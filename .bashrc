@@ -49,7 +49,6 @@ alias pcat='pygmentize -g'
 alias bcat='batcat' # for Ubuntu, for ohther - bat
 alias getip="curl ifconfig.me ; echo"
 alias np='notepad2.exe'
-alias sl='sublime-text.subl'
 alias h='history'
 alias j='jobs -l'
 alias r='rlogin'
