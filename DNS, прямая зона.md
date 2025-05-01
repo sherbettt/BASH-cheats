@@ -139,7 +139,7 @@ mycorp.com.     IN SOA ns1.mycorp.com. rootdns@mycorp.com. (
 
 ### Образец полного конфигурационного файла DNS
 
-```bash
+```c
 ; Конфигурационный файл зоны mycorp.com
 ; Использует стандартную схему и соглашения DNS BIND
 
@@ -269,7 +269,7 @@ zone "1.168.192.in-addr.arpa." {
 
 ### Общий пример полноценного файла `/etc/named.conf`
 
-```bash
+```c
 // named.conf
 options {
     directory "/var/named";                // Директория расположения файлов зон
