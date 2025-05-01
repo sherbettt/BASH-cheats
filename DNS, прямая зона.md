@@ -276,6 +276,16 @@ options {
     allow-recursion {"localhost";};        // Разрешить рекурсию только для localhost
     listen-on port 53 { any; };            // Слушаем запросы на любом интерфейсе
     forwarders { 8.8.8.8; 8.8.4.4; };     // Форвардеры (Google DNS)
+    listen-on port 53 { 127.0.0.1; 192.168.107.10; };
+    listen-on-v6 port 53 { none; };
+    dump-file       "/var/named/data/cache_dump.db";
+    statistics-file "/var/named/data/named_stats.txt";
+    memstatistics-file "/var/named/data/named_mem_stats.txt";
+    secroots-file   "/var/named/data/named.secroots";
+    recursing-file  "/var/named/data/named.recursing";
+    allow-query     { any; };
+    forwarders { 172.25.62.129; 172.25.62.128; };
+    forward first;
 };
 
 acl internal_network { 192.168.1.0/24; }; // Внутренняя сеть
