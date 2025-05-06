@@ -38,7 +38,7 @@ alias diff='diff --color=always'
 
 # some more other aliases
 alias sudo='sudo '
-alias clear='cls'
+alias cls='clear'
 alias repo='grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/*'
 alias apta='sudo apt update -y && sudo apt upgrade -y && sudo apt dist-upgrade -y'
 alias lz='eza -aghlo -F -U --group-directories-first --icons=automatic --total-size'
