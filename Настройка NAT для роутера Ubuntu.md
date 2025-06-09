@@ -51,11 +51,13 @@ ip route add default via 192.168.96.1 dev eth2 table eth2_table
 ### 4. Настройте маршруты на клиентских машинах:
 #### На `192.168.56.2`:
 ```bash
+ip r a 192.168.87.0/24 via 192.168.56.1
 ip route add default via 192.168.56.1
 ```
 
 #### На `192.168.56.3`:
 ```bash
+ip r a 192.168.96.0/24 via 192.168.56.1
 ip route add default via 192.168.56.1
 ```
 
