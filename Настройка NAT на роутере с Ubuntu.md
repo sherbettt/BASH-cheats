@@ -32,6 +32,25 @@ iptables -t nat -A POSTROUTING -s 192.168.56.3 -o eth2 -j MASQUERADE
 iptables -A FORWARD -i eth1 -o eth2 -s 192.168.56.3 -j ACCEPT
 iptables -A FORWARD -i eth2 -o eth1 -d 192.168.56.3 -j ACCEPT
 ```
+#### Итоговая таблица iptables:
+```bash
+┌─ root ~/.ssh 
+─ test-gw 
+└─ # iptables -nvL
+Chain INPUT (policy ACCEPT 116K packets, 51M bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+
+Chain FORWARD (policy ACCEPT 126K packets, 120M bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+    0     0 ACCEPT     0    --  192.168.56.0/24 192.168.87.112  0.0.0.0/0            0.0.0.0/0           
+    0     0 ACCEPT     0    --  192.168.56.1 192.168.87.112  0.0.0.0/0            0.0.0.0/0           
+    0     0 ACCEPT     0    --  192.168.87.112 192.168.56.1  0.0.0.0/0            0.0.0.0/0            state RELATED,ESTABLISHED
+    0     0 ACCEPT     0    --  eth0   eth1    192.168.56.0/24      0.0.0.0/0           
+    0     0 ACCEPT     0    --  eth1   eth0    0.0.0.0/0            192.168.56.0/24     
+
+Chain OUTPUT (policy ACCEPT 92102 packets, 538M bytes)
+ pkts bytes target     prot opt in     out     source               destination
+```
 
 ### 3. Настройте маршрутизацию на роутере:
 Создайте отдельные таблицы маршрутизации для каждой машины.
