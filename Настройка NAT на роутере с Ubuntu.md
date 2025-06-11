@@ -127,3 +127,134 @@ sudo systemctl restart networking
 apt install iptables-persistent
 netfilter-persistent save
 ```
+---
+
+## Сохранение маршрутов.
+Чтобы сохранить настройки маршрутизации (`ip route`) в Ubuntu (или другом Linux-дистрибутиве) **навсегда**, чтобы они не сбрасывались после перезагрузки, есть несколько способов.  
+
+## **1. Через `netplan` (рекомендуется в Ubuntu 18.04+)**
+Если ваш роутер использует `netplan` (актуально для современных Ubuntu), можно прописать маршруты в YAML-конфиге.  
+
+### **Пример для вашего роутера (3 интерфейса + маршруты для 192.168.56.2 и 192.168.56.3)**  
+Открываем конфиг:  
+```bash
+sudo nano /etc/netplan/01-netcfg.yaml
+```
+Добавляем маршруты в `routes:` для каждого интерфейса:  
+```yaml
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eth0:
+      addresses: [192.168.87.112/24]
+      routes:
+        - to: 0.0.0.0/0
+          via: 192.168.87.1
+      nameservers:
+        addresses: [8.8.8.8, 1.1.1.1]
+    eth1:
+      addresses: [192.168.56.1/24]
+    eth2:
+      addresses: [192.168.96.113/24]
+      routes:
+        - to: 0.0.0.0/0
+          via: 192.168.96.1
+      nameservers:
+        addresses: [8.8.8.8, 1.1.1.1]
+```
+Применяем:  
+```bash
+sudo netplan apply
+```
+**Плюсы:**  
+✔ Официальный способ в Ubuntu  
+✔ Автоматически применяется при загрузке  
+✔ Поддержка статических маршрутов  
+
+---
+
+## **2. Через `/etc/network/interfaces` (если используется `ifupdown`)**
+Если у вас старая Ubuntu (до 18.04) или вы используете `ifupdown`, можно прописать маршруты вручную.  
+
+### **Настройка для `eth0` и `eth2` (шлюзы в интернет)**
+```bash
+sudo nano /etc/network/interfaces
+```
+```conf
+auto eth0
+iface eth0 inet static
+    address 192.168.87.112
+    netmask 255.255.255.0
+    gateway 192.168.87.1
+    dns-nameservers 8.8.8.8 1.1.1.1
+
+auto eth1
+iface eth1 inet static
+    address 192.168.56.1
+    netmask 255.255.255.0
+
+auto eth2
+iface eth2 inet static
+    address 192.168.96.113
+    netmask 255.255.255.0
+    up ip route add 192.168.56.3 via 192.168.56.1 dev eth1
+    up ip route add default via 192.168.96.1
+```
+Применяем:  
+```bash
+sudo systemctl restart networking
+```
+
+---
+
+## **3. Через `systemd` (универсальный способ)**
+Если `netplan` не используется, можно создать сервис:  
+```bash
+sudo nano /etc/systemd/system/persistent-routes.service
+```
+```ini
+[Unit]
+Description=Persistent static routes
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/ip route add 192.168.56.2 via 192.168.56.1 dev eth1
+ExecStart=/sbin/ip route add 192.168.56.3 via 192.168.56.1 dev eth1
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+```
+Включаем:  
+```bash
+sudo systemctl enable persistent-routes.service
+sudo systemctl start persistent-routes.service
+```
+
+---
+
+## **4. Через `rc.local` (простой, но устаревший способ)**
+```bash
+sudo nano /etc/rc.local
+```
+Добавляем перед `exit 0`:  
+```bash
+ip route add 192.168.56.2 via 192.168.56.1 dev eth1
+ip route add 192.168.56.3 via 192.168.56.1 dev eth1
+```
+Делаем исполняемым:  
+```bash
+sudo chmod +x /etc/rc.local
+```
+
+---
+
+## **5. Сохранение NAT (`iptables`)**
+Чтобы NAT не сбрасывался после перезагрузки:  
+```bash
+sudo apt install iptables-persistent -y
+sudo iptables-save > /etc/iptables/rules.v4
+```
+После перезагрузки правила восстановятся.
