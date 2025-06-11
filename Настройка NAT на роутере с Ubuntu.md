@@ -82,6 +82,32 @@ ip r a 192.168.96.0/24 via 192.168.56.1
 ip route add default via 192.168.56.1
 ```
 
+### 5. Сохранить маршруты на клиентских машинах:
+```bash
+sudo mcedit /etc/network/interfaces
+
+auto eth0
+iface eth0 inet static
+    address 192.168.87.112
+    netmask 255.255.255.0
+    gateway 192.168.87.1
+    dns-nameservers 8.8.8.8 1.1.1.1
+
+auto eth1
+iface eth1 inet static
+    address 192.168.56.1
+    netmask 255.255.255.0
+
+auto eth2
+iface eth2 inet static
+    address 192.168.96.113
+    netmask 255.255.255.0
+    up ip route add 192.168.56.3 via 192.168.56.1 dev eth1
+    up ip route add default via 192.168.96.1
+
+sudo systemctl restart networking
+```
+
 ### Проверка:
 - Убедитесь, что трафик с `192.168.56.2` идет через `eth0`:
   ```bash
