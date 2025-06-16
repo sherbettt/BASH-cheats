@@ -1,3 +1,5 @@
+см. начало: [Настройка NAT на роутере с Ubuntu.md](https://github.com/sherbettt/BASH-cheats/blob/main/26.%20Настройка%20NAT%20на%20роутере%20с%20Ubuntu.md)
+
 ### ICMP Протокол
 [Wiki-ICMP](https://ru.wikipedia.org/wiki/ICMP)
 <br/> [netacademy-ICMP](https://net.academy.lv/lection/net_LS-10RU_icmp.pdf)
@@ -106,5 +108,30 @@ ICMP является вспомогательным средством диаг
 
 ---
 
+### Применение tshark с фильтрацией ICMP Протокола
+- Проверить таблицу iptables и добавить правило разрешающее icmp протокол
+```bash
+iptables -S
+iptable -nL
+iptables -I INPUT -p icmp -j ACCEPT
+```
+- запустить tshark с фильтрами.
+```bash
+┌─ root ~ 
+─ test-gw 
+└─ # tshark -f '' -T fields -E header=y -E separator=, -e frame.time_epoch -e ip.src -e ip.dst
+Running as user "root" and group "root". This could be dangerous.
+frame.time_epoch,ip.src,ip.dst
+Capturing on 'eth0'
+ ** (tshark:2019) 12:50:10.176112 [Main MESSAGE] -- Capture started.
+ ** (tshark:2019) 12:50:10.176136 [Main MESSAGE] -- File: "/tmp/wireshark_eth05EAC82.pcapng"
+1750078210.176162165,192.168.87.112,192.168.87.136
+1750078210.180074821,192.168.87.136,192.168.87.112
+1750078210.494016885,,
+1750078210.549043820,,
+1750078210.661378659,192.168.87.111,239.255.255.250
+1750078210.919578969,192.168.87.112,192.168.87.136
+...
 
+```
 
