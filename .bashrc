@@ -44,6 +44,7 @@ alias apta='sudo apt update -y && sudo apt upgrade -y && sudo apt dist-upgrade -
 alias lz='eza -aghlo -F -U --group-directories-first --icons=automatic --total-size'
 alias lzz='eza -aghli -F -U --group-directories-first --icons=automatic --time-style=long-iso'
 alias ll='ls -alFS --group-directories-first'
+alias llt='ll --time-style=+%F_%X'
 alias la='ls -A'
 alias l='ls -CF'
 alias pcat='pygmentize -g'
