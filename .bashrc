@@ -25,7 +25,6 @@ fi
 
 
 # color aliases
-alias tree='tree -Csu -a --du'    # альтернатива 'ls'
 alias sudo='sudo '
 alias ls='ls --color=always'
 alias ll='ll --color=always'
@@ -38,6 +37,7 @@ alias diff='diff --color=always'
 
 # some more other aliases
 alias sudo='sudo '
+alias tree='tree -Csu -a --du --dirsfirst'    # alternative to 'ls'
 alias cls='clear'
 alias repo='grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/*'
 alias apta='sudo apt update -y && sudo apt upgrade -y && sudo apt dist-upgrade -y'
