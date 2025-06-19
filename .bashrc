@@ -25,7 +25,7 @@ fi
 
 
 # color aliases
-alias tree='tree -Csu'    # альтернатива 'ls'
+alias tree='tree -Csu -a --du'    # альтернатива 'ls'
 alias sudo='sudo '
 alias ls='ls --color=always'
 alias ll='ll --color=always'
