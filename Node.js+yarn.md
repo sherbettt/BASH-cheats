@@ -427,7 +427,6 @@ browsers: ['ChromeHeadless'], // вместо 'Chrome'
 ```
 
 
-
 ### **4. Предупреждение о deprecated ES5**
 **Сообщение:**
 ```
@@ -487,4 +486,80 @@ DEPRECATED: ES5 output is deprecated. Please update TypeScript `target` compiler
 Это стандартная конфигурация, которая обычно находится в файле `test.ts` (или `test-setup.ts` в новых версиях Angular) и используется Karma или другими тестовыми раннерами для настройки окружения перед запуском тестов.
 
 В современных версиях Angular (версии 12+) этот файл может выглядеть немного иначе или даже быть автоматически сгенерированным с другими настройками, но основная концепция остаётся той же.
+
+--------------
+
+Ошибка в результает выполнения yarn e2e. Ошибка возникает из-за того, что Protractor не может найти Chrome браузер на вашей системе. Вот как это можно решить:
+
+### Основное решение:
+```bash
+[16:37:58] E/launcher - unknown error: cannot find Chrome binary
+```
+
+1. **Установите Google Chrome** (если ещё не установлен):
+   ```bash
+   # Для Ubuntu/Debian
+   sudo apt-get update
+   sudo apt-get install google-chrome-stable
+
+   # Для CentOS/RHEL
+   sudo yum install google-chrome-stable
+   ```
+
+2. **Проверьте путь к Chrome**:
+   Protractor ищет Chrome в стандартных местах. Если Chrome установлен в нестандартном месте, укажите путь в конфиге Protractor (`protractor.conf.js`):
+   ```js
+   capabilities: {
+     browserName: 'chrome',
+     chromeOptions: {
+       binary: '/path/to/your/chrome' // Например, '/usr/bin/google-chrome'
+     }
+   }
+   ```
+
+### Альтернативные решения:
+
+3. **Используйте ChromeDriver напрямую**:
+   Убедитесь, что ChromeDriver соответствует версии Chrome:
+   ```bash
+   npm install -g webdriver-manager
+   webdriver-manager update
+   ```
+
+4. **Перейдите на современные альтернативы Protractor** (рекомендуется):
+   Так как Protractor устарел, рассмотрите:
+   - **Cypress** (проще в настройке)
+   - **Playwright** или **WebdriverIO** (более мощные аналоги)
+
+   Angular CLI уже поддерживает эти альтернативы.
+
+5. **Если Chrome установлен, но не распознаётся**:
+   Проверьте симлинк:
+   ```bash
+   which google-chrome
+   # Если не найден, создайте симлинк
+   sudo ln -s /usr/bin/google-chrome-stable /usr/bin/google-chrome
+   ```
+
+### Дополнительные замечания:
+- Предупреждения о `mermaid.core.mjs` не влияют на запуск, но для оптимизации сборки добавьте в `angular.json`:
+  ```json
+  "allowedCommonJsDependencies": [
+    "@braintree/sanitize-url",
+    "dagre",
+    "dagre-d3",
+    "dompurify",
+    "graphlib",
+    "moment-mini"
+  ]
+  ```
+
+После установки Chrome перезапустите тесты:
+```bash
+yarn e2e
+```
+
+Если проблема сохраняется, попробуйте явно указать путь к Chrome в конфигурации Protractor.
+
+
 
