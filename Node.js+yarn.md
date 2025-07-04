@@ -353,6 +353,138 @@ yarn remove package-name
         ```bash
         ng update @angular/core @angular/cli
         ```
-   
+-----------
 
+Ошибки, которые могут возникнуть в момент работы `yarn test`, связаны с несколькими проблемами в настройке Angular-проекта и окружения. 
+
+### **1. Отсутствует файл `test.ts`**
+**Ошибка:**
+```
+Error: ENOENT: no such file or directory, open '/home/kirill/Projects/GIT/rt-v2/src/test.ts'
+```
+**Решение:**
+- Файл `src/test.ts` используется для настройки тестовой среды Angular. Если его нет, создайте его со следующим содержимым:
+  ```typescript
+  // test.ts
+  import 'zone.js/testing';
+  import { getTestBed } from '@angular/core/testing';
+  import { BrowserDynamicTestingModule, platformBrowserDynamicTesting } from '@angular/platform-browser-dynamic/testing';
+
+  getTestBed().initTestEnvironment(
+    BrowserDynamicTestingModule,
+    platformBrowserDynamicTesting(),
+  );
+  ```
+- Убедитесь, что он указан в `angular.json` в секции `test`:
+  ```json
+  "test": {
+    "main": "src/test.ts",
+    ...
+  }
+  ```
+
+
+
+### **2. Проблема с NGCC (Angular Compatibility Compiler)**
+**Ошибка:**
+```
+Error: Failed to initialize Angular compilation - NGCC failed.
+```
+**Решение:**
+- Удалите `node_modules` и `package-lock.json`/`yarn.lock`, затем переустановите зависимости:
+  ```bash
+  rm -rf node_modules yarn.lock
+  yarn install
+  ```
+- Если проблема остаётся, попробуйте явно запустить NGCC:
+  ```bash
+  yarn ngcc
+  ```
+
+
+### **3. Не установлен Chrome для Karma**
+**Ошибка:**
+```
+ERROR [launcher]: No binary for Chrome browser on your platform.
+Please, set "CHROME_BIN" env variable.
+```
+**Решение:**
+#### Для Linux (Ubuntu/Debian):
+1. Установите Chrome:
+   ```bash
+   sudo apt-get install google-chrome-stable
+   ```
+2. Укажите путь к Chrome в переменной окружения:
+   ```bash
+   export CHROME_BIN=$(which google-chrome-stable)
+   ```
+   (Добавьте эту строку в `~/.bashrc` или `~/.zshrc` для постоянного эффекта.)
+
+#### Альтернатива: Используйте Headless Chrome
+В `karma.conf.js` измените настройки браузера:
+```javascript
+browsers: ['ChromeHeadless'], // вместо 'Chrome'
+```
+
+
+
+### **4. Предупреждение о deprecated ES5**
+**Сообщение:**
+```
+DEPRECATED: ES5 output is deprecated. Please update TypeScript `target` compiler option to ES2015 or later.
+```
+**Решение:**
+Обновите `target` в `tsconfig.json`:
+```json
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    ...
+  }
+}
+```
+
+
+
+### **5. Проблема с `polyfills.ts`**
+**Ошибка:**
+```
+./src/polyfills.ts - Error: Emit attempted before Angular Webpack plugin initialization.
+```
+**Решение:**
+- Убедитесь, что `polyfills.ts` существует и содержит стандартные импорты (например, `zone.js`).
+- Пересоберите проект:
+  ```bash
+  yarn build
+  ```
+
+---
+  ```typescript
+  // test.ts
+  import 'zone.js/testing';
+  import { getTestBed } from '@angular/core/testing';
+  import { BrowserDynamicTestingModule, platformBrowserDynamicTesting } from '@angular/platform-browser-dynamic/testing';
+
+  getTestBed().initTestEnvironment(
+    BrowserDynamicTestingModule,
+    platformBrowserDynamicTesting(),
+  );
+  ```
+ это типовой (стандартный) скрипт для настройки тестового окружения в Angular с использованием Jasmine или других тестовых фреймворков.
+
+Разберём его по частям:
+
+1. `import 'zone.js/testing';` - Импорт Zone.js, который необходим Angular для работы с асинхронными операциями в тестах.
+
+2. `import { getTestBed } from '@angular/core/testing';` - Импорт функции getTestBed, которая предоставляет доступ к Angular TestBed.
+
+3. `import { BrowserDynamicTestingModule, platformBrowserDynamicTesting }` - Импорт необходимых модулей для тестирования в браузерном окружении.
+
+4. `getTestBed().initTestEnvironment(...)` - Инициализация тестового окружения с указанием:
+   - `BrowserDynamicTestingModule` - модуль для динамического тестирования в браузере
+   - `platformBrowserDynamicTesting()` - платформа для запуска тестов
+
+Это стандартная конфигурация, которая обычно находится в файле `test.ts` (или `test-setup.ts` в новых версиях Angular) и используется Karma или другими тестовыми раннерами для настройки окружения перед запуском тестов.
+
+В современных версиях Angular (версии 12+) этот файл может выглядеть немного иначе или даже быть автоматически сгенерированным с другими настройками, но основная концепция остаётся той же.
 
