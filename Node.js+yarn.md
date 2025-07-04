@@ -333,13 +333,22 @@ yarn remove package-name
    ```
    *(Это проверит node_modules на наличие проблемных библиотек)*
    
-4. **Для очистки кеша Yarn** (если есть проблемы с зависимостями):
+3. **Для очистки кеша Yarn** (если есть проблемы с зависимостями):
    ```bash
    yarn cache clean
    ```
-5. **Для проверки актуальности зависимостей**:
+4. **Для проверки актуальности зависимостей**:
    ```bash
    yarn outdated
    ```
+     1. Проверить, какие версии Angular поддерживает библиотека: `npm view <package> engines`
+        ```bash
+        npm view @rxweb/reactive-form-validators engines
+        ```
+     2. `ng update` – попробуйте обновить Angular и библиотеки:
+        ```bash
+        ng update @angular/core @angular/cli
+        ```
+   
 
 
