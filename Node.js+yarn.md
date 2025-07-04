@@ -237,6 +237,9 @@ error Command failed with signal "SIGABRT".
 
 В этом случае требуется увеличить лимит и перезапустить. В результате будет сформирована ссылка в бразуер для отладки `http://localhost:4200/`
 ```bash
+export NODE_OPTIONS=--max-old-space-size=8192
+```
+```bash
 ┌─ kirill ~/Projects/GIT/rt-v2 
 └─ $ yarn rt-v2
 yarn run v1.22.22
