@@ -312,6 +312,10 @@ yarn add package-name@version   # Указать версию
 ```bash
 yarn upgrade          # Обновить все зависимости
 yarn upgrade package-name # Обновить конкретный пакет
+##
+yarn upgrade @rxweb/reactive-form-validators@latest
+yarn upgrade ngx-perfect-scrollbar@latest
+yarn upgrade ngx-material-timepicker@latest
 ```
 
 ### 9. **Удаление зависимостей**
