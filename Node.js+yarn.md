@@ -241,6 +241,12 @@ error Command failed with signal "SIGABRT".
 ```bash
 export NODE_OPTIONS=--max-old-space-size=8192
 ```
+Или попробвать очистить кеш
+```bash
+rm -rf .angular/ node_modules/   # Linux/macOS
+yarn install                     # Переустановка зависимостей
+```
+
 ```bash
 ┌─ kirill ~/Projects/GIT/rt-v2 
 └─ $ yarn rt-v2
@@ -260,6 +266,15 @@ For more info see: https://angular.io/guide/build#configuring-commonjs-dependenc
 
 ✔ Compiled successfully.
 ```
+
+Если сборка всё равно падает, то можно обновить зависимости или добавить в `angular.json` в раздел `projects → rt-v2 → architect → build`:
+```json
+"optimization": false,
+"buildOptimizer": false,
+"aot": false
+```
+(Это временное решение для дебага, но не для прода)
+
 
 
 ### 4. Сборка проекта
@@ -311,11 +326,19 @@ yarn remove package-name
    export NODE_OPTIONS=--max-old-space-size=8192
    yarn build
    ```
-2. **Для очистки кеша Yarn** (если есть проблемы с зависимостями):
+2. **Используйте `ivy-cc` для анализа проблемных библиотек**:
+   Установите глобально:
+   ```bash
+   yarn global add ivy-cc
+   ivy-cc
+   ```
+   Он покажет, какие библиотеки несовместимы с Ivy и как их заменить.
+   
+4. **Для очистки кеша Yarn** (если есть проблемы с зависимостями):
    ```bash
    yarn cache clean
    ```
-3. **Для проверки актуальности зависимостей**:
+5. **Для проверки актуальности зависимостей**:
    ```bash
    yarn outdated
    ```
