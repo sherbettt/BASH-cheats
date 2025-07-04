@@ -33,7 +33,7 @@ yarn -v
 
 
 ### 2. Подготовка проекта
-
+Имея проект, написанный на Angular, имея готовый package.json, можно выполнить базовые действия:
 
 <details>
 <summary>package.json</summary>
@@ -191,3 +191,71 @@ yarn -v
 
 ```
 </details> 
+
+Перед началом работы установите все зависимости проекта, после чего появится папка **node_modules** в корне проекта: 
+```bash
+┌─ kirill ~/Projects/GIT/rt-v2 
+└─ $ yarn install   # или yarn
+yarn install v1.22.22
+[1/4] Resolving packages...
+.....
+warning " > @angular/material-moment-adapter@14.2.7" has unmet peer dependency "moment@^2.18.1".
+[4/4] Building fresh packages...
+success Saved lockfile.
+Done in 88.99s.
+```
+
+### 3. Запуск проекта в режиме разработки
+Для запуска проекта в dev-режиме используйте одну из команд из вашего `package.json`:
+```bash
+yarn rt-v2          # Обычный запуск
+yarn start-kept     # Запуск с конфигурацией "kept"
+yarn start-kept-dev # Запуск с конфигурацией "kept-dev"
+yarn cti-panel      # Запуск проекта cti-panel
+```
+Сборка может закончится с ошибкой из-за нехватка памяти
+```bash
+└─ $ yarn rt-v2
+yarn run v1.22.22
+$ ng serve --project rt-v2
+⠙ Generating browser application bundles (phase: setup)...Processing legacy "View Engine" libraries:
+.......
+FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory
+----- Native stack trace -----
+
+ 1: 0xe16044 node::OOMErrorHandler(char const*, v8::OOMDetails const&) [ng serve --project rt-v2]
+ 2: 0x11e0dd0 v8::Utils::ReportOOMFailure(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [ng serve --project rt-v2]
+ 3: 0x11e10a7 v8::internal::V8::FatalProcessOutOfMemory(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [ng serve --project rt-v2]
+ 4: 0x140e985  [ng serve --project rt-v2]
+ 5: 0x140e9b3  [ng serve --project rt-v2]
+ 6: 0x1427a8a  [ng serve --project rt-v2]
+ 7: 0x142ac58  [ng serve --project rt-v2]
+ 8: 0x1c90921  [ng serve --project rt-v2]
+error Command failed with signal "SIGABRT".
+```
+
+В этом случае требуется увеличить лимит и перезапустить. В результате будет сформирована ссылка в бразуер для отладки `http://localhost:4200/`
+```bash
+┌─ kirill ~/Projects/GIT/rt-v2 
+└─ $ yarn rt-v2
+yarn run v1.22.22
+$ ng serve --project rt-v2
+✔ Browser application bundle generation complete.
+
+Initial Chunk Files   | Names                                                                           |   Raw Size
+main.js               | main                                                                            |   15.94 MB | 
+scripts.js            | scripts                                                                         | 1009.94 kB | 
+styles.css, styles.js | styles                                                                          |  530.65 kB | 
+.......
+Warning: /home/kirill/Projects/GIT/rt-v2/node_modules/mermaid/dist/mermaid.core.mjs depends on 'moment-mini'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+** Angular Live Development Server is listening on localhost:4200, open your browser on http://localhost:4200/ **
+
+✔ Compiled successfully.
+```
+
+
+
+
+
