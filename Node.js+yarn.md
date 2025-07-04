@@ -1,5 +1,5 @@
 ### 1. Установка Node.js+yarn
-На [официальной странице](https://nodejs.org/en/download) можно посмотреть как это правильно сделать, создав sh скрипт.
+На [официальной странице](https://nodejs.org/en/download) можно посмотреть как это правильно сделать, создав sh скрипт. 
 А также смотри [cli команды yarn](https://classic.yarnpkg.com/en/docs/cli/).
 
 <details>
@@ -257,6 +257,10 @@ For more info see: https://angular.io/guide/build#configuring-commonjs-dependenc
 ```
 
 
-
-
+### 4. Запуск проекта в режиме разработки
+```bash
+yarn build      # Основная сборка (с увеличенным лимитом памяти)
+yarn build-win  # Сборка для Windows (без увеличенного лимита памяти)
+yarn build-kept # Сборка с конфигурацией "kept"
+```
 
