@@ -2,6 +2,8 @@
 На [официальной странице](https://nodejs.org/en/download) можно посмотреть как это правильно сделать, создав sh скрипт. 
 А также смотри [cli команды yarn](https://classic.yarnpkg.com/en/docs/cli/).
 
+
+
 <details>
 <summary>Install.sh</summary>
 
@@ -269,13 +271,13 @@ yarn build-kept # Сборка с конфигурацией "kept"
 В результате будет создан файл `yarn.lock`.
 
 
-### 4. Анализ бандлов
+### 5. Анализ бандлов
 ```bash
 yarn bundle-report      # Обычный анализ
 yarn bundle-report-kept # Анализ для конфигурации "kept"
 ```
 
-### 4. Тестирование
+### 6. Тестирование
 ```bash
 yarn test  # Запуск unit-тестов
 yarn e2e   # Запуск end-to-end тестов
@@ -283,12 +285,39 @@ yarn lint  # Проверка кода с помощью ESLint
 ```
 И будет сформирован отчёт: Webpack Bundle Analyzer is started at http://127.0.0.1:8090
 
-### 5. Добавление новых зависимостей
+### 7. Добавление новых зависимостей
 Чтобы добавить новую зависимость:
 ```bash
 yarn add package-name           # Добавить в dependencies
 yarn add -D package-name        # Добавить в devDependencies
 yarn add package-name@version   # Указать версию
 ```
+
+### 8. **Обновление зависимостей**
+```bash
+yarn upgrade          # Обновить все зависимости
+yarn upgrade package-name # Обновить конкретный пакет
+```
+
+### 9. **Удаление зависимостей**
+```bash
+yarn remove package-name
+```
+
+
+### Советы:
+1. **Если сборка падает из-за нехватки памяти** – попробуйте увеличить лимит:
+   ```bash
+   export NODE_OPTIONS=--max-old-space-size=8192
+   yarn build
+   ```
+2. **Для очистки кеша Yarn** (если есть проблемы с зависимостями):
+   ```bash
+   yarn cache clean
+   ```
+3. **Для проверки актуальности зависимостей**:
+   ```bash
+   yarn outdated
+   ```
 
 
