@@ -257,7 +257,7 @@ For more info see: https://angular.io/guide/build#configuring-commonjs-dependenc
 ```
 
 
-### 4. Запуск проекта в режиме разработки
+### 4. Сборка проекта
 ```bash
 yarn build      # Основная сборка (с увеличенным лимитом памяти)
 yarn build-win  # Сборка для Windows (без увеличенного лимита памяти)
