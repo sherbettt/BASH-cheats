@@ -1,6 +1,6 @@
 ### 1. Установка Node.js+yarn
-На [официальной странице](https://nodejs.org/en/download) можно посмотреть как это правильно сделать, создав sh скрипт. 
-А также смотри [cli команды yarn](https://classic.yarnpkg.com/en/docs/cli/).
+На **[официальной странице](https://nodejs.org/en/download)** можно посмотреть как это правильно сделать, создав sh скрипт. 
+А также смотри **[cli команды yarn](https://classic.yarnpkg.com/en/docs/cli/)**.
 
 
 
