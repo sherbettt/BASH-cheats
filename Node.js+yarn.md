@@ -273,7 +273,7 @@ For more info see: https://angular.io/guide/build#configuring-commonjs-dependenc
 "buildOptimizer": false,
 "aot": false
 ```
-(Это временное решение для дебага, но не для прода)
+*(Это временное решение для дебага, но не для прода)*
 
 
 
@@ -326,13 +326,12 @@ yarn remove package-name
    export NODE_OPTIONS=--max-old-space-size=8192
    yarn build
    ```
-2. **Используйте `ivy-cc` для анализа проблемных библиотек**:
+2. **Используйте `npx ngcc` для анализа проблемных библиотек**:
    Установите глобально:
    ```bash
-   yarn global add ivy-cc
-   ivy-cc
+   npx ngcc --properties es2015 browser module main --first-only --create-ivy-entry-points
    ```
-   Он покажет, какие библиотеки несовместимы с Ivy и как их заменить.
+   *(Это проверит node_modules на наличие проблемных библиотек)*
    
 4. **Для очистки кеша Yarn** (если есть проблемы с зависимостями):
    ```bash
