@@ -353,6 +353,11 @@ yarn remove package-name
         ```bash
         ng update @angular/core @angular/cli
         ```
+5. **Отображает расположение папки bin**:
+   ```bash
+   yarn bin
+   yarn bin gettext-compile
+   ```
 -----------
 
 Ошибки, которые могут возникнуть в момент работы `yarn test`, связаны с несколькими проблемами в настройке Angular-проекта и окружения. 
