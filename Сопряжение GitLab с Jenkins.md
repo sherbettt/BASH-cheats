@@ -40,3 +40,10 @@ curl -v -X POST \
   -H "Referer: https://jenkins.runtel.ru" \
   "https://jenkins.runtel.ru/job/nested_stages_front_test/build"
 ```
+-------------------------------------
+
+Например, зайти на https://gitlab.runtel.org/runtel/rt-v2, выбрать Settings -> integrations -> jenkins или сразу https://gitlab.runtel.org/runtel/rt-v2/-/settings/integrations/jenkins/edit
+  - Jenkins server URL: https://jenkins.runtel.ru/
+  - Project name: rt_v2_deb10_dev
+  - Username: admin
+  - Enter new password: <можно вставить сгенерированный токен в Jenkins>
