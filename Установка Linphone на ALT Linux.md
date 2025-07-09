@@ -1,0 +1,134 @@
+# Установка Linphone на ALT Linux / Ximper Linux
+
+```bash
+└─ $ batp /etc/*release
+Ximper Linux 0.9.3 (Alice)
+Ximper Linux 0.9.3 (Alice)
+NAME="Etersoft Ximper"
+VERSION="0.9.3"
+ID=altlinux
+VERSION_ID=0.9.3
+PRETTY_NAME="Ximper Linux 0.9.3 (Alice)"
+ANSI_COLOR="1;33"
+CPE_NAME="cpe:/o:alt:ximper:0.9.3"
+BUILD_ID="Etersoft Ximper 0.9.3"
+HOME_URL="https://ximperlinux.ru/"
+BUG_REPORT_URL="https://github.com/Etersoft/XimperLinux/issues/new/choose"
+LOGO=ximperlinux
+Ximper Linux 0.9.3 (Alice)
+Ximper Linux 0.9.3 (Alice)
+```
+
+Поскольку в **Ximper Linux** используется **EEPM** (Etersoft Enhanced Package Manager) вместо APT, установка Linphone будет немного отличаться.
+
+
+### **1. Поиск Linphone в репозиториях Etersoft/Ximper Linux**
+Проверим, есть ли пакет в доступных репозиториях:
+```bash
+epm query linphone
+```
+Если пакет найден, устанавливаем его:
+```bash
+epm install linphone
+```
+
+Если пакета нет, можно попробовать поискать в других репозиториях ALT Linux:
+```bash
+epm --repack --auto --repo=sisyphus linphone
+```
+*(Попытка установки из Sisyphus, но возможны конфликты зависимостей.)*
+
+
+
+### **2. Установка вручную из RPM (если есть подходящий пакет)**
+Если где-то найден RPM-пакет (например, для ALT Linux p10), можно попробовать установить его вручную:
+```bash
+epm --repack linphone-3.12.0-alt7.x86_64.rpm
+```
+*(Но, как вы уже обнаружили, актуальных RPM для Linphone в репозиториях ALT нет.)*
+
+
+
+### **3. Установка через Flatpak (рекомендуемый способ)**
+Поскольку в репозиториях Etersoft/Ximper Linux пакет отсутствует, лучший вариант — установить **Linphone через Flatpak**:
+```bash
+# Установка Flatpak (если ещё не установлен)
+epm install flatpak
+
+# Добавление репозитория Flathub
+flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+
+# Установка Linphone
+flatpak install flathub org.linphone.Linphone
+
+# Запуск
+flatpak run org.linphone.Linphone
+```
+*(Этот метод обеспечит актуальную версию без проблем с зависимостями.)*
+
+
+
+### **4. Сборка из исходников (если Flatpak не подходит)**
+Если нужна именно системная установка, можно собрать Linphone вручную:
+```bash
+# Установка зависимостей для сборки
+epm install git cmake gcc-c++ intltool libtool automake pkg-config \
+    gtk2-devel libexosip2-devel libortp-devel libmediastreamer-devel
+
+# Клонирование и сборка (например, версии 5.x)
+git clone --recursive https://gitlab.linphone.org/BC/public/linphone-desktop.git
+cd linphone-desktop
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr
+make -j$(nproc)
+sudo make install
+```
+*(Этот способ сложнее и может потребовать дополнительных библиотек.)*
+
+
+
+### **5. Альтернативные SIP-клиенты**
+Если Linphone не удаётся установить, попробуйте другие VoIP-приложения:
+```bash
+epm search sip  # Поиск альтернатив (например, Jitsi, MicroSIP)
+epm install jitsi  # Или другой клиент
+```
+
+### **Вывод**
+1. **Лучший вариант** → **Установка через Flatpak** (актуальная версия, минимум проблем).  
+2. **Если нужна системная установка** → попробовать `epm --repack` с RPM из других репозиториев или сборку из исходников.  
+3. **Альтернативы** → другие SIP-клиенты (`jitsi`, `twinkle` и т. д.).  
+
+
+
+---------------------
+Для установки Linphone на ALT Linux (версия p10) из существующего пакета, выполните следующие шаги:
+
+### 1. **Скачайте пакет**
+   ```bash
+   wget https://ftp.altlinux.org/pub/distributions/ALTLinux/classic/p10/x86_64/RPMS.classic//linphone-3.12.0-alt7.x86_64.rpm
+   ```
+но он уже не существует, как и не сущесвтует в https://ftp.altlinux.org/pub/distributions/ALTLinux/Sisyphus/x86_64/RPMS.classic/, хотя сам пакет присутсвтует в https://altlinux.pkgs.org/p10/classic-x86_64/linphone-3.12.0-alt7.x86_64.rpm.html
+
+### 2. **Установите пакет**
+   Используйте `apt-get` (который в ALT Linux работает с RPM-пакетами) или `rpm`:
+   ```bash
+   sudo apt-get install ./linphone-3.12.0-alt7.x86_64.rpm
+   ```
+   **Или** через `rpm`:
+   ```bash
+   sudo rpm -i linphone-3.12.0-alt7.x86_64.rpm
+   ```
+
+### 3. **Разрешите зависимости**
+   Если при установке возникнут ошибки из-за зависимостей, выполните:
+   ```bash
+   sudo apt-get update
+   sudo apt-get install -f  # автоматическое исправление зависимостей
+   ```
+
+### 4. **Запустите Linphone**
+   После успешной установки запустите его из меню приложений или через терминал:
+   ```bash
+   linphone
+   ```
