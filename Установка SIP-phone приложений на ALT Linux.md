@@ -1,3 +1,94 @@
+
+# Установка ZoIPer на ALT Linux / Ximper Linux
+
+Помощь: https://zadarma.com/ru/support/instructions/linux/zoiper/
+
+Скачать отсюда https://www.zoiper.com/en/voip-softphone/download/current
+<br/> Для установки пакета `Zoiper5_5.6.10_x86_64.deb` на **XIMPER LINUX** с использованием менеджера пакетов **EEPM** (Elbrus Easy Package Manager), выполните следующие шаги:
+
+### 1. **Установка через EEPM**
+Откройте терминал и выполните команду:
+```bash
+sudo eepm install ./Zoiper5_5.6.10_x86_64.deb
+```
+Если `eepm` поддерживает установку локальных `.deb`-пакетов, это должно сработать.
+
+### 2. **Если EEPM не поддерживает прямую установку .deb**
+Попробуйте установить вручную через `dpkg`:
+```bash
+sudo dpkg -i Zoiper5_5.6.10_x86_64.deb
+```
+Если возникнут ошибки зависимостей, выполните:
+```bash
+sudo eepm install -f  # или sudo apt-get install -f
+```
+
+### 3. **Запуск Zoiper 5**
+После установки запустите программу:
+```bash
+zoiper5
+```
+Или найдите её в меню приложений.
+
+### 4. **Если пакет несовместим**
+Если XIMPER LINUX основан на **ALT Linux** или другом не-Debian дистрибутиве, `.deb` может не работать. В таком случае:
+- Попробуйте найти Zoiper в репозиториях EEPM:
+  ```bash
+  sudo eepm install zoiper
+  ```
+- Или скачайте **RPM-версию** (если XIMPER использует RPM-пакеты).
+
+### 5. **Ручная установка (если ничего не помогло)**
+Распакуйте `.deb` и скопируйте файлы вручную:
+```bash
+ar x Zoiper5_5.6.10_x86_64.deb
+tar -xf data.tar.xz
+sudo cp -r usr /
+```
+
+Созданы:
+<br/> 4028@office.runtel.org - telephone
+<br/> 4029@office.runtel.org - softphone
+
+```ini
+## https://192.168.87.140/servlet?m=mod_data&p=status&q=load ##
+	Версия	
+Версия ПО	                53.84.0.15
+Сборка	                    53.0.0.224.0.0.0
+    Сертификат устройства	
+Сертификат устройства	    Заводской сертификат
+Сеть	
+Порт Internet	            IPv4
+IPv4	
+Режим порта Internet	    DHCP
+IP-адрес порта Internet	    192.168.87.140
+Маска подсети	            255.255.255.0
+Шлюз	                    192.168.87.1
+Осн. DNS-сервер	            8.8.8.8
+Доп. DNS-сервер	            77.88.8.8
+    Общие	
+MAC-адрес	                00:15:65:D5:DB:7B
+VLAN ID	                    0
+Статус WAN-порта	        100Mbps Full Duplex
+PC Port статус	            Link Down
+Режим порта PC	            Мост
+Время работы	            0 дни 00:08
+Текущее время	            19:29:36 Ср Июл 09
+    Статус аккаунта	
+Аккаунт 1	                4028@office.runtel.org : Зарегистрировано
+```
+
+
+
+
+
+
+
+
+
+
+------------------------------------------------------------
+
 # Установка Linphone на ALT Linux / Ximper Linux
 
 Помощь: https://zadarma.com/ru/support/instructions/linux/linphone/
@@ -134,51 +225,4 @@ epm install jitsi  # Или другой клиент
    ```bash
    linphone
    ```
--------------------------------------
 
-# Установка ZoIPer на ALT Linux / Ximper Linux
-
-Помощь: https://zadarma.com/ru/support/instructions/linux/zoiper/
-
-Скачать отсюда https://www.zoiper.com/en/voip-softphone/download/current
-<br/> Для установки пакета `Zoiper5_5.6.10_x86_64.deb` на **XIMPER LINUX** с использованием менеджера пакетов **EEPM** (Elbrus Easy Package Manager), выполните следующие шаги:
-
-### 1. **Установка через EEPM**
-Откройте терминал и выполните команду:
-```bash
-sudo eepm install ./Zoiper5_5.6.10_x86_64.deb
-```
-Если `eepm` поддерживает установку локальных `.deb`-пакетов, это должно сработать.
-
-### 2. **Если EEPM не поддерживает прямую установку .deb**
-Попробуйте установить вручную через `dpkg`:
-```bash
-sudo dpkg -i Zoiper5_5.6.10_x86_64.deb
-```
-Если возникнут ошибки зависимостей, выполните:
-```bash
-sudo eepm install -f  # или sudo apt-get install -f
-```
-
-### 3. **Запуск Zoiper 5**
-После установки запустите программу:
-```bash
-zoiper5
-```
-Или найдите её в меню приложений.
-
-### 4. **Если пакет несовместим**
-Если XIMPER LINUX основан на **ALT Linux** или другом не-Debian дистрибутиве, `.deb` может не работать. В таком случае:
-- Попробуйте найти Zoiper в репозиториях EEPM:
-  ```bash
-  sudo eepm install zoiper
-  ```
-- Или скачайте **RPM-версию** (если XIMPER использует RPM-пакеты).
-
-### 5. **Ручная установка (если ничего не помогло)**
-Распакуйте `.deb` и скопируйте файлы вручную:
-```bash
-ar x Zoiper5_5.6.10_x86_64.deb
-tar -xf data.tar.xz
-sudo cp -r usr /
-```
