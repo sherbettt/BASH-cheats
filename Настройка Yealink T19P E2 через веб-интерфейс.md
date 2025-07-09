@@ -1,4 +1,5 @@
 см. как пользоваться [NMAP](https://github.com/sherbettt/BASH-cheats/blob/main/13.5.%20nmap.md)
+см. [Установка SIP-phone приложений на ALT Linux.md](https://github.com/sherbettt/BASH-cheats/blob/main/Установка%20SIP-phone%20приложений%20на%20ALT%20Linux.md)
 
 
 Для настройки телефона Yealink T19P E2 через веб-интерфейс и устранения ошибки регистрации аккаунта выполните следующие шаги:
