@@ -134,6 +134,8 @@ epm install jitsi  # Или другой клиент
    ```
 -------------------------------------
 
+# Установка ZoIPer на ALT Linux / Ximper Linux
+
 Скачать отсюда https://www.zoiper.com/en/voip-softphone/download/current
 <br/> Для установки пакета `Zoiper5_5.6.10_x86_64.deb` на **XIMPER LINUX** с использованием менеджера пакетов **EEPM** (Elbrus Easy Package Manager), выполните следующие шаги:
 
