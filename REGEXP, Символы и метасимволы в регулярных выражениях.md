@@ -740,7 +740,7 @@ if (preg_match($pattern, $phone, $matches)) {
 
 RF Mobile phones != 8|7|+7
 <br/> **Мобильные номера РФ без 8|7|+7**
-<br/> ` (?:8|7|\+7)(9\d{2}\d{7}) `
+<br/> ` (?:8|7|\+7)(\d{10}) `
 
 RF Mobile phones 7num
 <br/>  **Мобильные номера РФ 7 цифр**
