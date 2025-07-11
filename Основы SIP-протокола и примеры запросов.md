@@ -251,6 +251,8 @@ STUN (Session Traversal Utilities for NAT) — это протокол, позв
 #### **Как проверить через `curl` (если сервер поддерживает HTTP-запросы):**  
 ```bash
 curl -s https://api.ipify.org  # Альтернатива: просто узнать внешний IP без STUN
+# или
+curl ifconfig.me ; echo
 ```  
 Но это не STUN, а просто HTTP-запрос.  
 
