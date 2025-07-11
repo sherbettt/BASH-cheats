@@ -139,13 +139,105 @@
 | **510** | Not Extended | Требуется расширение запроса. |
 | **511** | Network Authentication Required | Требуется аутентификация в сети (например, публичный Wi-Fi). |
 
+--------------------------
+
+
+## **Примеры HTTP-запросов и ответов**
+
+### **1. GET-запрос (получение данных)**
+**Запрос:**  
+```http
+GET /api/users?id=123 HTTP/1.1
+Host: example.com
+User-Agent: Mozilla/5.0
+Accept: application/json
+```
+**Ответ:**  
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+Content-Length: 45
+
+{
+  "id": 123,
+  "name": "John Doe",
+  "email": "john@example.com"
+}
+```
+
+### **2. POST-запрос (отправка данных)**
+**Запрос:**  
+```http
+POST /api/login HTTP/1.1
+Host: example.com
+Content-Type: application/json
+Content-Length: 42
+
+{
+  "username": "admin",
+  "password": "12345"
+}
+```
+**Ответ:**  
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+Set-Cookie: session=abc123
+
+{
+  "status": "success",
+  "token": "xyz789"
+}
+```
+
+### **3. PUT-запрос (обновление данных)**
+**Запрос:**  
+```http
+PUT /api/users/123 HTTP/1.1
+Host: example.com
+Content-Type: application/json
+Authorization: Bearer xyz789
+
+{
+  "name": "John Smith",
+  "email": "john.smith@example.com"
+}
+```
+**Ответ:**  
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "status": "updated",
+  "user": {
+    "id": 123,
+    "name": "John Smith",
+    "email": "john.smith@example.com"
+  }
+}
+```
+
+### **4. DELETE-запрос (удаление данных)**
+**Запрос:**  
+```http
+DELETE /api/users/123 HTTP/1.1
+Host: example.com
+Authorization: Bearer xyz789
+```
+**Ответ:**  
+```http
+HTTP/1.1 204 No Content
+```
+
 ---
 
-## **Вывод**  
-- **1xx** — информационные (редко используются).  
-- **2xx** — успех (запрос выполнен).  
-- **3xx** — перенаправления (смена URL).  
-- **4xx** — ошибки клиента (неправильный запрос).  
-- **5xx** — ошибки сервера (проблемы на стороне backend).  
+## **Инструменты для работы с HTTP**
+- **Браузерные DevTools** (Chrome/Firefox) — просмотр запросов.  
+- **Postman / Insomnia** — тестирование API.  
+- **cURL** — отправка запросов из командной строки:  
+  ```bash
+  curl -X GET https://example.com/api/users
+  curl -X POST -H "Content-Type: application/json" -d '{"login":"user"}' https://example.com/login
+  ```
 
-Эти коды помогают в отладке API, настройке редиректов и обработке ошибок.
