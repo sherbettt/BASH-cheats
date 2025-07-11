@@ -253,6 +253,8 @@ STUN (Session Traversal Utilities for NAT) — это протокол, позв
 curl -s https://api.ipify.org  # Альтернатива: просто узнать внешний IP без STUN
 # или
 curl ifconfig.me ; echo
+# или
+dig +short myip.opendns.com @resolver1.opendns.com
 ```  
 Но это не STUN, а просто HTTP-запрос.  
 
