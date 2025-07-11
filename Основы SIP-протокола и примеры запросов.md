@@ -248,6 +248,21 @@ STUN (Session Traversal Utilities for NAT) — это протокол, позв
 - `stun.voipbuster.com`  
 - `stun.stunprotocol.org`  
 
+#### **Как проверить через python скрипт:** 
+```python
+#!/usr/bin/python3
+
+import stun
+
+# Задайте ручной выбор STUN-сервера
+stun_host = 'stun.l.google.com'
+stun_port = 19302
+
+external_ip = stun.get_ip_info()[1]
+print(f"Внешний IP адрес: {external_ip}")
+```
+
+
 #### **Как проверить через `curl` (если сервер поддерживает HTTP-запросы):**  
 ```bash
 curl -s https://api.ipify.org  # Альтернатива: просто узнать внешний IP без STUN
