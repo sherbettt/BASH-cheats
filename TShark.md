@@ -95,7 +95,7 @@ tshark -r input.pcap -T json > output.json
 tshark -r input.pcap -Y "http.request" -T fields -e http.host -e http.request.uri > urls.csv
 ```
 
----
+
 
 ### **6. Примеры использования**
 #### **1. Анализ DNS-запросов**
@@ -123,7 +123,7 @@ tshark -i eth0 -Y "http.request or http.response" -O http  # Подробный 
 - **Цветной вывод**: `tshark --color` (подсветка пакетов).
 - **Геолокация IP**: `tshark -r input.pcap -Y "ip" -T fields -e ip.src -e ip.geoip.country`.
 
----
+
 
 ### **Важно**
 - Для захвата трафика может потребоваться запуск с `sudo`.
