@@ -1,7 +1,7 @@
 #!/usr/bin/python3
-import socket
-import binascii
-import os  # Добавляем недостающий импорт
+import socket        # для работы с сетевыми соединениями; в частности для сетевого взаимодействия с STUN-сервером
+import binascii      # для преобразования бинарных данных в ASCII и обратно; формирование корректного бинарного STUN-запроса
+import os            # Предоставляет функции для работы с операционной системой; для генерации случайных данных, необходимых по протоколу STUN
 
 def get_stun_info(server='stun.l.google.com', port=19302):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
