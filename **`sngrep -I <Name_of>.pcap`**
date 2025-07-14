@@ -1,6 +1,5 @@
 **`sngrep -I <Name_of>.pcap`**
 
-Call flow for 2 dialogs (Color by Request/Response)
 ```
                                                                                                                         │
              10.190.9.11:5060            10.240.251.218:5060           10.240.251.218:5202             10.190.9.11:5060 │
