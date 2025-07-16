@@ -49,4 +49,92 @@
 - Для отладки SIP-трафика используйте команду `sofia global sip_capture on`.
 -----------------------------------------------------------------------------------------
 
+Вот список всех команд `fs_cli -x`, которые можно выполнить в FreeSWITCH через CLI:
+
+### **Основные команды**
+1. `help` – Показать список доступных команд
+2. `status` – Показать текущий статус FreeSWITCH
+3. `reloadxml` – Перезагрузить XML-конфигурацию
+4. `sofia status` – Показать статус Sofia SIP
+5. `sofia profile <profile> rescan` – Перезагрузить SIP-профиль
+6. `version` – Показать версию FreeSWITCH
+7. `uptime` – Показать время работы сервера
+8. `fsctl send_sighup` – Отправить сигнал HUP (перезагрузка)
+9. `fsctl shutdown` – Остановить FreeSWITCH
+10. `fsctl sync_clock` – Синхронизировать время
+11. `fsctl last_sps` – Показать последние вызовы в секунду (CPS)
+
+
+
+### **Команды для вызовов**
+12. `show calls` – Показать активные вызовы
+13. `show channels` – Показать активные каналы
+14. `show calls count` – Показать количество активных вызовов
+15. `uuid_kill <uuid>` – Завершить канал по UUID
+16. `uuid_bridge <uuid1> <uuid2>` – Соединить два канала
+17. `uuid_transfer <uuid> <dest>` – Перевести вызов
+18. `uuid_record <uuid> start <file>` – Начать запись канала
+19. `uuid_record <uuid> stop` – Остановить запись канала
+20. `uuid_display <uuid> <text>` – Отправить текст на дисплей телефона
+
+
+
+### **Команды для конференций**
+21. `conference list` – Показать активные конференции
+22. `conference <conf_name> list` – Показать участников конференции
+23. `conference <conf_name> mute <member_id>` – Заглушить участника
+24. `conference <conf_name> unmute <member_id>` – Включить звук участника
+25. `conference <conf_name> kick <member_id>` – Удалить участника
+26. `conference <conf_name> lock` – Заблокировать конференцию
+27. `conference <conf_name> unlock` – Разблокировать конференцию
+
+
+
+### **Команды для очередей (FIFO)**
+28. `fifo list` – Показать все очереди
+29. `fifo <queue_name> list` – Показать участников очереди
+30. `fifo <queue_name> add <extension>` – Добавить участника в очередь
+31. `fifo <queue_name> remove <extension>` – Удалить участника из очереди
+
+
+
+### **Команды для модулей**
+32. `module list` – Показать загруженные модули
+33. `module load <mod_name>` – Загрузить модуль
+34. `module unload <mod_name>` – Выгрузить модуль
+35. `module reload <mod_name>` – Перезагрузить модуль
+
+
+
+### **Команды для баз данных**
+36. `db select <key>` – Выбрать значение из базы данных
+37. `db insert <key> <value>` – Вставить значение в базу
+38. `db delete <key>` – Удалить значение из базы
+39. `db exists <key>` – Проверить наличие ключа
+
+
+
+### **Команды для событий (Events)**
+40. `event plain all` – Подписаться на все события
+41. `event plain <event_type>` – Подписаться на определенный тип событий
+42. `noevents` – Отписаться от событий
+
+
+
+### **Команды для отладки**
+43. `loglevel <level>` – Установить уровень логирования (0-7)
+44. `debug_level <level>` – Установить уровень отладки
+45. `nixevent <event_mask>` – Включить/выключить события ядра
+
+
+
+### **Другие полезные команды**
+46. `originate <dest> <exten>` – Инициировать вызов
+47. `bgapi <command>` – Выполнить команду в фоне
+48. `python <script>` – Выполнить Python-скрипт
+49. `lua <script>` – Выполнить Lua-скрипт
+50. `jsrun <script>` – Выполнить JavaScript
+
+-----------------------------------------------------------------------------------------
+
 
