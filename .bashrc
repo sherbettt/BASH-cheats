@@ -61,7 +61,7 @@ alias du='du -kh'
 alias df='df -kTh'
 alias ipc='ip -c addr show'
 alias ipa='ip -br -c addr show'
-alias lsblk-more='lsblk --output LABEL,NAME,TRAN,UUID,TYPE,MOUNTPOINT,SIZE,FSTYPE,SERIAL,MODEL'
+alias lsblk-more='lsblk --output MOUNTPOINT,NAME,TRAN,UUID,TYPE,SIZE,FSTYPE,MODE,PTTYPE,PARTTYPELABEL'
 alias mc-visudo='sudo EDITOR=mcedit visudo'
 
 
