@@ -308,6 +308,9 @@ echo '{"ids":{}}' > /etc/pve/.vmlist
 chown root:www-data /etc/pve/.vmlist
 chmod 0640 /etc/pve/.vmlist
 ```
+
+
+также см.: [Как установить Proxmox Virtual Environment на Debian 12](https://byzoni.org/posts/how-to-install-proxmox-virtual-environment-on-debian-12/)
 Затем перезапустите фаервол:
 ```bash
 systemctl restart proxmox-firewall
