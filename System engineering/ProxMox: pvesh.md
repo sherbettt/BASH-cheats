@@ -17,9 +17,10 @@ pvesh <метод> <путь> [--параметры]
 ## **2. Работа со снепшотами через `pvesh`**
 ### **🔹 Просмотр всех снепшотов контейнера (LXC)**
 ```bash
-pvesh get /nodes/pmx5/lxc/107/snapshot
+pvesh get /nodes/pmx5/lxc;
+pvesh get /nodes/pmx5/lxc/107/snapshot;
  #или в json формате
-pvesh get /nodes/pmx5/lxc/107/snapshot --output-format json-pretty
+pvesh get /nodes/pmx5/lxc/107/snapshot --output-format json-pretty;
 ```
 Вывод (условно):
 ```
