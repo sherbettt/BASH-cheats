@@ -36,3 +36,47 @@ Number  Start   End     Size    File system     Name  Flags
 ```
 
 </details>
+
+
+Чтобы посмотреть, где физически хранятся ваши снапшоты Timeshift на разделе Btrfs, выполните следующие шаги:
+
+1. Снапшоты Timeshift в Btrfs хранятся как подтома (subvolumes) в корневом томе. Сначала определим, где смонтирован ваш корневой раздел Btrfs:
+
+```bash
+sudo btrfs subvolume list /
+```
+
+2. Если корневой раздел не смонтирован напрямую, а смонтирован только `/home` (как видно из вашего вывода `lsblk`), то смотрим подтома в `/home`:
+
+```bash
+sudo btrfs subvolume list /home
+```
+
+3. Снапшоты Timeshift обычно находятся в папке `timeshift-btrfs/snapshots`. Вы можете проверить её содержимое:
+
+```bash
+sudo ls -l /home/timeshift-btrfs/snapshots
+```
+
+4. Если вы не видите эту папку, возможно, она скрыта. Попробуйте:
+
+```bash
+sudo ls -la /home/.timeshift
+```
+
+5. Также вы можете временно смонтировать корневой подтом Btrfs и проверить его содержимое:
+
+```bash
+sudo mkdir -p /mnt/btrfs
+sudo mount /dev/nvme0n1p3 /mnt/btrfs
+sudo ls -l /mnt/btrfs/timeshift-btrfs/snapshots
+```
+
+После проверки не забудьте размонтировать:
+
+```bash
+sudo umount /mnt/btrfs
+```
+
+Из вывода Timeshift видно, что у имеется один снапшот с меткой "Manual1". Он физически хранится в подтоме Btrfs на разделе `/dev/nvme0n1p3`, который смонтирован как `/home`.
+
