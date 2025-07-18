@@ -199,3 +199,4 @@ sudo umount /mnt/btrfs-root
   ```
 
 
+читай https://www.altlinux.org/Timeshift
