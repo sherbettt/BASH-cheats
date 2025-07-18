@@ -51,9 +51,18 @@
 ---
 
 ### **Способ 2: Через Proxmox VE Tasks (если не хотите использовать Cron)**
-1. **Создайте задачу в Proxmox GUI:**  
-   - **Datacenter → Tasks → Add → Scheduled Task**  
+1.  **Создайте задачу в Proxmox GUI:**  
+   - **Datacenter → Backup → Add → Scheduled Task**  
    - **Schedule:** `0 0 * * 5` (каждую пятницу в 00:00)  
+   - **Command:**  
+     ```bash
+     /usr/local/bin/rotate_lxc_snapshots.sh
+     ```
+
+
+2.  **(Alt) Создайте задачу в Proxmox GUI:**  
+   - **Datacenter → Tasks → Add → Scheduled Task**  
+   - **Schedule:** `fri 20:00` (каждую пятницу в 20:00)  
    - **Command:**  
      ```bash
      /usr/local/bin/rotate_lxc_snapshots.sh
