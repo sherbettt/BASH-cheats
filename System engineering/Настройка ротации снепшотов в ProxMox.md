@@ -61,12 +61,14 @@
 
 
 2.  **(Alt) Создайте задачу в Proxmox GUI:**  
-   - **Datacenter → Tasks → Add → Scheduled Task**  
-   - **Schedule:** `fri 20:00` (каждую пятницу в 20:00)  
-   - **Command:**  
-     ```bash
-     /usr/local/bin/rotate_lxc_snapshots.sh
-     ```
+   - **Datacenter → Tasks → Add → GENERAL / Scheduled Task**  
+      - **Schedule:** `fri 20:00` (каждую пятницу в 20:00)
+      - **Send email to:** eng@runtel.ru
+      - **Compression:** ZSTD
+      - **Mode:** snapshot
+   - **Datacenter → Tasks → Add → RETENTION**
+      - **Keep last:** 4
+
 
 ---
 
