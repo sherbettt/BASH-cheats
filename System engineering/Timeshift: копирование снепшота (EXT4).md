@@ -129,7 +129,7 @@ Num     Name                 Tags  Description
 
 Чтобы найти точный путь к снепшотам:
 ```bash
-sudo ls -l /stg/8tb/timeshift/snapshots
+sudo ls -alhF /stg/8tb/timeshift/snapshots
 ```
 
 ### 2. Проверка целостности RAID
@@ -159,7 +159,7 @@ sudo rsync -avz --progress /stg/8tb/timeshift/snapshots/2025-07-17_17-42-21/ kir
 - **Исключение файлов**: Добавьте `--exclude='*/cache/*'`, чтобы пропускать кэш.
 - **Проверка после копирования**: На целевой машине выполните:
   ```bash
-  ls -l /home/kirill/timeshift_backup/pmx5/
+  ls -alhF /home/kirill/timeshift_backup/pmx5/
   ```
 
 #### Альтернатива с `scp` (если `rsync` недоступен):
