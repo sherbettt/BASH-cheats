@@ -72,6 +72,20 @@
 
 ---
 
+### **Способ 3: Через Proxmox VE Tasks (если не хотите использовать Cron)**
+Использвать утилиту `vzdump`.
+```bash
+ll /stg/8tb/dump;
+
+vzdump 107 --storage storage_8tb --compress zstd && pvesm set storage_8tb --content backup
+
+# Создаём бэкап и переименовываем
+vzdump 107 --storage storage_8tb --compress zstd && \
+mv /stg/8tb/dump/vzdump-lxc-107-*.tar.zst /stg/8tb/dump/minio_daily_$(date +%A).tar.zst
+```
+
+------------
+
 ### **Проверка работы**
 - Посмотреть снепшоты контейнера:  
   ```bash
