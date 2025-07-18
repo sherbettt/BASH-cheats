@@ -1,4 +1,5 @@
 Читай [cheat.sh/timeshift](https://cheat.sh/timeshift)
+<br/> Читай [команды Timeshift](https://github.com/sherbettt/BASH-cheats/blob/main/Команды%20Timeshift%20для%20системного%20администрирования.md)
 
 
 # Копирование снепшотов с Debian12 (ProxMox)
