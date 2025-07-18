@@ -34,7 +34,6 @@ Number  Start   End     Size    File system     Name  Flags
  3      9556MB  512GB   503GB   btrfs
 
 ```
-
 </details>
 
 
@@ -80,3 +79,126 @@ sudo umount /mnt/btrfs
 
 Из вывода Timeshift видно, что у имеется один снапшот с меткой "Manual1". Он физически хранится в подтоме Btrfs на разделе `/dev/nvme0n1p3`, который смонтирован как `/home`.
 
+
+<details>
+<summary>Timeshift info</summary>
+          
+```bash
+┌─ kirill ~ 
+└─ $ sudo timeshift --list-devices
+Mounted '/dev/nvme0n1p3' at '/run/timeshift/48762/backup'
+btrfs: Quotas are not enabled
+
+Devices with Linux file systems:
+
+Num     Device              Size   Type  Label  
+------------------------------------------------------------------------------
+0    >  /dev/nvme0n1p3  502.5 GB  btrfs         
+
+┌─ kirill ~ 
+└─ $ sudo btrfs subvolume list /home
+ID 256 gen 35696 top level 5 path @
+ID 257 gen 35696 top level 5 path @home
+ID 258 gen 16802 top level 256 path @/var/lib/machines
+ID 329 gen 35672 top level 5 path timeshift-btrfs/snapshots/2025-07-18_10-49-53/@
+ID 330 gen 35673 top level 5 path timeshift-btrfs/snapshots/2025-07-18_10-49-53/@home
+
+┌─ kirill ~ 
+└─ $ sudo cat /etc/timeshift/timeshift.json
+{
+  "backup_device_uuid" : "d52de598-b702-4de5-ad46-a8b99b6be1a5",
+  "parent_device_uuid" : "",
+  "do_first_run" : "false",
+  "btrfs_mode" : "true",
+  "include_btrfs_home_for_backup" : "true",
+  "include_btrfs_home_for_restore" : "false",
+  "stop_cron_emails" : "true",
+  "schedule_monthly" : "false",
+  "schedule_weekly" : "true",
+  "schedule_daily" : "false",
+  "schedule_hourly" : "false",
+  "schedule_boot" : "false",
+  "count_monthly" : "1",
+  "count_weekly" : "2",
+  "count_daily" : "1",
+  "count_hourly" : "1",
+  "count_boot" : "1",
+  "snapshot_size" : "0",
+  "snapshot_count" : "0",
+  "date_format" : "%Y-%m-%d %H:%M:%S",
+  "exclude" : [],
+  "exclude-apps" : []
+}
+```
+</details>
+
+
+
+### **Где физически находятся снапшоты?**  
+Из вывода `btrfs subvolume list /home` видно, что снапшоты Timeshift хранятся в **подтомах Btrfs** по пути:  
+```
+timeshift-btrfs/snapshots/2025-07-18_10-49-53/@  
+timeshift-btrfs/snapshots/2025-07-18_10-49-53/@home  
+```
+Но они **не отображаются в `/home` как обычные папки**, потому что Btrfs использует **подтома (subvolumes)**, которые монтируются отдельно.  
+
+---
+
+### **Как посмотреть содержимое снапшота?**  
+Чтобы получить доступ к файлам внутри снапшота, нужно **смонтировать подтом вручную**.  
+
+#### **1. Смонтируем корень Btrfs раздела (`/dev/nvme0n1p3`) временно**  
+```bash
+sudo mkdir -p /mnt/btrfs-root
+sudo mount /dev/nvme0n1p3 /mnt/btrfs-root
+```
+
+#### **2. Посмотрим содержимое папки `timeshift-btrfs/snapshots`**  
+```bash
+sudo ls -l /mnt/btrfs-root/timeshift-btrfs/snapshots
+```
+Вы должны увидеть папку `2025-07-18_10-49-53`, которая содержит подтома `@` (корневая система) и `@home` (ваши домашние файлы).  
+
+#### **3. Можно смонтировать конкретный снапшот для просмотра**  
+Например, смонтируем корневой снапшот (`@`):  
+```bash
+sudo mkdir -p /mnt/snapshot-root
+sudo mount -o subvol=timeshift-btrfs/snapshots/2025-07-18_10-49-53/@ /dev/nvme0n1p3 /mnt/snapshot-root
+```
+Теперь вы можете просмотреть файлы снапшота:  
+```bash
+ls /mnt/snapshot-root
+```
+
+#### **4. После просмотра размонтируем**  
+```bash
+sudo umount /mnt/snapshot-root
+sudo umount /mnt/btrfs-root
+```
+
+---
+
+### **Почему снапшоты не видны в `/home`?**  
+- Timeshift хранит их как **отдельные подтома Btrfs**, а не как обычные папки.  
+- Они не занимают место в `/home`, пока не смонтированы.  
+
+---
+
+### **Как управлять снапшотами через Timeshift?**  
+- **Удалить старые снапшоты**:  
+  ```bash
+  sudo timeshift --delete --snapshot '2025-07-18_10-49-53'
+  ```
+- **Создать новый вручную**:  
+  ```bash
+  sudo timeshift --create --comments "Новый снапшот"
+  ```
+- **Открыть графический интерфейс**:  
+  ```bash
+  sudo timeshift-gtk
+  ```
+
+---
+
+### **Вывод**  
+Ваши снапшоты находятся в **подтомах Btrfs** на разделе `/dev/nvme0n1p3`, но чтобы увидеть их содержимое, нужно смонтировать их вручную. Если нужно просто восстановить систему, используйте Timeshift в графическом режиме или через CLI (`--restore`).
