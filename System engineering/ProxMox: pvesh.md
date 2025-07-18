@@ -234,6 +234,13 @@ pvesh get /nodes/pmx5/tasks
 # Получить информацию о CPU/RAM
 pvesh get /nodes/pmx5/status
 ```
+```bash
+# Основная информация о хранилище (тип, контент, размер)
+pvesh get /nodes/pmx6/storage
+
+# Подробности конкретного хранилища (включая путь)
+cat /etc/pve/storage.cfg | grep -A 5 "storage_8tb\|ssd_1tb"
+```
 
 Для детального изучения конкретного раздела используйте:
 ```bash
