@@ -31,8 +31,7 @@ pvesh get /nodes/pmx5/lxc/107/snapshot
 
 ### **🔹 Создание снепшота**
 ```bash
-pvesh create /nodes/pmx5/lxc/107/snapshot \
-  --snapname "auto_$(date +%Y%m%d)" \
+pvesh create /nodes/pmx5/lxc/107/snapshot --snapname "auto_$(date +%Y%m%d)" \
   --description "Автоснепшот"
 ```
 - `--snapname` — имя снепшота (лучше использовать дату).  
