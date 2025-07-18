@@ -131,13 +131,17 @@ hostname -b pmx5.runtel.ru
 - Проверить имя интерфейса командой `ip -c a s`, и в наше случае - это **`enp4s0`**;
 - Отредактировать файл `/etc/network/interfaces`, где вместо **<ИНТЕРФЕЙС>** ставим **enp4s0**:
 	```markdown
+	auto enp4s0
+	allow-hotplug enp4s0
+	iface enp4s0 inet manual
+	
 	auto vmbr0
 	iface vmbr0 inet static
-  	address 192.168.87.20/24
-  	gateway 192.168.87.1
-  	bridge-ports <ИНТЕРФЕЙС>
-  	bridge-stp off
-  	bridge-fd 0
+		address 192.168.87.20/24
+		gateway 192.168.87.1
+		bridge-ports <ИНТЕРФЕЙС>
+		bridge-stp off
+		bridge-fd 0
 	```
 
 
