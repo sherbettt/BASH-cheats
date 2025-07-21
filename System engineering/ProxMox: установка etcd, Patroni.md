@@ -141,9 +141,10 @@ root@pmx5:~# ip -c a s
 ```bash
 pct create 201 local:vztmpl/debian-12-standard_12.2-1_amd64.tar.zst \
   --hostname pg-node1 \
-  --cores 2 \
-  --memory 2048 \
-  --swap 1024 \
+  --cores 4 \
+  --memory 4096 \
+  --swap 2048 \
+  --rootfs /stg/8tb:30 \      # Прямое указание пути
   --storage local \
   --net0 name=eth0,bridge=pgnet,ip=10.10.10.1/24,gw=10.10.10.1 \
   --unprivileged 1 \
@@ -154,9 +155,10 @@ pct create 201 local:vztmpl/debian-12-standard_12.2-1_amd64.tar.zst \
 ```bash
 pct create 202 local:vztmpl/debian-12-standard_12.2-1_amd64.tar.zst \
   --hostname pg-node2 \
-  --cores 2 \
-  --memory 2048 \
-  --swap 1024 \
+  --cores 4 \
+  --memory 4096 \
+  --swap 2048 \
+  --rootfs /stg/8tb:30 \      # Прямое указание пути
   --storage local \
   --net0 name=eth0,bridge=pgnet,ip=10.10.10.2/24,gw=10.10.10.1 \
   --unprivileged 1 \
@@ -167,9 +169,10 @@ pct create 202 local:vztmpl/debian-12-standard_12.2-1_amd64.tar.zst \
 ```bash
 pct create 203 local:vztmpl/debian-12-standard_12.2-1_amd64.tar.zst \
   --hostname pg-node3 \
-  --cores 2 \
-  --memory 2048 \
-  --swap 1024 \
+  --cores 4 \
+  --memory 4096 \
+  --swap 2048 \
+  --rootfs /stg/8tb:30 \      # Прямое указание пути
   --storage local \
   --net0 name=eth0,bridge=pgnet,ip=10.10.10.3/24,gw=10.10.10.1 \
   --unprivileged 1 \
@@ -185,10 +188,11 @@ for i in {1..3}; do
   pct create $((200+i)) \
     local:vztmpl/debian-12-standard_12.2-1_amd64.tar.zst \
     --hostname pg-node${i} \
-    --cores 2 \
-    --memory 2048 \
-    --swap 1024 \
-    --storage local \
+    --cores 4 \
+    --memory 4096 \
+    --swap 2048 \
+    --rootfs /stg/8tb:30 \      # Прямое указание пути
+    --storage local \           # Используем прямое хранилище
     --net0 name=eth0,bridge=pgnet,ip=10.10.10.${i}/24,gw=10.10.10.1 \
     --unprivileged 1 \
     --start
