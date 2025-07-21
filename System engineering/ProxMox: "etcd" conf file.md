@@ -88,3 +88,5 @@ ETCD_INITIAL_CLUSTER_STATE="existing"
 (если только вы не разворачиваете кластер заново с чистого листа).  
 
 Если оставить `new`, etcd может не запуститься или создать конфликт в кластере.
+
+Основаня статья [System engineering/15. ProxMox: установка etcd, Patroni](https://github.com/sherbettt/BASH-cheats/blob/main/System%20engineering/15.%20ProxMox:%20установка%20etcd,%20Patroni.md)
