@@ -225,7 +225,6 @@ pct migrate <CTID> <target-node>
 5. **Мониторинг** - настройте мониторинг (например, через Zabbix или Prometheus)
 6. **Хранилища** - убедитесь, что все узлы имеют доступ к общим хранилищам
 
-Для более детального управления конкретными аспектами кластера можно использовать веб-интерфейс, который предоставляет удобный графический интерфейс для всех этих операций.
 
 
 
@@ -273,7 +272,8 @@ bridge fdb show dev vxlan_pgnet
 
 ### 4. Проверка состояния сервисов
 ```bash
-systemctl status pve-cluster corosync pmxcfs
+systemctl status pve-cluster corosync pmxcfs --no-pager
+systemctl status pveproxy pvedaemon pve-cluster --no-pager
 pvecm nodes
 ```
 
