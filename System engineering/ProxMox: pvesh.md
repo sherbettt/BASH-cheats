@@ -114,6 +114,7 @@ pvesh create /nodes/pmx5/lxc/$CTID/snapshot \
   --description "Автоснепшот"
 
 # Удалить старые (оставить только MAX_SNAPS)
+ # SNAPS=$(pvesh get /nodes/pmx5/lxc/$CTID/snapshot | jq -r '.[].name' | grep 'auto_')
 SNAPS=$(pvesh get /nodes/pmx5/lxc/$CTID/snapshot --output-format json | jq -r '.[].name' | grep 'auto_')
 COUNT=$(echo "$SNAPS" | wc -l)
 
