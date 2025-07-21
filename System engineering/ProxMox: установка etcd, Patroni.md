@@ -1,3 +1,138 @@
+<details>
+<summary>ip -c a s</summary>
+
+```bash
+root@pmx5:~# ip -c a s
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host noprefixroute 
+       valid_lft forever preferred_lft forever
+2: enp4s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast master vmbr0 state UP group default qlen 1000
+    link/ether 74:56:3c:40:a6:3f brd ff:ff:ff:ff:ff:ff
+3: vxlan_dmznet: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue master dmznet state UNKNOWN group default qlen 1000
+    link/ether d6:ff:b1:9d:3d:5c brd ff:ff:ff:ff:ff:ff
+4: dmznet: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue state UP group default qlen 1000
+    link/ether d6:ff:b1:9d:3d:5c brd ff:ff:ff:ff:ff:ff
+    inet6 fe80::d4ff:b1ff:fe9d:3d5c/64 scope link 
+       valid_lft forever preferred_lft forever
+5: vxlan_pgnet: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue master pgnet state UNKNOWN group default qlen 1000
+    link/ether fa:72:12:dd:ba:d2 brd ff:ff:ff:ff:ff:ff
+6: pgnet: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue state UP group default qlen 1000
+    link/ether fa:72:12:dd:ba:d2 brd ff:ff:ff:ff:ff:ff
+    inet6 fe80::f872:12ff:fedd:bad2/64 scope link 
+       valid_lft forever preferred_lft forever
+7: vmbr0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 74:56:3c:40:a6:3f brd ff:ff:ff:ff:ff:ff
+    inet 192.168.87.20/24 scope global vmbr0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::7656:3cff:fe40:a63f/64 scope link 
+       valid_lft forever preferred_lft forever
+8: wlp3s0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN group default qlen 1000
+    link/ether f0:a6:54:c5:22:47 brd ff:ff:ff:ff:ff:ff
+13: tap138i0: <BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast master fwbr138i0 state UNKNOWN group default qlen 1000
+    link/ether a6:c5:8f:d1:14:fb brd ff:ff:ff:ff:ff:ff
+14: fwbr138i0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 62:1b:d2:b3:ae:7e brd ff:ff:ff:ff:ff:ff
+15: fwpr138p0@fwln138i0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master vmbr0 state UP group default qlen 1000
+    link/ether a2:5b:04:fd:ff:74 brd ff:ff:ff:ff:ff:ff
+16: fwln138i0@fwpr138p0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master fwbr138i0 state UP group default qlen 1000
+    link/ether 62:1b:d2:b3:ae:7e brd ff:ff:ff:ff:ff:ff
+17: veth151i0@if2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master fwbr151i0 state UP group default qlen 1000
+    link/ether fe:6a:c2:04:5e:be brd ff:ff:ff:ff:ff:ff link-netnsid 1
+18: fwbr151i0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 6e:77:a7:76:45:44 brd ff:ff:ff:ff:ff:ff
+19: fwpr151p0@fwln151i0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master vmbr0 state UP group default qlen 1000
+    link/ether 1a:9a:d1:65:68:fd brd ff:ff:ff:ff:ff:ff
+20: fwln151i0@fwpr151p0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master fwbr151i0 state UP group default qlen 1000
+    link/ether 6e:77:a7:76:45:44 brd ff:ff:ff:ff:ff:ff
+21: veth156i0@if2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master fwbr156i0 state UP group default qlen 1000
+    link/ether fe:ac:91:4c:61:4f brd ff:ff:ff:ff:ff:ff link-netnsid 2
+22: fwbr156i0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 4e:4d:a5:ac:88:67 brd ff:ff:ff:ff:ff:ff
+23: fwpr156p0@fwln156i0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master vmbr0 state UP group default qlen 1000
+    link/ether 42:8f:84:45:f3:47 brd ff:ff:ff:ff:ff:ff
+24: fwln156i0@fwpr156p0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master fwbr156i0 state UP group default qlen 1000
+    link/ether 4e:4d:a5:ac:88:67 brd ff:ff:ff:ff:ff:ff
+25: veth158i0@if2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master fwbr158i0 state UP group default qlen 1000
+    link/ether fe:c3:8a:68:de:fd brd ff:ff:ff:ff:ff:ff link-netnsid 3
+26: fwbr158i0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 66:d9:6f:c4:1b:b7 brd ff:ff:ff:ff:ff:ff
+27: fwpr158p0@fwln158i0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master vmbr0 state UP group default qlen 1000
+    link/ether c6:2f:a6:a0:60:e8 brd ff:ff:ff:ff:ff:ff
+28: fwln158i0@fwpr158p0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master fwbr158i0 state UP group default qlen 1000
+    link/ether 66:d9:6f:c4:1b:b7 brd ff:ff:ff:ff:ff:ff
+29: veth153i0@if2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master fwbr153i0 state UP group default qlen 1000
+    link/ether fe:22:4e:da:86:b8 brd ff:ff:ff:ff:ff:ff link-netnsid 4
+30: fwbr153i0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 3a:40:0c:6d:b3:2c brd ff:ff:ff:ff:ff:ff
+31: fwpr153p0@fwln153i0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master vmbr0 state UP group default qlen 1000
+    link/ether be:d6:23:1d:0c:57 brd ff:ff:ff:ff:ff:ff
+32: fwln153i0@fwpr153p0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master fwbr153i0 state UP group default qlen 1000
+    link/ether 3a:40:0c:6d:b3:2c brd ff:ff:ff:ff:ff:ff
+33: veth112i0@if2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue master fwbr112i0 state UP group default qlen 1000
+    link/ether fe:95:2a:51:65:fc brd ff:ff:ff:ff:ff:ff link-netnsid 5
+34: fwbr112i0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue state UP group default qlen 1000
+    link/ether e2:6a:8a:e1:c8:da brd ff:ff:ff:ff:ff:ff
+35: fwpr112p0@fwln112i0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue master dmznet state UP group default qlen 1000
+    link/ether a2:65:a4:c3:e6:62 brd ff:ff:ff:ff:ff:ff
+36: fwln112i0@fwpr112p0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue master fwbr112i0 state UP group default qlen 1000
+    link/ether e2:6a:8a:e1:c8:da brd ff:ff:ff:ff:ff:ff
+37: veth155i0@if2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master fwbr155i0 state UP group default qlen 1000
+    link/ether fe:10:b6:4d:f5:6a brd ff:ff:ff:ff:ff:ff link-netnsid 6
+38: fwbr155i0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 46:ee:17:2e:ad:49 brd ff:ff:ff:ff:ff:ff
+39: fwpr155p0@fwln155i0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master vmbr0 state UP group default qlen 1000
+    link/ether be:aa:ad:86:5b:7a brd ff:ff:ff:ff:ff:ff
+40: fwln155i0@fwpr155p0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master fwbr155i0 state UP group default qlen 1000
+    link/ether 46:ee:17:2e:ad:49 brd ff:ff:ff:ff:ff:ff
+41: veth119i1@if2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue master fwbr119i1 state UP group default qlen 1000
+    link/ether fe:7c:7a:44:72:7f brd ff:ff:ff:ff:ff:ff link-netnsid 7
+42: fwbr119i1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue state UP group default qlen 1000
+    link/ether f6:18:d2:0d:f3:f8 brd ff:ff:ff:ff:ff:ff
+43: fwpr119p1@fwln119i1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue master dmznet state UP group default qlen 1000
+    link/ether 2e:26:d1:73:a2:86 brd ff:ff:ff:ff:ff:ff
+44: fwln119i1@fwpr119p1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue master fwbr119i1 state UP group default qlen 1000
+    link/ether f6:18:d2:0d:f3:f8 brd ff:ff:ff:ff:ff:ff
+53: veth107i1@if2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue master fwbr107i1 state UP group default qlen 1000
+    link/ether fe:4b:ed:4f:de:c0 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+54: fwbr107i1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue state UP group default qlen 1000
+    link/ether 7e:f1:7d:c8:d5:53 brd ff:ff:ff:ff:ff:ff
+55: fwpr107p1@fwln107i1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue master dmznet state UP group default qlen 1000
+    link/ether 66:cf:6b:dc:c0:0c brd ff:ff:ff:ff:ff:ff
+56: fwln107i1@fwpr107p1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue master fwbr107i1 state UP group default qlen 1000
+    link/ether 7e:f1:7d:c8:d5:53 brd ff:ff:ff:ff:ff:ff
+57: veth105i0@if2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master fwbr105i0 state UP group default qlen 1000
+    link/ether fe:f8:19:ab:42:02 brd ff:ff:ff:ff:ff:ff link-netnsid 8
+58: fwbr105i0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether da:95:de:64:35:a3 brd ff:ff:ff:ff:ff:ff
+59: fwpr105p0@fwln105i0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master vmbr0 state UP group default qlen 1000
+    link/ether 86:2e:5e:86:e8:17 brd ff:ff:ff:ff:ff:ff
+60: fwln105i0@fwpr105p0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master fwbr105i0 state UP group default qlen 1000
+    link/ether da:95:de:64:35:a3 brd ff:ff:ff:ff:ff:ff
+61: veth121i0@if2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master fwbr121i0 state UP group default qlen 1000
+    link/ether fe:fd:f8:3b:0d:0a brd ff:ff:ff:ff:ff:ff link-netnsid 9
+62: fwbr121i0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether b6:a2:a4:d7:e0:77 brd ff:ff:ff:ff:ff:ff
+63: fwpr121p0@fwln121i0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master vmbr0 state UP group default qlen 1000
+    link/ether 82:ff:cf:61:e8:6d brd ff:ff:ff:ff:ff:ff
+64: fwln121i0@fwpr121p0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master fwbr121i0 state UP group default qlen 1000
+    link/ether b6:a2:a4:d7:e0:77 brd ff:ff:ff:ff:ff:ff
+65: veth157i0@if2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master fwbr157i0 state UP group default qlen 1000
+    link/ether fe:3b:3e:bf:c2:77 brd ff:ff:ff:ff:ff:ff link-netnsid 10
+66: fwbr157i0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether ce:13:6e:15:32:4a brd ff:ff:ff:ff:ff:ff
+67: fwpr157p0@fwln157i0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master vmbr0 state UP group default qlen 1000
+    link/ether be:27:3c:43:53:29 brd ff:ff:ff:ff:ff:ff
+68: fwln157i0@fwpr157p0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master fwbr157i0 state UP group default qlen 1000
+    link/ether ce:13:6e:15:32:4a brd ff:ff:ff:ff:ff:ff
+```
+
+</details> 
+<br/>
+
+
 Для создания трех нод в сети `pgnet` с установкой Debian 12, etcd и Patroni, выполните следующие шаги:
 
 ### 1. Создаем три LXC контейнера (по одному на каждую ноду)
