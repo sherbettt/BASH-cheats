@@ -191,8 +191,8 @@ pvesubscription get # Статус подписки
 
 ### Проверка состояния сети
 ```bash
-ip a               # Сетевые интерфейсы
-cat /etc/network/interfaces # Конфигурация сети
+ip -c a s             # Сетевые интерфейсы
+cat /etc/network/interfaces  # Конфигурация сети
 ```
 
 ### Проверка журналов
