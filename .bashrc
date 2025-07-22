@@ -95,27 +95,36 @@ fi
 
 
 # PS1
+# Цвета (яркие и жирные)
 INPUT_COLOR="\[\033[0m\]"
-DIR_COLOR="\[\033[0;33m\]"
-DIR="\w"
+DIR_COLOR="\[\033[1;38;5;208m\]"      # Ярко-оранжевый (жирный)
+LINE_COLOR="\[\033[1;37m\]"           # Ярко-белая граница
 
-LINE_VERTICAL="\342\224\200"
-LINE_CORNER_1="\342\224\214"
-LINE_CORNER_2="\342\224\224"
-LINE_COLOR="\[\033[0;37m\]"
+# Псевдографика (Unicode)
+LINE_VERTICAL="\342\224\200"          # "─"
+LINE_CORNER_1="\342\224\214"          # "┌"
+LINE_CORNER_2="\342\224\224"          # "└"
+LINE_CROSS="\342\224\234"             # "├"
 
-USER_NAME="\[\033[0;32m\]\u"
-HOST_NAME="\[\033[1;94m\]\h"
-TIME="\[\033[0;90m\]\t"
-SYMBOL="\[\033[0;92m\]$"
-
+# Динамические настройки для пользователя/root
 if [[ ${EUID} == 0 ]]; then
-	USER_NAME="\[\033[0;31m\]\u"
-	SYMBOL="\[\033[0;31m\]#"
+    # Стиль для root (3 строки + оранжевый вместо красного)
+    USER_NAME="\[\033[1;38;5;208m\]\u"  # Ярко-оранжевый (жирный)
+    HOST_NAME="\[\033[1;38;5;39m\]\h"   # Ярко-голубой
+    SYMBOL="\[\033[1;38;5;196m\]#"      # Ярко-красный #
+    PS1="\
+${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_NAME} ${HOST_NAME}\n\
+${LINE_COLOR}${LINE_CROSS}${LINE_VERTICAL} ${DIR_COLOR}${DIR}\n\
+${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${SYMBOL} ${INPUT_COLOR}"
+else
+    # Стиль для обычного пользователя (2 строки)
+    USER_NAME="\[\033[1;38;5;46m\]\u"   # Ярко-зелёный
+    HOST_NAME="\[\033[1;38;5;39m\]\h"   # Ярко-голубой
+    SYMBOL="\[\033[1;38;5;196m\]\$"     # Ярко-красный $
+    PS1="\
+${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_NAME} ${DIR_COLOR}${DIR}\n\
+${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${SYMBOL} ${INPUT_COLOR}"
 fi
-
-PS1="$LINE_COLOR$LINE_CORNER_1$LINE_VERTICAL $USER_NAME $DIR_COLOR$DIR \n$LINE_COLOR$LINE_CORNER_2$LINE_VERTICAL $SYMBOL $INPUT_COLOR"
-#PS1="$LINE_COLOR$LINE_CORNER_1$LINE_VERTICAL $USER_NAME $DIR_COLOR$DIR \n$LINE_COLOR$LINE_VERTICAL $HOST_NAME \n$LINE_COLOR$LINE_CORNER_2$LINE_VERTICAL $SYMBOL $INPUT_COLOR"
 
 # цветной bash
 # https://pingvinus.ru/note/bash-promt
