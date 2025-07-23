@@ -67,7 +67,11 @@ frontend postgres_readonly
 
 </details>
 
+В конце файла должна быть пустая строка обязательно.
 
-
+Проверка файл на наличие скрытых символов:
+```bash
+cat -A /etc/haproxy/haproxy.cfg
+```
 
 
