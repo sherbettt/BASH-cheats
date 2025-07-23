@@ -35,9 +35,9 @@ backend postgres_master
     option httpchk GET /master
     http-check expect status 200
     default-server inter 3s fall 3 rise 2 on-marked-down shutdown-sessions
-    server pg1 192.168.45.201:5432 check port 8008
-    server pg2 192.168.45.202:5432 check port 8008
-    server pg3 192.168.45.204:5432 check port 8008
+    server pg1 192.168.45.201:5432 check port 8008 inter 5s rise 2 fall 3
+    server pg2 192.168.45.202:5432 check port 8008 inter 5s rise 2 fall 3
+    server pg3 192.168.45.204:5432 check port 8008 inter 5s rise 2 fall 3
 
 backend postgres_replica
     mode tcp
@@ -45,9 +45,9 @@ backend postgres_replica
     option httpchk GET /replica
     http-check expect status 200
     default-server inter 3s fall 3 rise 2 on-marked-down shutdown-sessions
-    server pg1 192.168.45.201:5432 check port 8008
-    server pg2 192.168.45.202:5432 check port 8008
-    server pg3 192.168.45.204:5432 check port 8008
+    server pg1 192.168.45.201:5432 check port 8008 inter 5s rise 2 fall 3
+    server pg2 192.168.45.202:5432 check port 8008 inter 5s rise 2 fall 3
+    server pg3 192.168.45.204:5432 check port 8008 inter 5s rise 2 fall 3
 
 frontend postgres_frontend
     bind *:5000
