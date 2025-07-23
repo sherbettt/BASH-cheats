@@ -107,22 +107,22 @@ LINE_CROSS="\342\224\234"             # "├"
 
 # Динамические настройки для пользователя/root
 if [[ ${EUID} == 0 ]]; then
-    # Стиль для root (3 строки + оранжевый вместо красного)
+    # Стиль для root (3 строки)
     USER_NAME="\[\033[1;38;5;208m\]\u"  # Ярко-оранжевый (жирный)
     HOST_NAME="\[\033[1;38;5;39m\]\h"   # Ярко-голубой
     SYMBOL="\[\033[1;38;5;196m\]#"      # Ярко-красный #
     PS1="\
 ${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_NAME}\n\
-${LINE_COLOR}${LINE_CROSS}${LINE_VERTICAL} ${HOST_NAME} ${DIR_COLOR}${DIR}\n\
-${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${SYMBOL} ${INPUT_COLOR}"
+${LINE_COLOR}${LINE_CROSS}${LINE_VERTICAL} ${HOST_NAME}\n\
+${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${DIR_COLOR}\w ${SYMBOL} ${INPUT_COLOR}"
 else
     # Стиль для обычного пользователя (2 строки)
     USER_NAME="\[\033[1;38;5;46m\]\u"   # Ярко-зелёный
     HOST_NAME="\[\033[1;38;5;39m\]\h"   # Ярко-голубой
     SYMBOL="\[\033[1;38;5;196m\]\$"     # Ярко-красный $
     PS1="\
-${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_NAME} ${DIR_COLOR}${DIR}\n\
-${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${SYMBOL} ${INPUT_COLOR}"
+${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_NAME} ${HOST_NAME}\n\
+${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${DIR_COLOR}\w ${SYMBOL} ${INPUT_COLOR}"
 fi
 
 
