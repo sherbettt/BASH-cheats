@@ -32,11 +32,9 @@ listen stats
 backend postgres_master
     mode tcp
     balance roundrobin
-    option httpchk
-    http-check connect
-    http-check send meth GET uri /master ver HTTP/1.1
+    option httpchk GET /master
     http-check expect status 200
-    default-server inter 3s fall 3 rise 2
+    default-server inter 3s fall 3 rise 2 on-marked-down shutdown-sessions
     server pg1 192.168.45.201:5432 check port 8008
     server pg2 192.168.45.202:5432 check port 8008
     server pg3 192.168.45.204:5432 check port 8008
@@ -44,11 +42,9 @@ backend postgres_master
 backend postgres_replica
     mode tcp
     balance roundrobin
-    option httpchk
-    http-check connect
-    http-check send meth GET uri /replica ver HTTP/1.1
+    option httpchk GET /replica
     http-check expect status 200
-    default-server inter 3s fall 3 rise 2
+    default-server inter 3s fall 3 rise 2 on-marked-down shutdown-sessions
     server pg1 192.168.45.201:5432 check port 8008
     server pg2 192.168.45.202:5432 check port 8008
     server pg3 192.168.45.204:5432 check port 8008
