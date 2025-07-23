@@ -64,14 +64,23 @@ frontend postgres_readonly
     default_backend postgres_replica
 
 ```
-
 </details>
 
 В конце файла должна быть пустая строка обязательно.
 
-Проверка файл на наличие скрытых символов:
+--------------
+
+### Проверка файл на наличие скрытых символов:
 ```bash
 cat -A /etc/haproxy/haproxy.cfg
 ```
-
+### Проверка валидности
+```bash
+ls -alF /etc/haproxy/haproxy.cfg
+haproxy -c -f /etc/haproxy/haproxy.cfg
+```
+### HAProxy в режиме отладки прямо в терминале:
+```bash
+haproxy -f /etc/haproxy/haproxy.cfg -d
+```
 
