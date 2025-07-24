@@ -43,13 +43,19 @@ base_color=editnormal=black,white:editbold=black,brightwhite:editmarked=white,bl
 base_color=editnormal=lightmagenta,black:editbold=white,black:editmarked=black,lightmagenta
 ```
 
+#### 6. **Оранжевая на тёмном фоне**:
+```ini
+base_color=editnormal=brightyellow,black:editbold=orange,black:editmarked=black,brightred
+```
+
 ### Проверка изменений:
 После сохранения файла перезапустите Midnight Commander (`mc`), чтобы применить настройки.  
 Если изменения не вступили в силу, убедитесь, что вы редактировали правильный файл (путь может отличаться в некоторых системах — проверьте `~/.config/mc/ini` или `~/.mc/ini`). 
 
 Если вам нужно автоматизировать замену через командную строку, используйте `sed`:
 ```bash
-sed -i '/^\[Colors\]/,/^\[/ s/^base_color=.*/base_color=editnormal=lightgray,black:editbold=yellow,black:editmarked=black,cyan/' ~/.config/mc/ini
+sed -i '/^\[Colors\]/,/^\[/ s/^base_color=.*/base_color=editnormal=lightgray,black:editbold=yellow,black:editmarked=black,cyan/' ~/.config/mc/ini;
+sed -i '/^\[Colors\]/,/^\[/ s/^base_color=.*/base_color=editnormal=brightyellow,black:editbold=orange,black:editmarked=black,brightred' ~/.config/mc/ini;
 ```
 
 Это изменит строку только в секции `[Colors]`.
