@@ -55,7 +55,12 @@ base_color=editnormal=brightyellow,black:editbold=orange,black:editmarked=black,
 Если вам нужно автоматизировать замену через командную строку, используйте `sed`:
 ```bash
 sed -i '/^\[Colors\]/,/^\[/ s/^base_color=.*/base_color=editnormal=lightgray,black:editbold=yellow,black:editmarked=black,cyan/' ~/.config/mc/ini;
-sed -i '/^\[Colors\]/,/^\[/ s/^base_color=.*/base_color=editnormal=brightyellow,black:editbold=orange,black:editmarked=black,brightred' ~/.config/mc/ini;
+```
+```bash
+sed -i '
+/^\[Colors\]/,/^\[/ {
+    s/^base_color=.*/base_color=editnormal=brightyellow,black:editbold=orange,black:editmarked=black,brightred/
+}' ~/.config/mc/ini
 ```
 
 Это изменит строку только в секции `[Colors]`.
