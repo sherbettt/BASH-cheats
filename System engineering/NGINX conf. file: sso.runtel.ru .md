@@ -9,11 +9,20 @@ upstream kc_servers {
     # server 192.168.46.17:8443 backup;
 }
 
+# Сюда запросы any-other-domain.com:8443 
 server {
+    listen 8443 default_server;
+    server_name _;  # Специальное значение для "catch-all"
+    return 444;     # Закрывает соединение без ответа
+}
+
+# Сюда запросы sso.runtel.ru:8443 
+server {
+    server_name sso.runtel.ru;
     listen 8443 ssl http2 default_server;
     listen [::]:8443 ssl http2 default_server;
     
-    server_name sso.runtel.ru;
+    
     
     # SSL conf
     ssl_certificate /etc/nginx/runtel.pem;
@@ -83,7 +92,11 @@ server {
 ```
 - **`listen 8443 ssl http2`**: Слушает порт 8443 с SSL и HTTP/2 для IPv4
 - **`listen [::]:8443`**: То же самое для IPv6
-- **`default_server`**: Делает этот сервер обработчиком по умолчанию для всех запросов на порт 8443
+- **`default_server`**: Делает этот сервер обработчиком по умолчанию для всех запросов на порт 8443; это boolean флаг, который указывает, что данный server-блок должен обрабатывать все запросы, которые:
+    - Приходят на указанный порт (в нашем случае 8443)
+    - Не соответствуют ни одному из других server_name в конфигурации
+    - Или приходят по IP-адресу вместо доменного имени
+
 
 ### 3. Настройки сервера
 ```nginx
