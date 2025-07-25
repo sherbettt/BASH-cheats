@@ -227,12 +227,6 @@ ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256';
     limit_req zone=one burst=20;
 ```
 
-Конфигурация теперь обеспечивает:
-- Четкое разделение трафика
-- Максимальную безопасность
-- Корректную обработку ошибок
-- Оптимальные таймауты
-
 Для применения изменений:
 ```bash
 nginx -t && systemctl reload nginx
