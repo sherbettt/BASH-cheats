@@ -4,25 +4,34 @@
 ```c
 ### /etc/nginx/sites-enabled/sso.runtel.ru
 #-------------------
+
 upstream kc_servers {
     server 192.168.46.16:8443;
     # server 192.168.46.17:8443 backup;
 }
 
-# Сюда запросы any-other-domain.com:8443 
+# There are  any-other-domain.com:8443  requests
+# Call-all server
 server {
-    listen 8443 default_server;
-    server_name _;  # Специальное значение для "catch-all"
-    return 444;     # Закрывает соединение без ответа
+    listen 8443 ssl default_server;
+    listen [::]:8443 ssl default_server;
+    server_name _;
+    
+    # Really sertificates haven't beed used
+    ssl_certificate /etc/nginx/runtel.pem;
+    ssl_certificate_key /etc/nginx/runtel.pem;
+    
+    ssl_protocols TLSv1.2 TLSv1.3;
+    return 444;       # Close session without answer
 }
 
-# Сюда запросы sso.runtel.ru:8443 
+
+# There are sso.runtel.ru  requests
 server {
+    listen 8443 ssl http2;  # 
+    listen [::]:8443 ssl http2;
     server_name sso.runtel.ru;
-    listen 8443 ssl http2 default_server;
-    listen [::]:8443 ssl http2 default_server;
-    
-    
+
     
     # SSL conf
     ssl_certificate /etc/nginx/runtel.pem;
