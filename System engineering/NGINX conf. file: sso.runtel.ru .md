@@ -23,6 +23,11 @@ server {
     
     ssl_protocols TLSv1.2 TLSv1.3;
     return 444;       # Close session without answer
+
+    # Отключаем все логи для этого блока
+    access_log off;
+    log_not_found off;
+    error_log /dev/null crit;
 }
 
 
