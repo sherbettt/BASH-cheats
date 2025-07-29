@@ -55,7 +55,6 @@ alias batp='bat -p -S'
 alias getip="curl ifconfig.me ; echo"
 alias getip2='curl 2ip.ru ; echo'
 alias localip='ifconfig | grep "inet " | grep -v 127.0.0.1'
-alias np='notepad2.exe'
 alias h='history'
 alias j='jobs -l'
 alias r='rlogin'
