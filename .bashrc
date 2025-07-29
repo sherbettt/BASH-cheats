@@ -49,6 +49,7 @@ alias l='ls -CF'
 alias lz='eza -aghlo -F -U --group-directories-first --icons=automatic --total-size'
 alias lzz='eza -aghli -F -U --group-directories-first --icons=automatic --time-style=long-iso'
 alias pcat='pygmentize -g'
+alias ccat='highlight --out-format=xterm256 --syntax=ini'
 alias batc='bat --config-dir; bat --cache-dir' # for Ubuntu is batcat, for ohther - bat
 alias batp='bat -p -S'
 alias getip="curl ifconfig.me ; echo"
