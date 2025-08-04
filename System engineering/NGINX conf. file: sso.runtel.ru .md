@@ -1,6 +1,8 @@
 <details>
 <summary>❗ sso.runtel.ru ❗</summary>
 
+читай статью: [Как настроить Nginx в качестве обратного прокси-сервера на Ubuntu 24.04](https://hostvds.com/ru/tutorials/installing-the-server-software/nginx-as-a-reverse-proxy-server)
+
 ```c
 ### /etc/nginx/sites-enabled/sso.runtel.ru
 ### на 192.168.87.2 - dmz-gateway
