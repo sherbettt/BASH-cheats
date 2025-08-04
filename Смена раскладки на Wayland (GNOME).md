@@ -5,7 +5,7 @@
 gsettings set org.gnome.desktop.input-sources xkb-options "['grp:caps_toggle']"
 ```
 
-Сброс раскладки для Caps кнопки:
+Сброс раскладки для всех клавиш:
 ```bash
 gsettings reset org.gnome.desktop.input-sources xkb-options
 ```
