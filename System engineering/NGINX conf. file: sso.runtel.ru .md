@@ -3,6 +3,7 @@
 
 ```c
 ### /etc/nginx/sites-enabled/sso.runtel.ru
+### на 192.168.87.2 - dmz-gateway
 #-------------------
 
 upstream kc_servers {
