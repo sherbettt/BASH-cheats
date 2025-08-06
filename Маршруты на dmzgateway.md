@@ -100,6 +100,7 @@ ping 8.8.8.8        # Проверка интернета (через 192.168.87
   Перезапустите сеть:
   ```bash
   sudo systemctl restart systemd-networkd
+  sudo systemctl restart network.service
   ```
 
 ---
