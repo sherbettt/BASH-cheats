@@ -172,5 +172,58 @@ sed -i '/^\[Editor\]/a line_numbers=1' ~/.config/mc/ini
 
 -------------------------------------------------
 
+В Linux можно установить редактор по умолчанию для команд, которые требуют текстового редактора (например, `git commit`, `visudo`, `crontab -e` и т. д.), с помощью переменной окружения `EDITOR` или `VISUAL`.  
+
+### **Способы установки редактора по умолчанию**  
+
+#### **1. Временная установка (для текущей сессии)**  
+```bash
+export EDITOR=/usr/bin/mcedit  # или vim, code, nano и т. д.
+export VISUAL=$EDITOR       # VISUAL используется в некоторых программах
+```
+
+#### **2. Постоянная установка (для пользователя)**  
+Добавьте в файл `~/.bashrc`, `~/.zshrc` (для Zsh) или `~/.profile`:  
+```bash
+export EDITOR=/usr/bin/nano
+export VISUAL=$EDITOR
+```
+После этого перезагрузите оболочку:  
+```bash
+source ~/.bashrc  # или source ~/.zshrc
+```
+
+#### **3. Глобальная установка (для всех пользователей)**  
+Можно задать редактор в `/etc/environment`:  
+```bash
+sudo nano /etc/environment
+```
+Добавьте строки:  
+```
+EDITOR="/usr/bin/nano"
+VISUAL="/usr/bin/nano"
+```
+После этого перезагрузите систему или войдите заново.  
+
+#### **4. Альтернативный способ (через update-alternatives, если поддерживается)**  
+Некоторые дистрибутивы (например, Debian/Ubuntu) позволяют выбрать редактор через:  
+```bash
+sudo update-alternatives --config editor
+```
+Затем выберите нужный вариант из списка.  
+
+### **Проверка текущего редактора**  
+```bash
+echo $EDITOR
+echo $VISUAL
+```
+
+### **Примеры популярных редакторов**  
+- Nano: `/usr/bin/nano`  
+- Vim: `/usr/bin/vim`  
+- Neovim: `/usr/bin/nvim`  
+- VSCode: `/usr/bin/code` (если установлен)  
+- Micro: `/usr/bin/micro`  
+
 
 
