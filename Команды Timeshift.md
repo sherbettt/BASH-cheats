@@ -55,12 +55,38 @@ sudo nano /etc/timeshift/timeshift.json  # Ручное редактирован
 
 #### **10. Просмотр у-в и создание снепшота**
 ```bash
-sudo timeshift --list-devices
+sudo timeshift --list-devices  # выбираем /dev/md0
 sudo timeshift --create --snapshot-device /dev/md0 --comments "before editting NFS share folder"
 # просмотр снепшотов
 sudo timeshift --list
 sudo ls /run/timeshift/*/backup/timeshift/snapshots/
 ```
+каталог `/run/timeshift/` является временным и существует только во время работы Timeshift. Когда вы пытаетесь проверить его содержимое через `ls`, он уже демонтирован. Вот как правильно проверить ваши снапшоты:
+```bash
+sudo timeshift --list\
+
+# Найдите UUID устройства
+sudo blkid /dev/md0
+
+# Ищите снапшоты по UUID; это будет /stg/8tb/timeshift/snapshots/
+sudo find / -path "*/timeshift/snapshots" -type d 2>/dev/null
+```
+
+#### **11. Как смонтировать снапшот для проверки (если нужно)**
+```bash
+# Создаём точку монтирования
+sudo mkdir -p /mnt/snapshot
+
+# Монтируем снапшот
+sudo mount --bind /stg/8tb/timeshift/snapshots/2025-08-07_10-58-42/localhost/ /mnt/snapshot/
+
+# Проверяем содержимое
+ls -alhF /mnt/snapshot/
+
+# После работы размонтируем
+sudo umount /mnt/snapshot
+```
+
 
 ### **Вывод**  
 Timeshift позволяет удобно управлять резервными копиями через терминал. Основные команды:  
