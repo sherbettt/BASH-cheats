@@ -53,6 +53,15 @@ sudo timeshift --check  # Проверка необходимости созда
 sudo nano /etc/timeshift/timeshift.json  # Ручное редактирование конфигурации
 ```
 
+#### **10. Просмотр у-в и создание снепшота**
+```bash
+sudo timeshift --list-devices
+sudo timeshift --create --snapshot-device /dev/md0 --comments "before editting NFS share folder"
+# просмотр снепшотов
+sudo timeshift --list
+sudo ls /run/timeshift/*/backup/timeshift/snapshots/
+```
+
 ### **Вывод**  
 Timeshift позволяет удобно управлять резервными копиями через терминал. Основные команды:  
 - `--create` – создание снепшота,  
