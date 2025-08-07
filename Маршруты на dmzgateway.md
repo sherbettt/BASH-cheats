@@ -1,4 +1,4 @@
-**MASTER GATEWAY** : **[102 (dmzgateway)](https://192.168.87.6:8006/#v1:0:=lxc%2F102:4::::::11:2)**
+**MASTER GATEWAY** : **[102 (dmzgateway)](https://192.168.87.6:8006/#v1:0:=lxc%2F102:4:::::::)**
 ```
 dmzgateway
  vmbr0:        
