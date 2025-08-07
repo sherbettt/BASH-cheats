@@ -63,7 +63,7 @@ sudo ls /run/timeshift/*/backup/timeshift/snapshots/
 ```
 каталог `/run/timeshift/` является временным и существует только во время работы Timeshift. Когда вы пытаетесь проверить его содержимое через `ls`, он уже демонтирован. Вот как правильно проверить ваши снапшоты:
 ```bash
-sudo timeshift --list\
+sudo timeshift --list
 
 # Найдите UUID устройства
 sudo blkid /dev/md0
