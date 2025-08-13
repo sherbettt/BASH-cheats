@@ -28,6 +28,10 @@ video:x:979:kirill,ollama
 ┌─ kirill kiko0217
 ```
 
+Файл `/usr/local/bin/ollama` с содержимым **ELF** — это исполняемый бинарный файл в формате ELF (Executable and Linkable Format). ELF — стандартный формат исполняемых файлов, ELF при выводе cat или ccat — это означает, что файл бинарный, и его нельзя прочитать как текстовый. 
+<br/> Именно по этой причине в ExecStart прописан путь для запуска /usr/local/bin/ollama serve т.о.
+
+
 Сервисный юнит `/etc/systemd/system/ollama.service`
 ```ini
 ### /etc/systemd/system/ollama.service 
