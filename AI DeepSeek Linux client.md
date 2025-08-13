@@ -38,6 +38,7 @@ video:x:979:kirill,ollama
 [Unit]
 Description=Ollama Service
 After=network-online.target
+Requires=network-online.target  # явная проверка зависиомстей
 
 [Service]
 ExecStart=/usr/local/bin/ollama serve
@@ -47,6 +48,9 @@ Restart=always
 RestartSec=3
 Environment="PATH=/home/kirill/.nvm/versions/node/v22.17.0/bin:/usr/local/bin:/home/kirill/.nvm/versions/node/v22.17.0/bin:/usr/local/bin:/home/kirill/.nvm/versions/node/v22.17.0/bin:/home/kirill/.sdkman/candidates/groovy/current/bin:/usr/local/bin:/home/kirill/bin:/usr/bin:/bin:/usr/local/bin:/usr/games:/var/lib/snapd/snap/bin:/home/kirill/.local/bin:/home/kirill/.local/bin:/home/kirill/.local/bin"
 #Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+WorkingDirectory=/var/lib/ollama
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=default.target
