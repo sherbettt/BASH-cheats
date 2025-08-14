@@ -1,4 +1,6 @@
 Узел: https://jenkins.runtel.ru/computer/redos-7/
+Другие два узла в задаче: https://jenkins.runtel.ru/computer/deb12-builder/ и https://jenkins.runtel.ru/computer/deb11-builder/
+
 
 Похоже, что на сервере `redos-7` (192.168.87.24) Jenkins **не установлен как системный сервис**, но при этом существует рабочая директория `/var/lib/jenkins/workspace`. Это означает, что:
 
