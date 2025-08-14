@@ -85,6 +85,7 @@ sudo systemctl restart jenkins-agent
    Запустите агент вручную с логированием:
    ```bash
    java -jar agent.jar -jnlpUrl http://jenkins.runtel.ru/computer/redos-7/jenkins-agent.jnlp -secret YOUR_SECRET -workDir "/var/lib/jenkins" > /tmp/jenkins-agent.log 2>&1 &
+   java -jar remoting.jar -workDir /var/lib/jenkins -jar-cache /var/lib/jenkins/remoting/jarCache
    ```
    Затем проверьте логи:
    ```bash
