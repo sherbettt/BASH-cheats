@@ -118,4 +118,75 @@ sudo systemctl restart jenkins-agent
    sudo systemctl enable jenkins-agent
    sudo systemctl start jenkins-agent
    ```
+----------------
 
+На основании предоставленных данных видно, что Jenkins agent на сервере redos-7 (192.168.87.24) работает как процесс Java с использованием `remoting.jar`, но не настроен как systemd-сервис. Вот как правильно перезапустить агент:
+
+### 1. Текущий статус агента
+Агент работает как процесс:
+```bash
+java -jar remoting.jar -workDir /var/lib/jenkins -jar-cache /var/lib/jenkins/remoting/jarCache
+```
+PID: 1102
+
+### 2. Перезапуск агента вручную
+
+#### Остановка текущего процесса:
+```bash
+sudo kill -9 1102
+```
+
+#### Запуск нового агента:
+Используйте команду, аналогичную текущей (возможно, потребуется добавить JNLP-параметры):
+```bash
+cd /var/lib/jenkins
+java -jar remoting.jar -workDir /var/lib/jenkins -jar-cache /var/lib/jenkins/remoting/jarCache &
+```
+
+### 3. Настройка systemd-сервиса (рекомендуется)
+
+Создайте файл сервиса:
+```bash
+sudo tee /etc/systemd/system/jenkins-agent.service <<'EOF'
+[Unit]
+Description=Jenkins Agent
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/var/lib/jenkins
+ExecStart=/usr/bin/java -jar remoting.jar -workDir /var/lib/jenkins -jar-cache /var/lib/jenkins/remoting/jarCache
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+Активируйте сервис:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable jenkins-agent
+sudo systemctl start jenkins-agent
+```
+
+### 4. Проверка
+```bash
+sudo systemctl status jenkins-agent
+journalctl -u jenkins-agent -f
+```
+
+### 5. Если требуется JNLP-подключение
+Измените ExecStart в сервисе, добавив JNLP-параметры (получить их можно из веб-интерфейса Jenkins):
+```bash
+ExecStart=/usr/bin/java -jar remoting.jar -jnlpUrl https://jenkins.runtel.ru/computer/redos-7/jenkins-agent.jnlp -secret YOUR_SECRET -workDir /var/lib/jenkins
+```
+
+### Ключевые моменты:
+1. Агент использует `remoting.jar` вместо `agent.jar`
+2. Работает от root (возможно, стоит создать пользователя jenkins)
+3. Для HTTPS-подключения потребуется добавить JNLP-URL и secret
+4. Логи будут доступны через journalctl
+
+После настройки сервиса агент будет автоматически перезапускаться при сбоях и перезагрузке сервера.
