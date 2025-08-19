@@ -1,4 +1,4 @@
-```hosts
+
 # Standard host addresses
 127.0.0.1  localhost
 ::1        localhost ip6-localhost ip6-loopback
@@ -24,4 +24,4 @@ ff02::2    ip6-allrouters
 192.168.45.202 pg2
 192.168.45.201 pg1
 192.168.45.204 pg3
-```
+
