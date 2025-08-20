@@ -1,5 +1,7 @@
 См. страницу [wiki.etersoft.ru/Epm](https://wiki.etersoft.ru/Epm)
 
+См. страницу [ALT Linux Wiki/Epm](https://www.altlinux.org/Epm)
+
 ```bash
 # графический EEPM 
 eepm install eepm-play-gui
