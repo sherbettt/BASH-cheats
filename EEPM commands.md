@@ -1,3 +1,7 @@
+```bash
+# графический EEPM 
+eepm install eepm-play-gui
+```
 
 ### **Список команд, epm --help:**
 
