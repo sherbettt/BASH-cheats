@@ -1,3 +1,5 @@
+См. страницу [wiki.etersoft.ru/Epm](https://wiki.etersoft.ru/Epm)
+
 ```bash
 # графический EEPM 
 eepm install eepm-play-gui
@@ -28,6 +30,5 @@ eepm install eepm-play-gui
 # epms "name1 name2" — выполняет поиск именно такого сочетания
 ```
 
-См. страницу [wiki.etersoft.ru/Epm](https://wiki.etersoft.ru/Epm)
 
 
