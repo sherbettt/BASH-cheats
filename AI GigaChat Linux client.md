@@ -1,3 +1,5 @@
+[Установка GigaCode в VS Codium](https://gitverse.ru/features/gigacode/install/)
+
 https://pypi.org/project/gigachat/
 https://gitverse.ru/gigachatteam/linux-client
 
