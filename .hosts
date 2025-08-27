@@ -1,12 +1,7 @@
 
-# Standard host addresses
-127.0.0.1  localhost
-::1        localhost ip6-localhost ip6-loopback
-ff02::1    ip6-allnodes
-ff02::2    ip6-allrouters
-# This host address
-127.0.1.1  runtel-re
-
+127.0.0.1   localhost.localdomain localhost
+::1 localhost6.localdomain localhost6
+127.0.1.1       runtel-re
 
 #master gateway
 192.168.87.17 prox4
@@ -24,4 +19,10 @@ ff02::2    ip6-allrouters
 192.168.45.202 pg2
 192.168.45.201 pg1
 192.168.45.204 pg3
+
+#Jenkuns nodes
+192.168.87.9   deb12-builder
+192.168.87.14  deb11-builder
+192.168.87.24  redos-7  redos.runtel.ru
+
 
