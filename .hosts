@@ -9,20 +9,24 @@
 192.168.87.6  pmx6
 
 #float ip for gateway
-#192.168.87.2
+#192.168.87.2 dmzgateway
 #192.168.46.1
 #192.168.45.1
 
+# semaphore->ansible
 192.168.87.8 semaphore
 
+# Backup server
+192.168.87.99
+
 #pg-clust
-192.168.45.202 pg2
 192.168.45.201 pg1
+192.168.45.202 pg2
 192.168.45.204 pg3
 
 #Jenkuns nodes
 192.168.87.9   deb12-builder
 192.168.87.14  deb11-builder
 192.168.87.24  redos-7  redos.runtel.ru
-
+192.168.87.211  redos7.3-builder
 
