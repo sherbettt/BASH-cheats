@@ -140,17 +140,27 @@ ping 8.8.8.8        # Проверка интернета (через 192.168.87
     ```bash
     nmcli connection show
     ```
+    ```
+    NAME    UUID                                  TYPE      DEVICE 
+    runtel  886a8694-a874-4d69-882a-7400dc1cf068  wifi      wlp1s0 
+    lo      d9f3d595-5efb-4b79-be31-d1d7fb577025  loopback  lo     
+    runtel  fba333dd-1dc2-4397-9a7c-54a809497128  wifi      --     
+    runtel  d45f3dc8-4248-4d2d-a9dd-94e82823b406  wifi      --
+    ```
+
     Вы увидите список. Найдите имя подключения, которое соответствует вашей беспроводной сети (например, `MyHomeWiFi`) или проводному интерфейсу (например, `Wired connection 1`).
 
-2.  **Добавьте маршруты к существующему подключению:**
+1.  **Добавьте маршруты к существующему подключению:**
     Замените `ИМЯ_ПОДКЛЮЧЕНИЯ` на имя, полученное на предыдущем шаге.
     ```bash
     sudo nmcli connection modify "ИМЯ_ПОДКЛЮЧЕНИЯ" +ipv4.routes "192.168.45.0/24 192.168.87.2, 192.168.46.0/24 192.168.87.2"
     sudo nmcli connection modify runtel +ipv4.routes "192.168.45.0/24 192.168.87.2, 192.168.46.0/24 192.168.87.2"
+    sudo nmcli connection modify 886a8694-a874-4d69-882a-7400dc1cf068 +ipv4.routes "192.168.45.0/24 192.168.87.2, 192.168.46.0/24 192.168.87.2"
+    
     ```
     *Команда `+ipv4.routes` добавляет маршруты к текущим настройкам.*
 
-3.  **Убедитесь, что основной шлюз тоже управляется NetworkManager:**
+2.  **Убедитесь, что основной шлюз тоже управляется NetworkManager:**
     Обычно он получается автоматически по DHCP. Проверить это можно командой:
     ```bash
     nmcli connection show "ИМЯ_ПОДКЛЮЧЕНИЯ" | grep ipv4.gateway
@@ -162,10 +172,23 @@ ping 8.8.8.8        # Проверка интернета (через 192.168.87
     sudo nmcli connection modify runtel ipv4.gateway 192.168.87.1
     ```
 
-4.  **Примените изменения:**
+3.  **Примените изменения:**
     ```bash
     sudo nmcli connection down "ИМЯ_ПОДКЛЮЧЕНИЯ" && sudo nmcli connection up "ИМЯ_ПОДКЛЮЧЕНИЯ"
     sudo nmcli connection down runtel && sudo nmcli connection up runtel
+
+    sudo nmcli connection down 886a8694-a874-4d69-882a-7400dc1cf068
+    sudo nmcli connection up 886a8694-a874-4d69-882a-7400dc1cf068
+    ```
+
+    Чтобы избежать путаницы в будущем, лучше переименовать подключения:
+    ```bash
+    # Переименовываем активное подключение
+    sudo nmcli connection modify 886a8694-a874-4d69-882a-7400dc1cf068 con.name "runtel-active"
+
+    # Переименовываем остальные (опционально)
+    sudo nmcli connection modify fba333dd-1dc2-4397-9a7c-54a809497128 con.name "runtel-gain1"
+    sudo nmcli connection modify d45f3dc8-4248-4d2d-a9dd-94e82823b406 con.name "runtel-gain2"
     ```
 
 5.  **Проверьте результат:**
