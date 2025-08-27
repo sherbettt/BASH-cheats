@@ -190,3 +190,4 @@ ssh root@192.168.87.211 "java -version"
 ```
 
 https://jenkins.runtel.ru/manage/credentials/store/system/domain/_/credential/736/
+https://jenkins.runtel.ru/computer/redos-7/
