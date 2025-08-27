@@ -184,7 +184,9 @@ ping 8.8.8.8        # Проверка интернета (через 192.168.87
     Чтобы избежать путаницы в будущем, лучше переименовать подключения:
     ```bash
     # Переименовываем активное подключение
+    sudo nmcli connection modify 886a8694-a874-4d69-882a-7400dc1cf068 connection.id "runtel-active"
     sudo nmcli connection modify 886a8694-a874-4d69-882a-7400dc1cf068 con.name "runtel-active"
+    sudo nmcli connection modify 886a8694-a874-4d69-882a-7400dc1cf068 id "runtel-active"
 
     # Переименовываем остальные (опционально)
     sudo nmcli connection modify fba333dd-1dc2-4397-9a7c-54a809497128 con.name "runtel-gain1"
