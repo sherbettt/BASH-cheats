@@ -4,164 +4,177 @@
 - **MASTER GATEWAY3** : **[186 (dmzgateway3)](https://192.168.87.6:8006/#v1:0:=lxc%2F186:4:::::::)**
 <br/>
 
+<details>
+<summary>❗ псевдографика ❗</summary>
 
-Из сети 192.168.45.0/24!
+```text
++---------------------------------------------------------------+
+|                     Кластер Proxmox                           |
+|                                                               |
+|  +---------------------+     +---------------------+          |
+|  |       Узел pmx6     |     |      Узел prox4     |          |
+|  | 192.168.87.6:8006   |     | 192.168.87.17:8006  |          |
+|  |                     |     |                     |          |
+|  |  +---------------+  |     |  +---------------+  |          |
+|  |  | Container 102 |  |     |  | Container 172 |  |          |
+|  |  | (dmzgateway)  |  |     |  | (keycloak)    |  |          |
+|  |  |_______________|  |     |  |_______________|  |          |
+|  |  | vmbr0:        |  |     |  | vmbr0         |  |          |
+|  |  | 192.168.87.2  |  |     |  +---------------+  |          |
+|  |  | dmznet:       |  |     |                     |          |
+|  |  | 192.168.46.1  |  |     |  +---------------+  |          |
+|  |  | pgnet:        |  |     |  | Container 272 |  |          |
+|  |  | 192.168.45.1  |  |     |  | (keycloak)    |  |          |
+|  |  +---------------+  |     |  |_______________|  |          |
+|  |                     |     |  | dmznet(eth0): |  |          |
+|  |                     |     |  | 192.168.46.16 |  |          |
+|  |                     |     |  | pgnet(eth1):  |  |          |
+|  |                     |     |  | 192.168.45.50 |  |          |
+|  |                     |     |  +---------------+  |          |
+|  |                     |     |                     |          |
+|  |                     |     |  +---------------+  |          |
+|  |                     |     |  | Container 273 |  |          |
+|  |                     |     |  | (clone of 272)|  |          |
+|  |                     |     |  |_______________|  |          |
+|  |                     |     |  | pgnet(eth1):  |  |          |
+|  |                     |     |  | 192.168.46.51 |  |          |
+|  |                     |     |  +---------------+  |          |
+|  +---------------------+     +---------------------+          |
+|                                                               |
++---------------------------------------------------------------+
+```
+</details>
+<br/>
+
+
+Настройка 45 и 46 сетей через 87 в и-нет!
 =======================
 
-Для настройки соединения из сети 192.168.45.0/24 в сеть 192.168.87.0/24 через шлюз 192.168.87.2, вам нужно:
+Для организации выхода в интернет из сетей 45 и 46 через шлюз в сети 87 на Debian-машинах нужно выполнить следующие действия:
 
-## 0. Очищаем все маршруты:
-```bash
-ip route del default via 192.168.45.1 2>/dev/null || true
-ip route flush table main
-```
+## 1. На шлюзе (dmzgateway, Container 102)
 
-## 1. Настройка маршрутизации на pg1, pg2, pg3:
-```bash
-# Добавить статический маршрут на каждом сервере
-ip route add 192.168.45.0/24 dev eth0
-ip route add 192.168.87.0/24 via 192.168.45.1
-ip route add default via 192.168.45.1
-```
-```
-root@pg2 ~ # ip r s
-default via 192.168.45.1 dev eth0 
-192.168.45.0/24 dev eth0 scope link 
-192.168.87.0/24 via 192.168.45.1 dev eth0
-```
-
-## 2. Альтернативно - настройка на шлюзе (dmzgateway):
-
-Если 192.168.45.1 - это ваш шлюз для сети 45, настройте на нем:
-
+### Настройка IP forwarding:
 ```bash
 # Включить форвардинг пакетов
-sudo sysctl -w net.ipv4.ip_forward=1
-
-# Добавить постоянное правило (в /etc/sysctl.conf)
 echo "net.ipv4.ip_forward=1" | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
 
-# Настроить iptables/NFTables для маршрутизации
-sudo iptables -t nat -A POSTROUTING -s 192.168.45.0/24 -d 192.168.87.0/24 -j MASQUERADE
+# Для IPv6 (если нужно)
+echo "net.ipv6.conf.all.forwarding=1" | sudo tee -a /etc/sysctl.conf
 ```
 
-## 3. Постоянная конфигурация (для CentOS/RHEL):
-
-Добавить в `/etc/sysconfig/network-scripts/route-eth0`:
-```
-192.168.87.0/24 via 192.168.45.1
-```
-
-## 4. Проверка соединения:
-
+### Настройка NAT (маскарадинг):
 ```bash
-# Проверить маршрутизацию
-ping 192.168.87.2
-traceroute 192.168.87.2
+# Установить iptables если нет
+sudo apt update
+sudo apt install iptables-persistent
 
-# Проверить маршруты
-ip route show
+# Добавить правила NAT
+sudo iptables -t nat -A POSTROUTING -s 192.168.45.0/24 -o vmbr0 -j MASQUERADE
+sudo iptables -t nat -A POSTROUTING -s 192.168.46.0/24 -o vmbr0 -j MASQUERADE
+
+# Сохранить правила
+sudo netfilter-persistent save
 ```
 
-Для Debian настройка постоянного статического маршрута выполняется несколькими способами:
-
-## Способ 1: Через /etc/network/interfaces (классический)
-
-На каждой машине (pg1, pg2, pg3) отредактируйте `/etc/network/interfaces`:
-
+### Проверить правила:
 ```bash
-sudo nano /etc/network/interfaces
+sudo iptables -t nat -L -n -v
 ```
 
-Добавьте к конфигурации вашего интерфейса (обычно eth0 или ensXX):
+## 2. На машинах в сетях 45 и 46 (keycloak контейнеры)
 
+### Настройка маршрута по умолчанию:
 ```bash
+# Для контейнеров в сети 45
+sudo ip route add default via 192.168.45.1
+
+# Для контейнеров в сети 46  
+sudo ip route add default via 192.168.46.1
+```
+
+### Постоянная настройка (в /etc/network/interfaces):
+```bash
+# Для eth1 (pgnet) в контейнерах 272/273
+auto eth1
+iface eth1 inet static
+    address 192.168.45.50/24
+    gateway 192.168.45.1
+    # или для 273
+    # address 192.168.45.51/24
+
+# Для eth0 (dmznet) в контейнере 272
 auto eth0
 iface eth0 inet static
-    address 192.168.45.201    # для pg1
-    netmask 255.255.255.0
-    gateway 192.168.45.1
-    up ip route add 192.168.87.0/24 via 192.168.45.1
-    down ip route del 192.168.87.0/24 via 192.168.45.1
+    address 192.168.46.16/24
+    gateway 192.168.46.1
 ```
 
-## Способ 2: Через /etc/network/interfaces с post-up
+## 3. На узлах Proxmox
 
+### Проверить настройки мостов:
 ```bash
-auto eth0
-iface eth0 inet static
-    address 192.168.45.201
-    netmask 255.255.255.0
-    gateway 192.168.45.1
-    post-up ip route add 192.168.87.0/24 via 192.168.45.1
-    pre-down ip route del 192.168.87.0/24 via 192.168.45.1
+# На pmx6 убедиться что vmbr0 имеет правильную конфигурацию
+cat /etc/network/interfaces
+
+# Должно быть примерно так:
+auto vmbr0
+iface vmbr0 inet static
+    address 192.168.87.6/24
+    gateway 192.168.87.1
+    bridge_ports enpXsY
+    bridge_stp off
+    bridge_fd 0
 ```
 
-## Способ 3: Через отдельный файл в /etc/network/if-up.d/
+## 4. Проверка работы
 
-Создайте скрипт:
+### С шлюза проверить доступность:
 ```bash
-sudo nano /etc/network/if-up.d/static-route
+ping 8.8.8.8
+ping google.com
 ```
 
-Содержимое:
+### С клиентских машин проверить маршрутизацию:
 ```bash
-#!/bin/sh
-if [ "$IFACE" = "eth0" ]; then
-    ip route add 192.168.87.0/24 via 192.168.45.1
-fi
-```
-
-Сделайте исполняемым:
-```bash
-sudo chmod +x /etc/network/if-up.d/static-route
-```
-
-## Способ 4: Через systemd networkd (если используется)
-
-Создайте файл `/etc/systemd/network/10-eth0.network`:
-```ini
-[Match]
-Name=eth0
-
-[Network]
-Address=192.168.45.201/24
-Gateway=192.168.45.1
-
-[Route]
-Destination=192.168.87.0/24
-Gateway=192.168.45.1
-```
-
-## Применить изменения:
-
-```bash
-# Перезапустить сеть
-sudo systemctl restart networking
-
-# Или перезагрузить интерфейс
-sudo ifdown eth0 && sudo ifup eth0
-
-# Проверить маршруты
+# Проверить маршрут
 ip route show
+
+# Проверить доступность шлюза
+ping 192.168.45.1  # для сети 45
+ping 192.168.46.1  # для сети 46
+
+# Проверить доступ в интернет
+ping 8.8.8.8
 ```
 
-## Проверка:
+## 5. Дополнительные настройки (если нужно)
 
+### DNS на клиентских машинах:
 ```bash
-# Убедиться, что маршрут добавлен
-ip route | grep 192.168.87
-
-# Проверить связь
-ping -c 4 192.168.87.2
+# Указать DNS серверы в /etc/resolv.conf
+nameserver 8.8.8.8
+nameserver 1.1.1.1
 ```
+
+### Firewall правила на шлюзе:
+```bash
+# Разрешить форвардинг
+sudo iptables -A FORWARD -i dmznet -o vmbr0 -j ACCEPT
+sudo iptables -A FORWARD -i pgnet -o vmbr0 -j ACCEPT
+sudo iptables -A FORWARD -i vmbr0 -o dmznet -m state --state ESTABLISHED,RELATED -j ACCEPT
+sudo iptables -A FORWARD -i vmbr0 -o pgnet -m state --state ESTABLISHED,RELATED -j ACCEPT
+```
+
+После применения этих настроек машины в сетях 45 и 46 должны иметь выход в интернет через шлюз 192.168.87.2.
 
 -----------------------------------------------------------
 
 
 <br/>
 
-С ноута!
+Настройка сети на ноуте до dmzgateway!
 =======================
 
 ```
@@ -292,6 +305,7 @@ ping 8.8.8.8        # Проверка интернета (через 192.168.87
 
 
 АЛТЕРНАТИВНЫЙ ВАРИНАТ!
+Настройка сети на ноуте до dmzgateway
 =======================
 
 Отличная инструкция! Для ALT Linux, который в основе использует либо `networkmanager` (чаще в рабочих станциях) так и классический `network` (в серверных установках), процесс сохранения маршрутов будет немного отличаться.
