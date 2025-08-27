@@ -189,5 +189,64 @@ which java
 ssh root@192.168.87.211 "java -version"
 ```
 
+**ПОЛУЧАЕМ**
 https://jenkins.runtel.ru/manage/credentials/store/system/domain/_/credential/736/
 https://jenkins.runtel.ru/computer/redos-7/
+
+### 19. Установим GIT:
+```bash
+dnf install -y git
+dnf install -y make gcc gcc-c++ rpm-build rpmdevtools
+```
+
+### 20. Установим python3:
+```bash
+dnf list available python3*
+dnf install -y python3 python3-devel
+
+# Установите инструменты для сборки native модулей
+yum install -y make gcc gcc-c++ openssl-devel bzip2-devel libffi-devel
+
+# Для node-gyp (если используется)
+yum install -y nodejs npm
+
+# Проверьте установку
+python3 --version
+which python3
+```
+
+Если нужно свежее то:
+```bash
+# Установите Software Collections (SCL)
+yum install -y centos-release-scl
+
+# Установите Python 3.8 или 3.9
+yum install -y rh-python38 rh-python39
+
+# Активируйте Python 3.8
+scl enable rh-python38 bash
+
+# Или сделайте постоянным
+echo 'source scl_source enable rh-python38' >> /etc/profile.d/python38.sh
+```
+
+Создайте симлинк python3 → python (если нужно):
+```bash
+# Проверьте, есть ли симлинк
+ls -la /usr/bin/python3
+
+# Если нужно создать симлинк python → python3
+ln -sf /usr/bin/python3 /usr/bin/python
+```
+
+Установите pip (менеджер пакетов Python):
+```bash
+yum install -y python3-pip
+
+# Обновите pip
+python3 -m pip install --upgrade pip
+
+# Проверьте
+pip3 --version
+```
+
