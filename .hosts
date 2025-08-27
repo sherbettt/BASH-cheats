@@ -3,12 +3,12 @@
 ::1 localhost6.localdomain localhost6
 127.0.1.1       runtel-re
 
-#master gateway
+# PMX cluster
 192.168.87.17 prox4
 192.168.87.20 pmx5
 192.168.87.6  pmx6
 
-#float ip for gateway
+# MASTER GATEWAY: float ip
 192.168.87.2 dmzgateway
 #192.168.46.1
 #192.168.45.1
@@ -19,7 +19,7 @@
 # Backup server
 192.168.87.99  backup
 
-#pg-clust
+# PostgeSQL DBs; Patroni; HAproxy
 192.168.45.201 pg1
 192.168.45.202 pg2
 192.168.45.204 pg3
@@ -30,3 +30,8 @@
 192.168.87.24   redos-7  redos.runtel.ru
 192.168.87.211  redos7.3-builder
 
+# Jira Cluster
+192.168.87.219  jira-new
+192.168.46.2  jira-cluster  # main server
+192.168.46.3  jira-node 
+192.168.46.4  jira-node2
