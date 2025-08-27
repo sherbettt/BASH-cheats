@@ -56,6 +56,8 @@
 
 ### Настройка IP forwarding:
 ```bash
+cat /proc/sys/net/ipv4/ip_forward
+
 # Включить форвардинг пакетов
 echo "net.ipv4.ip_forward=1" | sudo tee -a /etc/sysctl.conf
 sudo sysctl -p
@@ -78,10 +80,41 @@ sudo iptables -t nat -A POSTROUTING -s 192.168.46.0/24 -o vmbr0 -j MASQUERADE
 sudo netfilter-persistent save
 ```
 
+**MASQUERADE:**
+```bash
+# Для сети 45.0/24 через внешний интерфейс (vmbr0 или eth0)
+sudo iptables -t nat -A POSTROUTING -s 192.168.45.0/24 -o vmbr0 -j MASQUERADE
+
+# Для сети 46.0/24 через внешний интерфейс
+sudo iptables -t nat -A POSTROUTING -s 192.168.46.0/24 -o vmbr0 -j MASQUERADE
+
+# ИЛИ если vmbr0 не работает, используйте физический интерфейс:
+sudo iptables -t nat -A POSTROUTING -s 192.168.45.0/24 -o eth0 -j MASQUERADE
+sudo iptables -t nat -A POSTROUTING -s 192.168.46.0/24 -o eth0 -j MASQUERADE
+```
+
+**FORWARD:**
+```bash
+# Разрешить форвардинг между сетями
+sudo iptables -A FORWARD -i pgnet -o vmbr0 -j ACCEPT
+sudo iptables -A FORWARD -i dmznet -o vmbr0 -j ACCEPT
+sudo iptables -A FORWARD -i vmbr0 -o pgnet -m state --state ESTABLISHED,RELATED -j ACCEPT
+sudo iptables -A FORWARD -i vmbr0 -o dmznet -m state --state ESTABLISHED,RELATED -j ACCEPT
+```
+
+
 ### Проверить правила:
 ```bash
 sudo iptables -t nat -L -n -v
+sudo iptables -L -n -v
 ```
+
+**FСохранить правила:**
+```bash
+sudo netfilter-persistent save
+```
+
+
 
 ## 2. На машинах в сетях 45 и 46 (keycloak контейнеры)
 
