@@ -142,3 +142,49 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
+
+### Яркие цвета в Konsole, в сессии
+# Bright terminal colors
+set_bright_colors() {
+    # Проверяем что мы в интерактивной сессии и поддерживаем escape-последовательности
+    if [[ $- == *i* ]] && [[ -t 1 ]] && [[ "$TERM" != "dumb" ]]; then
+        case "$TERM" in
+            xterm*|rxvt*|konsole*|screen*|tmux*)
+                printf "\e]10;#FFFFFF\a"  # Bright white text
+                printf "\e]11;#000000\a"  # Black background
+                printf "\e]12;#00FF00\a"  # Green cursor
+                ;;
+        esac
+    fi
+}
+
+# Вызываем функцию при запуске bash
+set_bright_colors
+
+# Яркая цветовая схема для терминала
+if [[ $- == *i* ]] && [[ -t 1 ]]; then
+    # Основные цвета
+    printf "\e]10;#FFFFFF\a"  # Текст: ярко-белый
+    printf "\e]11;#000000\a"  # Фон: черный
+    
+    # Цвета ANSI (0-15)
+    printf "\e]4;0;#000000\a"   # Black
+    printf "\e]4;1;#FF5555\a"   # Bright Red
+    printf "\e]4;2;#55FF55\a"   # Bright Green
+    printf "\e]4;3;#FFFF55\a"   # Bright Yellow
+    printf "\e]4;4;#5555FF\a"   # Bright Blue
+    printf "\e]4;5;#FF55FF\a"   # Bright Magenta
+    printf "\e]4;6;#55FFFF\a"   # Bright Cyan
+    printf "\e]4;7;#FFFFFF\a"   # Bright White
+    printf "\e]4;8;#555555\a"   # Bright Black
+    printf "\e]4;9;#FF8080\a"   # Bright Red (intense)
+    printf "\e]4;10;#80FF80\a"  # Bright Green (intense)
+    printf "\e]4;11;#FFFF80\a"  # Bright Yellow (intense)
+    printf "\e]4;12;#8080FF\a"  # Bright Blue (intense)
+    printf "\e]4;13;#FF80FF\a"  # Bright Magenta (intense)
+    printf "\e]4;14;#80FFFF\a"  # Bright Cyan (intense)
+    printf "\e]4;15;#FFFFFF\a"  # Bright White (intense)
+    
+    # Курсор
+    printf "\e]12;#00FF00\a"    # Зеленый курсор
+fi
