@@ -1,3 +1,5 @@
+## Создание агента на развёрнутой машине с RedOS v.7.3.6
+
 ### 1. Создайте директорию для Jenkins на целевой ноде:
 
 ```bash
@@ -249,4 +251,256 @@ python3 -m pip install --upgrade pip
 # Проверьте
 pip3 --version
 ```
+<br/>
 
+
+## GPG ключи:
+- Копируем /root/.gnupg/ с машины redos-8 (192.168.87.201);
+- в директории `/root/.gnupg/` есть файлы, но они принадлежат пользователю с UID 1000, а не root. Это может вызывать проблемы с правами доступа.
+
+## Решение: Настройка GPG для подписи RPM
+
+### 1. Исправьте права доступа к GPG директории:
+
+```bash
+ssh root@192.168.87.211
+
+# Измените владельца файлов GPG на root
+chown -R root:root /root/.gnupg/
+
+# Установите правильные права
+chmod -R 700 /root/.gnupg/
+
+# Проверьте права
+ls -la /root/.gnupg/
+```
+
+### 2. Создайте или импортируйте GPG ключ для подписи:
+
+#### Вариант A: Создайте новый GPG ключ
+```bash
+# Создайте новый ключ (введите нужные данные)
+gpg --gen-key
+
+# Или без интерактивного режима
+cat > gpg_batch << EOF
+%echo Generating a basic OpenPGP key
+Key-Type: RSA
+Key-Length: 2048
+Subkey-Type: RSA
+Subkey-Length: 2048
+Name-Real: Jenkins RPM Signing
+Name-Email: jenkins@runtel.ru
+Expire-Date: 0
+%commit
+%echo done
+EOF
+
+gpg --batch --generate-key gpg_batch
+rm gpg_batch
+```
+
+#### Вариант B: Импортируйте существующий ключ
+```bash
+# Если у вас есть существующий ключ
+gpg --import your_private_key.asc
+```
+
+### 3. Проверьте наличие ключей:
+
+```bash
+# Список ключей
+gpg --list-keys
+gpg --list-secret-keys
+
+# Экспортируйте публичный ключ
+gpg --export -a "Jenkins RPM Signing" > RPM-GPG-KEY-runtel
+```
+
+### 4. Настройте RPM для использования GPG ключа:
+
+```bash
+# Создайте конфигурацию RPM
+cat > /etc/rpm/macros.dist << EOF
+%_signature gpg
+%_gpg_path /root/.gnupg
+%_gpg_name Jenkins RPM Signing
+%_gpgbin /usr/bin/gpg
+EOF
+
+# Или добавьте в ~/.rpmmacros
+echo '%_gpg_name Jenkins RPM Signing' >> ~/.rpmmacros
+```
+
+### 5. Проверьте подпись RPM:
+
+```bash
+# Создайте тестовый RPM или попробуйте подписать существующий
+echo "Test" > test.txt
+tar -czf test-1.0.0.tar.gz test.txt
+
+# Попробуйте подписать
+rpm --addsign /path/to/your.rpm
+```
+
+### 6. Если проблема сохраняется:
+
+Проверьте наличие всех необходимых пакетов:
+
+```bash
+# Убедитесь, что все установлено
+yum install -y rpm-sign gnupg2 expect
+
+# Проверьте пути
+which rpm
+which rpmsign
+which gpg
+
+# Проверьте версии
+rpm --version
+gpg --version
+```
+
+### 7. Альтернативное решение - используйте прямой вызов gpg:
+
+Если `rpm --addsign` не работает, можно подписывать через gpg напрямую:
+
+```bash
+# Подпись через gpg
+gpg --detach-sign --armor /path/to/package.rpm
+```
+
+```bash
+┌─ root
+├─ redos7
+└─ ~/.gnupg # gpg --list-keys
+/root/.gnupg/pubring.kbx
+------------------------
+pub   rsa4096 2019-04-03 [SC]
+      ABDA81F04BB74A21936B194F325CE60C3AD367DE
+uid         [ неизвестно ] runtel (RUNTEL GNUPG) <support@runtel.ru>
+sub   rsa4096 2019-04-03 [E]
+
+┌─ root
+├─ redos7
+└─ ~/.gnupg # gpg --list-secret-keys
+/root/.gnupg/pubring.kbx
+------------------------
+sec   rsa4096 2019-04-03 [SC]
+      ABDA81F04BB74A21936B194F325CE60C3AD367DE
+uid         [ неизвестно ] runtel (RUNTEL GNUPG) <support@runtel.ru>
+ssb   rsa4096 2019-04-03 [E]
+```
+
+GPG ключ есть, но он помечен как `[ неизвестно ]` - это означает, что ключу не доверяют. Нужно установить доверие и настроить RPM для использования этого ключа.
+
+## Решение: Настройка доверия и конфигурация RPM
+
+### 1. Установите доверие к GPG ключу:
+
+```bash
+ssh root@192.168.87.211
+
+# Установите максимальное доверие к ключу
+echo -e "5\ny\n" | gpg --command-fd 0 --edit-key ABDA81F04BB74A21936B194F325CE60C3AD367DE trust
+
+# Или альтернативный способ
+gpg --edit-key ABDA81F04BB74A21936B194F325CE60C3AD367DE
+# В интерактивном режиме введите:
+# trust
+# 5
+# y
+# quit
+```
+
+### 2. Проверьте доверие:
+
+```bash
+gpg --list-keys
+# Теперь должно показывать [полное] вместо [неизвестно]
+```
+
+### 3. Настройте RPM для использования этого ключа:
+
+```bash
+# Создайте или отредактируйте конфигурационный файл
+cat > ~/.rpmmacros << EOF
+%_signature gpg
+%_gpg_path /root/.gnupg
+%_gpg_name runtel (RUNTEL GNUPG) <support@runtel.ru>
+%_gpgbin /usr/bin/gpg
+EOF
+
+# Или используйте ID ключа
+echo '%_gpg_name ABDA81F04BB74A21936B194F325CE60C3AD367DE' >> ~/.rpmmacros
+```
+
+### 4. Проверьте конфигурацию RPM:
+
+```bash
+# Проверьте настройки
+rpm --showrc | grep gpg
+
+# Или
+rpm -E %_gpg_name
+```
+
+### 5. Протестируйте подпись RPM:
+
+```bash
+# Создайте простой тестовый файл
+echo "Test" > test.txt
+tar -czf test-1.0.0.tar.gz test.txt
+
+# Попробуйте подписать любой RPM файл (если есть)
+if [ -f /var/lib/jenkins/workspace/rt_v2_redos7/rpmbuild_100/RPMS/x86_64/*.rpm ]; then
+    rpm --addsign /var/lib/jenkins/workspace/rt_v2_redos7/rpmbuild_100/RPMS/x86_64/*.rpm
+    echo "Подпись успешна!"
+else
+    echo "RPM файлы не найдены для теста"
+fi
+```
+
+### 6. Если нужно, переустановите rpm-sign:
+
+```bash
+# Убедитесь, что rpm-sign установлен правильно
+yum reinstall -y rpm-sign
+```
+
+### 7. Проверьте наличие rpmsign:
+
+```bash
+# Проверьте, что rpmsign доступен
+which rpmsign
+ls -la /usr/bin/rpmsign
+
+# Если нет, найдите пакет
+yum provides */rpmsign
+```
+
+### 8. Альтернатива: используйте прямой вызов gpg:
+
+Если `rpm --addsign` все еще не работает:
+
+```bash
+# Найдите путь к rpmsign
+find /usr -name rpmsign -type f 2>/dev/null
+
+# Или используйте полный путь
+/usr/bin/rpm --addsign package.rpm
+```
+
+### 9. После настройки перезапустите сборку в Jenkins.
+
+## Если проблема сохраняется:
+
+Проверьте логи подробнее:
+
+```bash
+# Включите debug режим для RPM
+RPMDEBUG=1 rpm --addsign package.rpm 2>&1
+
+# Или проверьте с strace
+strace -f rpm --addsign package.rpm
+```
