@@ -72,9 +72,9 @@ echo "net.ipv6.conf.all.forwarding=1" | sudo tee -a /etc/sysctl.conf
 sudo apt update
 sudo apt install iptables-persistent
 
-# Добавить правила NAT
-sudo iptables -t nat -A POSTROUTING -s 192.168.45.0/24 -o vmbr0 -j MASQUERADE
-sudo iptables -t nat -A POSTROUTING -s 192.168.46.0/24 -o vmbr0 -j MASQUERADE
+# Добавить правила NAT (vmbr0)
+sudo iptables -t nat -A POSTROUTING -s 192.168.45.0/24 -o eth0 -j MASQUERADE
+sudo iptables -t nat -A POSTROUTING -s 192.168.46.0/24 -o eth0 -j MASQUERADE
 
 # Сохранить правила
 sudo netfilter-persistent save
@@ -83,10 +83,10 @@ sudo netfilter-persistent save
 **MASQUERADE:**
 ```bash
 # Для сети 45.0/24 через внешний интерфейс (vmbr0 или eth0)
-sudo iptables -t nat -A POSTROUTING -s 192.168.45.0/24 -o vmbr0 -j MASQUERADE
+sudo iptables -t nat -A POSTROUTING -s 192.168.45.0/24 -o eth0 -j MASQUERADE
 
 # Для сети 46.0/24 через внешний интерфейс
-sudo iptables -t nat -A POSTROUTING -s 192.168.46.0/24 -o vmbr0 -j MASQUERADE
+sudo iptables -t nat -A POSTROUTING -s 192.168.46.0/24 -o eth0 -j MASQUERADE
 
 # ИЛИ если vmbr0 не работает, используйте физический интерфейс:
 sudo iptables -t nat -A POSTROUTING -s 192.168.45.0/24 -o eth0 -j MASQUERADE
