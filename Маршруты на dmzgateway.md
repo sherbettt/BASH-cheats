@@ -44,6 +44,12 @@
 +---------------------------------------------------------------+
 ```
 </details>
+
+**Запомните соответствие:**
+*   **`eth0`** -> `192.168.87.2` (выход в интернет)
+*   **`eth1`** -> `192.168.46.1` (сеть dmznet)
+*   **`eth2`** -> `192.168.45.1` (сеть pgnet)
+
 <br/>
 
 
@@ -66,19 +72,7 @@ sudo sysctl -p
 echo "net.ipv6.conf.all.forwarding=1" | sudo tee -a /etc/sysctl.conf
 ```
 
-### Настройка NAT (маскарадинг):
-```bash
-# Установить iptables если нет
-sudo apt update
-sudo apt install iptables-persistent
-
-# Добавить правила NAT (vmbr0)
-sudo iptables -t nat -A POSTROUTING -s 192.168.45.0/24 -o eth0 -j MASQUERADE
-sudo iptables -t nat -A POSTROUTING -s 192.168.46.0/24 -o eth0 -j MASQUERADE
-
-# Сохранить правила
-sudo netfilter-persistent save
-```
+### Настройка NAT
 
 **MASQUERADE:**
 ```bash
@@ -102,7 +96,6 @@ sudo iptables -A FORWARD -i vmbr0 -o pgnet -m state --state ESTABLISHED,RELATED 
 sudo iptables -A FORWARD -i vmbr0 -o dmznet -m state --state ESTABLISHED,RELATED -j ACCEPT
 ```
 
-
 ### Проверить правила:
 ```bash
 sudo iptables -t nat -L -n -v
@@ -113,7 +106,72 @@ sudo iptables -L -n -v
 ```bash
 sudo netfilter-persistent save
 ```
+<br/>
 
+
+**Если рабоатет не так как нам надо, очищаем все правила**
+
+Лучше начать с чистого листа. **Внимание:** это команды на удаление. Если вы подключены через SSH, убедитесь, что у вас есть физический доступ к серверу на случай ошибки.
+
+```bash
+# Очищаем все правила NAT
+sudo iptables -t nat -F
+
+# Очищаем все правила в цепочке FORWARD
+sudo iptables -F FORWARD
+
+# Сбрасываем политики по умолчанию на ACCEPT (на время настройки)
+sudo iptables -P FORWARD ACCEPT
+```
+
+**Применяем ПРАВИЛЬНЫЕ правила**
+
+Подставьте в команды имена интерфейсов, которые вы узнали из `ip a`.
+
+```bash
+# Включаем MASQUERADE для выхода в интернет через правильный интерфейс (eth0)
+sudo iptables -t nat -A POSTROUTING -s 192.168.45.0/24 -o eth0 -j MASQUERADE
+sudo iptables -t nat -A POSTROUTING -s 192.168.46.0/24 -o eth0 -j MASQUERADE
+
+# Разрешаем форвардинг между внутренними сетями и интернетом
+# !!! ЗАМЕНИТЕ 'eth1' и 'eth2' на реальные имена ваших внутренних интерфейсов !!!
+sudo iptables -A FORWARD -i eth2 -o eth0 -j ACCEPT   # Разрешаем из сети 45 в интернет
+sudo iptables -A FORWARD -i eth1 -o eth0 -j ACCEPT   # Разрешаем из сети 46 в интернет
+
+# Разрешаем ответный трафик из интернета
+sudo iptables -A FORWARD -i eth0 -o eth2 -m state --state ESTABLISHED,RELATED -j ACCEPT
+sudo iptables -A FORWARD -i eth0 -o eth1 -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+# (Опционально) Если нужен обмен трафиком между сетями 45 и 46 внутри шлюза, добавьте:
+sudo iptables -A FORWARD -i eth2 -o eth1 -j ACCEPT
+sudo iptables -A FORWARD -i eth1 -o eth2 -j ACCEPT
+```
+
+**Сохраняем новые правила**
+
+```bash
+sudo netfilter-persistent save
+```
+
+**Проверяем результат**
+
+Снова выполните:
+```bash
+sudo iptables -t nat -L -n -v
+sudo iptables -L -n -v
+```
+Теперь в правилах `MASQUERADE` и `FORWARD` должны быть правильные имена интерфейсов (например, `eth0`), и счетчики пакетов для них начнут увеличиваться.
+
+После этого выполните тестовый пинг с клиентской машины (например, с `192.168.45.50`):
+```bash
+ping 8.8.8.8
+ping 192.168.45.1
+ping 192.168.45.201
+ping 192.168.46.1
+ping 192.168.46.4
+```
+Если настройки клиентов (шлюз и DNS) верны, а правила на шлюзе применены правильно, пинг должен работать.
+<br/>
 
 
 ## 2. На машинах в сетях 45 и 46 (keycloak контейнеры)
