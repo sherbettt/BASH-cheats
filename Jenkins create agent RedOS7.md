@@ -251,6 +251,64 @@ python3 -m pip install --upgrade pip
 # Проверьте
 pip3 --version
 ```
+
+### 20. Установим Ansible:
+Установите Ansible на RedOS 7:
+```bash
+# Установите EPEL репозиторий (если еще не установлен)
+dnf install -y epel-release
+
+dnf install -y sshpass  # для SSH подключений
+
+dnf install -y ansible
+
+# Проверьте установку
+ansible --version
+which ansible-playbook
+```
+
+Проверьте пути:
+```bash
+# Убедитесь, что ansible-playbook доступен по указанному пути
+ls -la /usr/bin/ansible-playbook
+
+# Если установлен в другом месте, найдите его
+find /usr -name ansible-playbook -type f 2>/dev/null
+```
+
+Если Ansible не находится в стандартных репозиториях:
+```bash
+# Альтернативная установка через pip
+yum install -y python3-pip
+pip3 install ansible
+
+# Проверьте установку
+/usr/local/bin/ansible-playbook --version
+```
+
+После установки проверьте пути:
+```bash
+# Найдите точный путь
+which ansible-playbook
+# Обычно: /usr/bin/ansible-playbook или /usr/local/bin/ansible-playbook
+
+# Проверьте, что ansible-playbook доступен
+ansible-playbook --version
+
+# Должно показать что-то вроде:
+# ansible-playbook [core 2.12.1]
+```
+
+Проверьте работу Ansible:
+```bash
+# Простой тест
+ansible localhost -m ping
+
+# Проверьте плейбук (если есть права)
+ansible-playbook --syntax-check /var/lib/jenkins/ansible/playbooks/upload_to_redos7_repo.yml
+```
+
+<br/>
 <br/>
 
 
