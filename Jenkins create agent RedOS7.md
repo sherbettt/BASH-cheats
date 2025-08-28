@@ -431,6 +431,17 @@ cat > ~/.rpmmacros << EOF
 %_gpgbin /usr/bin/gpg
 EOF
 
+# или
+#%_topdir /var/lib/jenkins/workspace/pbx_v2_redos
+#%_builddir /var/lib/jenkins/workspace/pbx_v2_redos
+#%_sourcedir /var/lib/jenkins/workspace/pbx_v2_redos
+#%_buildroot /var/lib/jenkins/workspace/pbx_v2_redos
+%_signature gpg
+%_gpg_path /root/.gnupg
+%_gpg_name runtel
+%_gpgbin /usr/bin/gpg2
+%_unitdir /usr/lib/systemd/system/
+
 # Или используйте ID ключа
 echo '%_gpg_name ABDA81F04BB74A21936B194F325CE60C3AD367DE' >> ~/.rpmmacros
 ```
