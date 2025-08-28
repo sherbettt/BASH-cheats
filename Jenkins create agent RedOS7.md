@@ -1,4 +1,4 @@
-## Создание агента на развёрнутой машине с RedOS v.7.3.6
+## Создание агента на развёрнутой вирутальной машине с RedOS v.7.3.6
 
 ### 1. Создайте директорию для Jenkins на целевой ноде:
 
@@ -126,10 +126,10 @@ java -version
 ssh root@192.168.87.211
 
 # Для RedOS (основана на RedHat)
-yum install -y java-11-openjdk-devel
+dnf install -y java-11-openjdk-devel
 
 # Или установите конкретную версию
-yum install -y java-1.8.0-openjdk-devel
+dnf install -y java-1.8.0-openjdk-devel
 
 # Проверьте установку
 java -version
@@ -147,10 +147,10 @@ alternatives --config java
 
 ```bash
 # Поиск доступных пакетов Java
-yum search openjdk
+dnf search openjdk
 
 # Установите нужную версию
-yum install -y java-11-openjdk-devel
+dnf install -y java-11-openjdk-devel
 ```
 
 ### 15. Проверьте переменные окружения:
@@ -252,7 +252,7 @@ python3 -m pip install --upgrade pip
 pip3 --version
 ```
 
-### 20. Установим Ansible:
+### 21. Установим Ansible:
 Установите Ansible на RedOS 7:
 ```bash
 # Установите EPEL репозиторий (если еще не установлен)
@@ -573,3 +573,113 @@ RPMDEBUG=1 rpm --addsign package.rpm 2>&1
 # Или проверьте с strace
 strace -f rpm --addsign package.rpm
 ```
+<br/>
+<br/>
+
+
+
+## Скопировать содеержимое /var/lib/jenkins/ansible/ с машины 192.168.87.24.
+
+<br/>
+<br/>
+
+
+## Установка готового RPM пакета.
+
+```
+┌─ root
+├─ redos7
+└─ /var/lib/jenkins/workspace # ll
+итого 62068
+drwxr-xr-x.  4 root root     4096 авг 28 11:37  ./
+drwxr-xr-x.  7 root root     4096 авг 28 11:33  ../
+drwxr-xr-x. 11 root root     4096 авг 28 11:37  rt_v2_redos7/
+drwxr-xr-x.  2 root root     4096 авг 28 11:37 'rt_v2_redos7@tmp'/
+-rw-r--r--.  1 root root 31767149 авг 28 10:46  runtel-web-v2-2.21.52-103.x86_64.rpm
+-rw-r--r--.  1 root root 31767105 авг 28 11:37  runtel-web-v2-2.21.52-104.x86_64.rpm
+-rw-r--r--.  1 root root      934 авг 27 18:58  workspaces.txt
+```
+
+### 1. Установите RPM пакет:
+
+```bash
+# Базовая установка
+yum install -y ./runtel-web-v2-2.21.52-104.x86_64.rpm
+
+# Или с помощью rpm
+rpm -ivh runtel-web-v2-2.21.52-104.x86_64.rpm
+
+# Или если нужно обновить существующую версию
+rpm -Uvh runtel-web-v2-2.21.52-104.x86_64.rpm
+```
+
+### 2. Проверьте установку:
+
+```bash
+# Проверьте, что пакет установлен
+rpm -qa | grep runtel-web-v2
+
+# Посмотрите информацию о пакете
+rpm -qi runtel-web-v2
+
+# Посмотрите какие файлы установил пакет
+rpm -ql runtel-web-v2
+```
+
+### 3. Если нужно проверить зависимости перед установкой:
+
+```bash
+# Проверьте зависимости
+rpm -qpR runtel-web-v2-2.21.52-104.x86_64.rpm
+
+# Тестовая установка (без реальной установки)
+rpm -ivh --test runtel-web-v2-2.21.52-104.x86_64.rpm
+```
+
+### 4. Дополнительные опции установки:
+
+```bash
+# Установка с игнорированием зависимостей (не рекомендуется)
+rpm -ivh --nodeps runtel-web-v2-2.21.52-104.x86_64.rpm
+
+# Установка с принудительной перезаписью
+rpm -ivh --force runtel-web-v2-2.21.52-104.x86_64.rpm
+```
+
+### 5. Если пакет уже установлен и нужно обновить:
+
+```bash
+# Обновление пакета
+rpm -Uvh runtel-web-v2-2.21.52-104.x86_64.rpm
+
+# Или через yum (лучше для обработки зависимостей)
+yum update -y ./runtel-web-v2-2.21.52-104.x86_64.rpm
+```
+
+## Рекомендуемый способ:
+
+```bash
+# Самый правильный способ - через yum для автоматического разрешения зависимостей
+yum install -y ./runtel-web-v2-2.21.52-104.x86_64.rpm
+```
+
+## После установки проверьте:
+
+```bash
+# Проверьте статус службы (если пакет устанавливает службу)
+systemctl status runtel-web-v2
+
+# Или посмотрите что установилось
+find / -name "*runtel*" -type f 2>/dev/null | head -10
+```
+
+## Если возникнут ошибки зависимостей:
+
+```bash
+# Установите недостающие зависимости
+yum install -y <missing-dependency>
+
+# Или посмотрите какие зависимости требуются
+rpm -qpR runtel-web-v2-2.21.52-104.x86_64.rpm
+```
+
