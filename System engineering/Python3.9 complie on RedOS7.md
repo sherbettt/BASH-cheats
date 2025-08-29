@@ -4,8 +4,8 @@
 ## 1. Установка зависимостей
 
 ```bash
-sudo yum groupinstall "Development Tools"
-sudo yum install zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel gdbm-devel db4-devel libpcap-devel xz-devel libffi-devel
+sudo dnf groupinstall "Development Tools"
+sudo dnf install zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel gdbm-devel db4-devel libpcap-devel xz-devel libffi-devel
 ```
 
 ## 2. Скачивание исходного кода Python 3.9.23
@@ -65,7 +65,7 @@ python3.9 -m pip install --upgrade pip
 1. **`make altinstall`** вместо `make install` - чтобы не перезаписывать системный Python
 2. **`--enable-shared`** - для создания shared библиотек
 3. **`--enable-optimizations`** - для оптимизации производительности
-4. RED OS основана на RHEL 7, поэтому используйте `yum` вместо `dnf`
+4. RED OS основана на RHEL 7, поэтому используйте `dnf` вместо `dnf`
 5. Проверьте доступное место на диске перед компиляцией (требуется ~2-3GB)
 
 После установки у вас будет:
