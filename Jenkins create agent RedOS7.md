@@ -683,3 +683,16 @@ yum install -y <missing-dependency>
 rpm -qpR runtel-web-v2-2.21.52-104.x86_64.rpm
 ```
 
+<br/>
+<br/>
+
+
+## Файл .netrc в корне.
+```bash
+┌─ root
+├─ redos7
+└─ ~ # ccat .netrc 
+machine gitlab.runtel.org
+login jenkins
+password <password>
+```
