@@ -1,3 +1,10 @@
+# ~/.bashrc
+# The individual per-interactive-shell startup file.
+
+# Source global definitions.
+if [ -r /etc/bashrc ]; then
+        . /etc/bashrc
+fi
 
 # don't put duplicate lines or lines starting with space in the history.
 # See bash(1) for more options
@@ -10,19 +17,13 @@ shopt -s histappend
 HISTSIZE=1000
 HISTFILESIZE=2000
 
+# Define user specific aliases and functions.
 
+export EDITOR=/usr/bin/mcedit
+export VISUAL=$EDITOR
 
-# enable programmable completion features (you don't need to enable
-# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
-# sources /etc/bash.bashrc).
-if ! shopt -oq posix; then
-  if [ -f /usr/share/bash-completion/bash_completion ]; then
-    . /usr/share/bash-completion/bash_completion
-  elif [ -f /etc/bash_completion ]; then
-    . /etc/bash_completion
-  fi
-fi
-
+# Более яркие цвета для LS (KDE)
+export LS_COLORS='rs=0:di=01;94:ln=01;36:...'
 
 # color aliases
 alias sudo='sudo '
@@ -67,10 +68,11 @@ alias ipa='ip -br -c addr show'
 alias lsblk-more='lsblk --output TYPE,PATH,NAME,FSAVAIL,FSUSE%,SIZE,MOUNTPOINT,UUID,FSTYPE,PTTYPE,PARTUUID'
 alias mc-visudo='sudo EDITOR=mcedit visudo'
 
-
 # Power commands
 alias shutdown="sudo shutdown -P now"
 alias reboot="sudo shutdown -r now"
+
+
 
 # Alias definitions.
 # You may want to put all your additions into a separate file like
@@ -110,22 +112,21 @@ LINE_CROSS="\342\224\234"             # "├"
 
 # Динамические настройки для пользователя/root
 if [[ ${EUID} == 0 ]]; then
-    # Стиль для root (3 строки)
+    # Стиль для root
     USER_NAME="\[\033[1;38;5;208m\]\u"  # Ярко-оранжевый (жирный)
     HOST_NAME="\[\033[1;38;5;39m\]\h"   # Ярко-голубой
-    SYMBOL="\[\033[1;38;5;196m\]#"      # Ярко-красный #
+    ARROW="\[\033[1;38;5;196m\]▶"       # Ярко-красная стрелочка
     PS1="\
 ${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_NAME}\n\
-${LINE_COLOR}${LINE_CROSS}${LINE_VERTICAL} ${HOST_NAME}\n\
-${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${DIR_COLOR}\w ${SYMBOL} ${INPUT_COLOR}"
+${LINE_COLOR}${LINE_CROSS}${LINE_VERTICAL} ${HOST_NAME} ${DIR_COLOR}\w ${ARROW} ${INPUT_COLOR}"
 else
-    # Стиль для обычного пользователя (2 строки)
+    # Стиль для обычного пользователя
     USER_NAME="\[\033[1;38;5;46m\]\u"   # Ярко-зелёный
-    HOST_NAME="\[\033[1;38;5;39m\]\h"   # Ярко-голубой
-    SYMBOL="\[\033[1;38;5;196m\]\$"     # Ярко-красный $
+    HOST_NAME="\[\033[1;38;5;39m\]@\h"  # Ярко-голубой с символом @
+    ARROW="\[\033[1;38;5;85m\]▶"        # Ярко-кислотная зелёная стрелочка
     PS1="\
-${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_NAME} ${HOST_NAME}\n\
-${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${DIR_COLOR}\w ${SYMBOL} ${INPUT_COLOR}"
+${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_NAME}${HOST_NAME}\n\
+${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${DIR_COLOR}\w ${ARROW} ${INPUT_COLOR}"
 fi
 
 
@@ -159,7 +160,6 @@ set_bright_colors() {
 }
 
 # Вызываем функцию при запуске bash
-set_bright_colors
 
 # Яркая цветовая схема для терминала
 if [[ $- == *i* ]] && [[ -t 1 ]]; then
@@ -188,3 +188,4 @@ if [[ $- == *i* ]] && [[ -t 1 ]]; then
     # Курсор
     printf "\e]12;#00FF00\a"    # Зеленый курсор
 fi
+set_bright_colors
