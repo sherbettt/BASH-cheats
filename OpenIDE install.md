@@ -64,7 +64,7 @@ sudo apt-get install openjdk-17-jdk
 
 Создайте файл ярлыка:
 ```bash
-sudo nano /usr/share/applications/idea.desktop
+sudo mcedit /usr/share/applications/idea.desktop
 ```
 
 Добавьте следующее содержимое:
@@ -146,7 +146,7 @@ java -version
 Для настройки размера heap памяти Java создайте файл:
 ```bash
 mkdir -p ~/.config/OpenIDE/OpenIDE2025.1
-nano ~/.config/OpenIDE/OpenIDE2025.1/openide64.vmoptions
+mcedit ~/.config/OpenIDE/OpenIDE2025.1/openide64.vmoptions
 ```
 
 Добавьте (пример):
