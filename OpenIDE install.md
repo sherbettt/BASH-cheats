@@ -58,6 +58,11 @@ java -version
 ```bash
 sudo apt-get update
 sudo apt-get install openjdk-17-jdk
+
+epm search openjdk
+epm play java-21-openjdk
+# или
+epmi java-21-openjdk
 ```
 
 ## 5. Создание .desktop файла для меню приложений
