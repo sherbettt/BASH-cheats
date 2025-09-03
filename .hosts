@@ -1,4 +1,4 @@
-
+## /etc/hosts
 127.0.0.1   localhost.localdomain localhost
 ::1 localhost6.localdomain localhost6
 127.0.1.1       runtel-re
@@ -18,6 +18,9 @@
 
 # Backup server
 192.168.87.99  backup
+
+#aptly_repo
+78.24.221.191 aptly_repo
 
 # PostgeSQL DBs; Patroni; HAproxy
 192.168.45.201 pg1
