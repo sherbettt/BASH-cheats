@@ -1,6 +1,6 @@
 ## /etc/hosts
-127.0.0.1   localhost.localdomain localhost
-::1 localhost6.localdomain localhost6
+127.0.0.1       localhost.localdomain localhost
+::1     localhost6.localdomain localhost6
 127.0.1.1       runtel-re
 
 # PMX cluster
@@ -13,14 +13,17 @@
 #192.168.46.1
 #192.168.45.1
 
+# Jenkins mater
+192.168.87.11  jenkins-clone
+
 # semaphore->ansible
 192.168.87.8  semaphore
 
-# Backup server
-192.168.87.99  backup
-
 #aptly_repo
 78.24.221.191 aptly_repo
+
+# Backup server
+192.168.87.99  backup
 
 # PostgeSQL DBs; Patroni; HAproxy
 192.168.45.201 pg1
@@ -30,11 +33,14 @@
 #Jenkins nodes
 192.168.87.9    deb12-builder
 192.168.87.14   deb11-builder
+192.168.87.15   astra
 192.168.87.24   redos-7  redos.runtel.ru
 192.168.87.211  redos7.3-builder
+192.168.87.201  redos8
 
 # Jira Cluster
 192.168.87.219  jira-new
 192.168.46.2  jira-cluster  # main server
 192.168.46.3  jira-node 
 192.168.46.4  jira-node2
+
