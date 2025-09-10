@@ -1,4 +1,5 @@
 ## /etc/hosts
+
 127.0.0.1       localhost.localdomain localhost
 ::1     localhost6.localdomain localhost6
 127.0.1.1       runtel-re
@@ -29,9 +30,12 @@
 # Backup server
 192.168.87.99  backup
 
+# REPO Runtel
+78.24.221.191 repo.runtel.ru
+
 # SSO, keycloak duplicates
 #192.168.46.16  sso.runtel.ru #keycloak
-192.168.46.17  sso.runtel.ru #keycloakd
+#192.168.46.17  sso.runtel.ru #keycloakd
 
 # PostgeSQL DBs; Patroni; HAproxy
 192.168.45.201 pg1
@@ -41,15 +45,17 @@
 #Jenkins nodes
 192.168.87.9    deb12-builder
 192.168.87.14   deb11-builder
-192.168.87.15   astra
-192.168.87.24   redos-7  redos.runtel.ru
-192.168.87.211  redos7.3-builder
-192.168.87.201  redos8
+192.168.87.15   astra-builder
+192.168.87.201  redos8-builder
+192.168.87.116  redos7-builder
 
 # Jira Cluster
 192.168.87.219  jira-new
 192.168.46.2  jira-cluster  # main server
 192.168.46.3  jira-node 
 192.168.46.4  jira-node2
+
+# lk-crct.cprt.su
+178.178.73.102 cprt
 
 
