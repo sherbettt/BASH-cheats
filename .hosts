@@ -1,5 +1,6 @@
 ## /etc/hosts
 
+```yaml
 127.0.0.1       localhost.localdomain localhost
 ::1     localhost6.localdomain localhost6
 127.0.1.1       runtel-re
@@ -57,5 +58,5 @@
 
 # lk-crct.cprt.su
 178.178.73.102 cprt
-
+```
 
