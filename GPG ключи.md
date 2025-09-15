@@ -34,6 +34,18 @@ done
 
 Чтобы ваш GPG-ключ считался валидным для репозитория RPM на сервере `http://repo.runtel.ru/`, вам нужно выполнить несколько действий:
 
+## 0. Скачать
+```bash
+# Скачать ключ заново на всякий случай
+wget -O /etc/pki/rpm-gpg/RPM-GPG-KEY-runtel http://repo.runtel.ru/runtel.gpg
+
+# Импортировать
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-runtel
+
+# устанвока без подписи
+dnf install --nogpgcheck freeswitch-codec-passthru-g729-debuginfo
+```
+
 ## 1. Экспорт ключа в правильном формате
 
 Сначала экспортируйте ваш ключ в формате, который понимает RPM:
