@@ -18,6 +18,7 @@ gpg-pubkey-3ad367de-5ca4b9d6    runtel (RUNTEL GNUPG) <support@runtel.ru> public
 ### 2. Проверка GPG ключей в системе
 ```bash
 gpg --list-keys
+gpg --list-secret-keys
 ```
 **Результат:**
 ```
