@@ -111,3 +111,79 @@ pip3.9 является /usr/local/bin/pip3.9
 
 https://mirror.yandex.ru/redos/7.3/x86_64/os/
 
+---------------
+
+В Red OS 7 требуется настроить Ansible для использования Python 3.9.17 вместо Python 3.8. 
+<br/> Вот несколько способов:
+
+## Способ 1: Настройка через ansible.cfg
+
+Создайте или отредактируйте файл `/etc/ansible/ansible.cfg`:
+
+```ini
+[defaults]
+interpreter_python = /usr/bin/python3.9
+```
+
+## Способ 2: Установка Python 3.9 как системного по умолчанию
+
+```bash
+# Создайте символическую ссылку
+sudo alternatives --set python /usr/bin/python3.9
+
+# Или обновите альтернативы
+sudo alternatives --config python
+```
+
+## Способ 3: Настройка для конкретного инвентаря
+
+В инвентарном файле укажите Python интерпретатор:
+
+```ini
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3.9
+```
+
+## Способ 4: Переустановка Ansible с Python 3.9
+
+Если предыдущие способы не работают, переустановите Ansible:
+
+```bash
+# Удалите текущую версию
+sudo yum remove ansible
+
+# Установите pip для Python 3.9
+python3.9 -m pip install --upgrade pip
+
+# Установите Ansible через pip для Python 3.9
+python3.9 -m pip install ansible
+
+# Проверьте версию
+python3.9 -m ansible --version
+```
+
+## Способ 5: Создание виртуального окружения
+
+```bash
+# Создайте виртуальное окружение с Python 3.9
+python3.9 -m venv ~/ansible-venv
+
+# Активируйте окружение
+source ~/ansible-venv/bin/activate
+
+# Установите Ansible
+pip install ansible
+
+# Добавьте алиас в .bashrc
+echo "alias ansible='~/ansible-venv/bin/ansible'" >> ~/.bashrc
+source ~/.bashrc
+```
+
+## Проверка
+
+После настройки проверьте:
+
+```bash
+ansible localhost -m ping -e 'ansible_python_interpreter=/usr/bin/python3.9'
+```
+
