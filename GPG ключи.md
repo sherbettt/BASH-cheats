@@ -23,10 +23,16 @@ gpg --list-keys
 ```
 /root/.gnupg/pubring.kbx
 ------------------------
+pub   rsa2048 2025-09-15 [SC] [   годен до: 2027-09-15]
+      8410195CAB1378F5293B039239D988BC61EABBC4
+uid         [  абсолютно ] root redos7 <support@runtel.ru>
+sub   rsa2048 2025-09-15 [E] [   годен до: 2027-09-15]
+
 pub   rsa4096 2019-04-03 [SC]
       ABDA81F04BB74A21936B194F325CE60C3AD367DE
 uid         [  абсолютно ] runtel (RUNTEL GNUPG) <support@runtel.ru>
 sub   rsa4096 2019-04-03 [E]
+
 ```
 
 ### 3. Проверка отпечатков ключей
