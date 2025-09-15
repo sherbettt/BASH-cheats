@@ -51,6 +51,9 @@ rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-runtel
 
 # устанвока без подписи
 dnf install --nogpgcheck freeswitch-codec-passthru-g729-debuginfo
+
+# проверка точного имени ключа
+gpg --list-keys --with-colons | grep uid | grep runtel
 ```
 
 ## 1. Экспорт ключа в правильном формате
