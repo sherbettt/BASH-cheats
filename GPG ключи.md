@@ -22,6 +22,16 @@ veNAiMYzvhp3AA9a
 
 или `rpm -qi $(rpm -qa gpg-pubkey*)`
 
+
+Посмотреть отпечатки ключей: `gpg --list-keys --with-fingerprint --with-colons` или
+```bash
+for key in $(rpm -qa gpg-pubkey*); do
+    echo "=== Ключ: $key ==="
+    rpm -qi $key | grep -E "(отпечаток|fingerprint)|ID"
+    echo
+done
+```
+
 Чтобы ваш GPG-ключ считался валидным для репозитория RPM на сервере `http://repo.runtel.ru/`, вам нужно выполнить несколько действий:
 
 ## 1. Экспорт ключа в правильном формате
