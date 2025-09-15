@@ -20,6 +20,8 @@ veNAiMYzvhp3AA9a
 -----END PGP PUBLIC KEY BLOCK-----
 ```
 
+или `rpm -qi $(rpm -qa gpg-pubkey*)`
+
 Чтобы ваш GPG-ключ считался валидным для репозитория RPM на сервере `http://repo.runtel.ru/`, вам нужно выполнить несколько действий:
 
 ## 1. Экспорт ключа в правильном формате
