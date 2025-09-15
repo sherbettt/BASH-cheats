@@ -19,6 +19,12 @@ gpg-pubkey-3ad367de-5ca4b9d6    runtel (RUNTEL GNUPG) <support@runtel.ru> public
 ```bash
 gpg --list-keys
 gpg --list-secret-keys
+
+# Проверим какие ключи есть в системе
+gpg --list-secret-keys --with-colons
+
+# Проверим точное имя ключа
+gpg --list-keys --with-colons | grep uid
 ```
 **Результат:**
 ```
