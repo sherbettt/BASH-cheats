@@ -151,7 +151,121 @@ dnf repolist
 
 Если всё настроено правильно, RPM пакеты из вашего репозитория будут проходить проверку подписи без ошибок.
 
+---------------------
 
+Отлично! Теперь видна полная картина. У вас есть два ключа:
+1. `gpg-pubkey-f8ac18ee-591e99a0` - RED SOFT (RedOS)
+2. `gpg-pubkey-2c1355e5-5ca35145` - Runtel
+
+Но проблема в Jenkins не связана с этими ключами. Ошибка `"Вы должны установить "%_gpg_name" в вашем макрофайле"` означает, что **не настроен GPG-ключ для подписи СБОРКИ пакетов**, а не для установки.
+
+## Решение для Jenkins
+
+### 1. Создайте GPG-ключ для подписи пакетов
+
+```bash
+# Создаем новый GPG-ключ (выполните от пользователя jenkins или root)
+gpg --gen-key
+# Выберите:
+# - Type: RSA and RSA (1)
+# - Size: 2048
+# - Expire: 0 (never expires)
+# - Real name: Jenkins Builder
+# - Email: jenkins@yourcompany.com
+# - Comment: RPM signing key
+```
+
+### 2. Настройте .rpmmacros для пользователя jenkins
+
+```bash
+# Перейдите в домашнюю директорию jenkins
+cd /var/lib/jenkins
+
+# Создайте файл .rpmmacros
+mcedit .rpmmacros
+```
+
+**Добавьте содержимое (замените на ваше имя ключа):**
+```bash
+%_signature gpg
+%_gpg_name Jenkins Builder
+%_gpg_path ~/.gnupg
+%_gpgbin /usr/bin/gpg
+%__gpg_sign_cmd %{__gpg} gpg --batch --no-verbose --no-armor --use-agent --no-secmem-warning -u "%{_gpg_name}" -sbo %{__signature_filename} %{__plaintext_filename}
+```
+
+### 3. Экспортируйте открытый ключ
+
+```bash
+# Экспортируйте открытый ключ
+gpg --export -a "Jenkins Builder" > /etc/pki/rpm-gpg/RPM-GPG-KEY-JENKINS
+
+# Импортируйте в RPM базу
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-JENKINS
+```
+
+### 4. Настройте права для Jenkins
+
+```bash
+# Убедитесь, что jenkins имеет доступ к GPG
+chown -R jenkins:jenkins /var/lib/jenkins/.gnupg
+chmod 700 /var/lib/jenkins/.gnupg
+```
+
+### 5. Альтернативное решение: настройка через /etc/rpm/macros
+
+```bash
+# Создайте глобальный конфиг
+mcedit /etc/rpm/macros.d/jenkins
+```
+
+Добавьте:
+```bash
+%_signature gpg
+%_gpg_name Jenkins Builder
+%_gpg_path /var/lib/jenkins/.gnupg
+```
+
+### 6. Проверьте настройки
+
+```bash
+# Проверьте, что настройки применяются
+rpm --showrc | grep _gpg_name
+```
+
+### 7. Для текущей сессии можно установить переменную
+
+В Jenkins job добавьте шаг:
+```bash
+export GPG_NAME="Jenkins Builder"
+```
+
+Или в самом скрипте:
+```bash
+#!/bin/bash
+export GPG_NAME="Jenkins Builder"
+rpm --addsign ваш-пакет.rpm
+```
+
+### 8. Если не хотите настраивать подпись, отключите её
+
+В Jenkins job можно пропустить подпись:
+```bash
+# Пропустить шаг подписи в скрипте
+# rpm --addsign ...  # Закомментируйте эту строку
+```
+
+### 9. Проверьте работу
+
+```bash
+# Проверьте подпись
+rpm --checksig ваш-пакет.rpm
+```
+
+## Важно!
+Убедитесь, что все команды выполняются от правильного пользователя (jenkins или того, под которым запускается сборка).
+
+После этих настроек ошибка `"%_gpg_name"` должна исчезнуть, и подпись пакетов будет работать корректно.
 
 
 
