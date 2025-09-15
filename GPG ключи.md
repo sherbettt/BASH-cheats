@@ -102,6 +102,7 @@ enabled = 1
 dnf clean all
 dnf makecache
 dnf repolist
+dnf 
 ```
 
 ## 🔄 Перенос ключей между системами
