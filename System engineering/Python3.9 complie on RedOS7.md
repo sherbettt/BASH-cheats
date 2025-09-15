@@ -122,7 +122,7 @@ https://mirror.yandex.ru/redos/7.3/x86_64/os/
 
 ```ini
 [defaults]
-interpreter_python = /usr/bin/python3.9
+interpreter_python = /usr/local/bin/python3.9
 ```
 
 ## Способ 2: Установка Python 3.9 как системного по умолчанию
