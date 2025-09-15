@@ -1,3 +1,10 @@
+```c
+# Посмотреть информацию о всех ключах
+rpm -qa gpg-pubkey* --qf "%{NAME}-%{VERSION}-%{RELEASE}\t%{SUMMARY}\n"
+
+gpg-pubkey-f8ac18ee-591e99a0    RED SOFT (RED SOFT rpm sign key) <support@red-soft.ru> public key
+gpg-pubkey-2c1355e5-5ca35145    runtel <support@runtel.ru> public key
+```
 
 ```c
 root@redos7 /etc/nginx # gpg --list-keys 
