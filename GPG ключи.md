@@ -80,6 +80,17 @@ rpm --showrc | grep _gpg_name
 echo -e "trust\n5\ny\nquit" | gpg --batch --command-fd 0 --edit-key "runtel (RUNTEL GNUPG)"
 ```
 
+### 3.1. Бессрочное действие ключа
+```bash
+gpg --edit-key "root redos7" ; gpg> expire; gpg> save
+```
+```bash
+echo -e "expire\n0\ny\nsave" | gpg --batch --command-fd 0 --edit-key "root redos7"
+
+#или с указанием точного ключа
+echo -e "expire\n0\ny\nsave" | gpg --batch --command-fd 0 --edit-key 8410195CAB1378F5293B039239D988BC61EABBC4
+```
+
 ### 4. Тестирование подписи
 ```bash
 rpm --addsign /path/to/package.rpm
