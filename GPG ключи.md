@@ -147,6 +147,7 @@ gpgkey=http://repo.runtel.ru/keys/RPM-GPG-KEY-runtel
 dnf clean all
 dnf makecache
 dnf repolist
+dnf repository-packages runtel list
 ```
 
 Если всё настроено правильно, RPM пакеты из вашего репозитория будут проходить проверку подписи без ошибок.
