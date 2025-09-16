@@ -46,7 +46,7 @@ gpg --list-keys --with-colons | grep uid
 ```
 /root/.gnupg/pubring.kbx
 ------------------------
-pub   rsa2048 2025-09-15 [SC] [   годен до: 2027-09-15]
+pub   rsa2048 2025-09-15 [SC]
       8410195CAB1378F5293B039239D988BC61EABBC4
 uid         [  абсолютно ] root redos7 <support@runtel.ru>
 sub   rsa2048 2025-09-15 [E] [   годен до: 2027-09-15]
@@ -56,6 +56,10 @@ pub   rsa4096 2019-04-03 [SC]
 uid         [  абсолютно ] runtel (RUNTEL GNUPG) <support@runtel.ru>
 sub   rsa4096 2019-04-03 [E]
 
+pub   rsa2048 2025-09-16 [SCEA] [   годен до: 2027-09-15]
+      AE6993C6F9752CB7AC5ADCA881C335431A0A310B
+uid         [  абсолютно ] runtel_redos7 <support@runtel.ru>
+sub   rsa2048 2025-09-16 [SEA] [   годен до: 2027-09-15]
 ```
 
 ### 3. Проверка отпечатков ключей
@@ -101,7 +105,7 @@ mcedit /root/.rpmmacros
 # Other variant
 %_signature gpg
 %_gpg_path /root/.gnupg
-%_gpg_name AE6993C6F9752CB7AC5ADCA881C335431A0A310B
+%_gpg_name ABDA81F04BB74A21936B194F325CE60C3AD367DE   # это runtel (RUNTEL GNUPG)
 %_gpgbin /usr/bin/gpg
 %_unitdir /usr/lib/systemd/system/
 ```
