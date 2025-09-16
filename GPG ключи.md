@@ -212,3 +212,5 @@ gpg --export -a "runtel" > backup-runtel-public.key
 
 
 Далее читай в https://github.com/sherbettt/runtel-frontend-build/tree/master/vars
+
+Далее читай в https://gitlab.runtel.org/runtel/runtel-frontend-build
