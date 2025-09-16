@@ -3,6 +3,20 @@
 
 репа: http://repo.runtel.ru/redos/redos/7/epel/x86_64/ , http://repo.runtel.ru/redos/redos/8/epel/x86_64/
 
+Условия для подписи в LXC контейнере:
+```c
+[root@redos7-builder] /var/lib/jenkins/workspace
+11:25:13 > ccat ~/.gnupg/gpg.conf 
+use-agent 
+pinentry-mode loopback
+[root@redos7-builder] /var/lib/jenkins/workspace
+11:28:14 > ccat ~/.gnupg/gpg-agent.conf 
+allow-loopback-pinentry
+default-cache-ttl 3600
+max-cache-ttl 7200
+allow-loopback-pinentry
+```
+
 ## 🔍 Диагностика текущего состояния
 
 ### 1. Проверка установленных ключей RPM
@@ -73,9 +87,21 @@ mcedit /root/.rpmmacros
 
 **Содержимое:**
 ```bash
+#%_topdir /var/lib/jenkins/workspace/pbx_v2_redos
+#%_builddir /var/lib/jenkins/workspace/pbx_v2_redos
+#%_sourcedir /var/lib/jenkins/workspace/pbx_v2_redos
+#%_buildroot /var/lib/jenkins/workspace/pbx_v2_redos
+#%_signature gpg
+#%_gpg_path /root/.gnupg
+#%_gpg_name root redos7
+#%_gpgbin /usr/bin/gpg2
+#%_unitdir /usr/lib/systemd/system/
+#%_gpg_name Jenkins RPM Signer
+
+# Other variant
 %_signature gpg
 %_gpg_path /root/.gnupg
-%_gpg_name runtel (RUNTEL GNUPG)
+%_gpg_name AE6993C6F9752CB7AC5ADCA881C335431A0A310B
 %_gpgbin /usr/bin/gpg
 %_unitdir /usr/lib/systemd/system/
 ```
