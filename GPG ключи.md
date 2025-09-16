@@ -1,5 +1,5 @@
 
-# Полное руководство по настройке GPG-подписи RPM пакетов для Jenkins и репозитория Runtel
+#  руководство по настройке GPG-подписи RPM пакетов для Jenkins и репозитория Runtel
 
 ## 🔍 Диагностика текущего состояния
 
@@ -228,7 +228,182 @@ dnf repository-packages runtel list
 
 **Важно:** Все команды должны выполняться от того пользователя, под которым работает Jenkins (в данном случае - `root`).
 
+------------
 
+Отлично! Используем ключ `AE6993C6F9752CB7AC5ADCA881C335431A0A310B` (runtel_redos7). Сначала нужно убрать passphrase с этого ключа.
 
+## 1. Убираем passphrase с ключа
+
+```bash
+# Экспортируем и импортируем ключ без пароля
+gpg --export-secret-keys -a "AE6993C6F9752CB7AC5ADCA881C335431A0A310B" > temp.key
+gpg --delete-secret-keys "AE6993C6F9752CB7AC5ADCA881C335431A0A310B"
+gpg --import --pinentry-mode loopback --passphrase '' temp.key
+rm -f temp.key
+
+# Проверяем, что ключ теперь без пароля
+echo "test message" > test.txt
+gpg --clear-sign test.txt -u "AE6993C6F9752CB7AC5ADCA881C335431A0A310B"
+```
+
+## 2. Настраиваем `.rpmmacros` с правильным fingerprint
+
+```bash
+# Создаем правильный .rpmmacros
+cat > /root/.rpmmacros << 'EOF'
+%_signature gpg
+%_gpg_path /root/.gnupg
+%_gpg_name AE6993C6F9752CB7AC5ADCA881C335431A0A310B
+%_gpgbin /usr/bin/gpg
+%_unitdir /usr/lib/systemd/system/
+EOF
+```
+
+## 3. Тестируем подпись RPM
+
+```bash
+# Создаем простой тестовый RPM
+mkdir -p testrpm/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+echo "test content" > testrpm/SOURCES/test.file
+
+cat > testrpm/SPECS/test.spec << 'EOF'
+Name: testrpm
+Version: 1.0
+Release: 1
+Summary: Test RPM
+License: MIT
+Source0: test.file
+
+%description
+Test RPM package
+
+%prep
+%setup -q
+
+%install
+mkdir -p %{buildroot}/tmp
+install -m 644 test.file %{buildroot}/tmp/test.file
+
+%files
+/tmp/test.file
+EOF
+
+# Собираем и подписываем
+rpmbuild -bb testrpm/SPECS/test.spec --define "_topdir $(pwd)/testrpm"
+test_rpm=$(find testrpm/RPMS -name "*.rpm")
+
+echo "Подписываем: $test_rpm"
+rpm --addsign $test_rpm
+
+echo "Проверяем подпись:"
+rpm --checksig $test_rpm
+
+# Убираем тестовые файлы
+rm -rf testrpm test.txt*
+```
+
+## 4. Упрощенная версия BuildFrontendRPMs() для Jenkins
+
+```groovy
+def BuildFrontendRPMs() {
+    echo "Рабочая директория Jenkins: ${env.WORKSPACE}"
+    def uniqueRPMDir = "${env.WORKSPACE}/rpmbuild/"
+    
+    // Чтение версии
+    def version = sh(
+        script: "cat ${env.WORKSPACE}/src/assets/version",
+        returnStdout: true
+    ).trim()
+    def safeBuildId = env.BUILD_ID.replaceAll('-', '_')
+    
+    // 1. Подготовка директорий RPM
+    sh label: 'Подготовка директорий RPM', script: """
+        rm -rf ${uniqueRPMDir}
+        mkdir -p ${uniqueRPMDir}/{SOURCES,SPECS,RPMS,SRPMS,BUILD,BUILDROOT}
+    """
+
+    // 2. Копирование файлов
+    sh label: 'Копирование dist в SOURCES', script: """
+        cp -a ${env.WORKSPACE}/dist/ ${uniqueRPMDir}/SOURCES/
+        find ${uniqueRPMDir}/SOURCES/dist/ -name "*.wasm" -exec chmod 644 {} \\;
+    """
+
+    // 3. Подготовка spec-файла
+    sh label: 'Подготовка spec файла', script: """
+        cp -v ${env.WORKSPACE}/runtel-web-v2.spec ${uniqueRPMDir}/SPECS/
+        sed -i "s/VERSION/${version}/g" ${uniqueRPMDir}/SPECS/runtel-web-v2.spec
+        sed -i "s/RELEASE/${safeBuildId}/g" ${uniqueRPMDir}/SPECS/runtel-web-v2.spec
+    """
+
+    // 4. Сборка RPM
+    sh label: 'Сборка RPM пакета', script: """
+        rpmbuild -bb ${uniqueRPMDir}/SPECS/runtel-web-v2.spec \\
+            --define "_topdir ${uniqueRPMDir}" \\
+            --nocheck
+        
+        echo "=== Собранные RPM файлы ==="
+        find ${uniqueRPMDir}/RPMS/ -name '*.rpm' -ls
+    """
+
+    // 5. Подпись RPM
+    sh label: 'Подпись RPM пакета', script: """
+        RPM_FILE=\$(find ${uniqueRPMDir}/RPMS/ -name '*.rpm' | head -1)
+        if [ -z "\$RPM_FILE" ]; then
+            echo "ОШИБКА: RPM файл не найден!"
+            exit 1
+        fi
+        
+        echo "Подписываем RPM: \$RPM_FILE"
+        rpm --addsign "\$RPM_FILE"
+        
+        # Проверяем подпись
+        if rpm --checksig "\$RPM_FILE"; then
+            echo "RPM успешно подписан"
+            cp -v "\$RPM_FILE" ${env.WORKSPACE}/
+        else
+            echo "ОШИБКА: Не удалось подписать RPM"
+            echo "Детальная информация:"
+            rpm --checksig -v "\$RPM_FILE"
+            exit 1
+        fi
+    """
+
+    // 6. Финальная проверка
+    sh label: 'Финальная проверка', script: """
+        echo "=== Финальный список RPM файлов ==="
+        ls -la ${env.WORKSPACE}/*.rpm
+        echo "=== Информация о RPM ==="
+        rpm -qip ${env.WORKSPACE}/*.rpm
+    """
+}
+```
+
+## 5. Проверка настройки GPG
+
+Добавьте эту stage в Jenkins pipeline для отладки:
+
+```groovy
+stage('Check GPG setup on redos7') {
+    steps {
+        script {
+            sh """
+            echo "=== Проверка GPG на redos7 ==="
+            echo "Используемый fingerprint: AE6993C6F9752CB7AC5ADCA881C335431A0A310B"
+            echo "Содержимое .rpmmacros:"
+            cat /root/.rpmmacros || echo "Файл .rpmmacros не существует"
+            echo "Секретные ключи:"
+            gpg --list-secret-keys --with-fingerprint
+            echo "Тест подписи:"
+            echo "test" > gpg_test.txt
+            gpg --clear-sign gpg_test.txt -u "AE6993C6F9752CB7AC5ADCA881C335431A0A310B" && echo "Тест подписи успешен" || echo "Тест подписи failed"
+            rm -f gpg_test.txt*
+            echo "=== Конец проверки GPG ==="
+            """
+        }
+    }
+}
+```
+
+После этих настроек ключ должен работать без passphrase и подпись RPM в Jenkins будет работать автоматически.
 
 
