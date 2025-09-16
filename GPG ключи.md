@@ -50,6 +50,7 @@ for key in $(rpm -qa gpg-pubkey*); do
     echo
 done
 ```
+`gpg --list-secret-keys --with-fingerprint --with-colons | grep fpr | cut -d: -f10`
 
 ## 🎯 Проблема в Jenkins
 
