@@ -211,6 +211,50 @@ gpg --export-secret-keys -a "runtel" > backup-runtel-private.key
 # Backup публичного ключа  
 gpg --export -a "runtel" > backup-runtel-public.key
 ```
+<br/>
+
+
+## Проверка ключей
+
+Можно добавить шаг проверки ключей в Jenkinsfile:
+```groovy
+stage('Проверка GPG установок на redos7') {
+    steps {
+        script {
+            sh """
+            echo "=== Проверка GPG на redos7 ==="
+            echo "Используемый ключ: ABDA81F04BB74A21936B194F325CE60C3AD367DE"
+            echo "Содержимое .rpmmacros:"
+            cat /root/.rpmmacros || echo "Файл .rpmmacros не существует"
+            echo "Секретные ключи:"
+            gpg --list-secret-keys --with-fingerprint
+            echo "Публичные ключи:"
+            gpg --list-keys --with-fingerprint
+            echo "Ключи RPM:"
+            rpm -qa gpg-pubkey* --qf "%{NAME}-%{VERSION}-%{RELEASE}\\t%{SUMMARY}\\n"
+            echo "=== Конец проверки GPG ==="
+            """
+        }
+    }
+}
+```
+<br/>
+
+
+## Тест подписи
+
+Проверьте на сервере redos7:
+```bash
+# Тест подписи вручную
+TEST_RPM=$(find /var/lib/jenkins/workspace -name "*.rpm" | head -1)
+if [ -n "$TEST_RPM" ]; then
+    echo "Тестируем подпись: $TEST_RPM"
+    rpm --define "_gpg_name ABDA81F04BB74A21936B194F325CE60C3AD367DE" --addsign "$TEST_RPM"
+    echo "Информация о подписи:"
+    rpm -qpi "$TEST_RPM" --qf='Signature: %{SIGPGP:pgpsig}\n'
+fi
+```
+
 
 Далее читай в https://gitlab.runtel.org/runtel/runtel-frontend-build
 <!-- [Это скрытый текст, который не отображается](https://github.com/sherbettt/runtel-frontend-build/tree/master/vars) -->
