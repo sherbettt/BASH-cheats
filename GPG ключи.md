@@ -5,12 +5,15 @@
 
 Условия для подписи в LXC контейнере:
 ```c
-[root@redos7-builder] /var/lib/jenkins/workspace
-11:25:13 > ccat ~/.gnupg/gpg.conf 
+[root@redos7-builder-priv] ~
+12:22:40 > ccat ~/.gnupg/gpg.conf
 use-agent 
 pinentry-mode loopback
-[root@redos7-builder] /var/lib/jenkins/workspace
-11:28:14 > ccat ~/.gnupg/gpg-agent.conf 
+no-emit-version  
+default-key ABDA81F04BB74A21936B194F325CE60C3AD367DE
+auto-key-retrieve
+[root@redos7-builder-priv] ~
+12:22:41 > ccat ~/.gnupg/gpg-agent.conf
 allow-loopback-pinentry
 default-cache-ttl 3600
 max-cache-ttl 7200
