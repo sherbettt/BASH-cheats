@@ -4,9 +4,12 @@
 
 ## Условия для подписи в LXC контейнере:
 
-В **~/.bashrc** добавить переменную: `export GPG_TTY=$(tty)`
+> **ВАЖНО!**
+> Требуется создать LXC контейнер с привилегями;
+> если контейнер был создан без привилегй, то требуется создать **Backup** LXC контейнера и **восстановить** на той же машине с повышенными привилегиями.
+{.is-warning}
 
-Требуется создать **Backup** LXC контейнера и **восстанвоить** на той же машине с повышенными привилегиями. ЭТО ВАЖНО!
+В **~/.bashrc** добавить переменную: `export GPG_TTY=$(tty)`
 
 Прописать следующее:
 ```
@@ -110,7 +113,7 @@ rpm --showrc | grep _gpg_name
 echo -e "trust\n5\ny\nquit" | gpg --batch --command-fd 0 --edit-key "runtel (RUNTEL GNUPG)"
 ```
 
-### 6.2. Бессрочное действие ключа
+### 6.2. Бессрочное действие ключа (опционально)
 ```bash
 gpg --edit-key "root redos7" ; gpg> expire; gpg> save
 ```
@@ -208,9 +211,5 @@ gpg --export-secret-keys -a "runtel" > backup-runtel-private.key
 # Backup публичного ключа  
 gpg --export -a "runtel" > backup-runtel-public.key
 ```
-<br/>
-
-
-Далее читай в https://github.com/sherbettt/runtel-frontend-build/tree/master/vars
 
 Далее читай в https://gitlab.runtel.org/runtel/runtel-frontend-build
