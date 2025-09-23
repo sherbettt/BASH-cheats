@@ -17,6 +17,28 @@ shopt -s histappend
 HISTSIZE=1000
 HISTFILESIZE=2000
 
+
+# Alias definitions.
+# You may want to put all your additions into a separate file like
+# ~/.bash_aliases, instead of adding them here directly.
+# See /usr/share/doc/bash-doc/examples in the bash-doc package.
+
+if [ -f ~/.bash_aliases ]; then
+    . ~/.bash_aliases
+fi
+
+# enable color support of ls and also add handy aliases
+if [ -x /usr/bin/dircolors ]; then
+    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+    alias ls='ls --color=auto'
+    alias dir='dir --color=auto'
+    alias vdir='vdir --color=auto'
+    alias grep='grep --color=auto'
+    alias fgrep='fgrep --color=auto'
+    alias egrep='egrep --color=auto'
+fi
+
+
 ## Simple PS1
 PS1='${debian_chroot:+($debian_chroot)}\[\033[01;38;5;46m\]\u\[\033[01;38;5;226m\]@\[\033[01;38;5;85m\]\h \[\033[01;38;5;226m\]\w\n\[\033[01;38;5;45m\]\t \[\033[01;38;5;201m\]\$ \[\033[00m\]'
 
@@ -83,27 +105,6 @@ alias mc-visudo='sudo EDITOR=mcedit visudo'
 alias shutdown="sudo shutdown -P now"
 alias reboot="sudo shutdown -r now"
 
-
-
-# Alias definitions.
-# You may want to put all your additions into a separate file like
-# ~/.bash_aliases, instead of adding them here directly.
-# See /usr/share/doc/bash-doc/examples in the bash-doc package.
-
-if [ -f ~/.bash_aliases ]; then
-    . ~/.bash_aliases
-fi
-
-# enable color support of ls and also add handy aliases
-if [ -x /usr/bin/dircolors ]; then
-    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
-    alias ls='ls --color=auto'
-    alias dir='dir --color=auto'
-    alias vdir='vdir --color=auto'
-    alias grep='grep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias egrep='egrep --color=auto'
-fi
 
 
 # PS1
