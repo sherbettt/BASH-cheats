@@ -17,6 +17,16 @@ shopt -s histappend
 HISTSIZE=1000
 HISTFILESIZE=2000
 
+## Simple PS1
+PS1='${debian_chroot:+($debian_chroot)}\[\033[01;38;5;46m\]\u\[\033[01;38;5;226m\]@\[\033[01;38;5;85m\]\h \[\033[01;38;5;226m\]\w\n\[\033[01;38;5;45m\]\t \[\033[01;38;5;201m\]\$ \[\033[00m\]'
+
+if [ "$(id -u)" -eq 0 ]; then
+    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;38;5;196m\]\u\[\033[01;38;5;226m\]@\[\033[01;38;5;85m\]\h \[\033[01;38;5;226m\]\w\n\[\033[01;38;5;45m\]\t \[\033[01;38;5;201m\]\$ \[\033[00m\]'
+else
+    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;38;5;46m\]\u\[\033[01;38;5;226m\]@\[\033[01;38;5;85m\]\h \[\033[01;38;5;226m\]\w\n\[\033[01;38;5;45m\]\t \[\033[01;38;5;201m\]\$ \[\033[00m\]'
+fi
+
+
 # Define user specific aliases and functions.
 
 export EDITOR=/usr/bin/mcedit
@@ -94,10 +104,6 @@ if [ -x /usr/bin/dircolors ]; then
     alias fgrep='fgrep --color=auto'
     alias egrep='egrep --color=auto'
 fi
-
-
-# Simple color PS1
-# PS1='${debian_chroot:+($debian_chroot)}\[\033[01;38;5;196m\]\u\[\033[01;38;5;226m\]@\[\033[01;38;5;51m\]\h \[\033[01;38;5;226m\]\w\n\[\033[01;38;5;45m\]\t \[\033[01;38;5;201m\]\$ \[\033[00m\]'
 
 
 # PS1
