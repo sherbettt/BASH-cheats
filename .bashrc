@@ -40,13 +40,13 @@ fi
 
 
 ## Simple PS1
-PS1='${debian_chroot:+($debian_chroot)}\[\033[01;38;5;46m\]\u\[\033[01;38;5;226m\]@\[\033[01;38;5;85m\]\h \[\033[01;38;5;226m\]\w\n\[\033[01;38;5;45m\]\t \[\033[01;38;5;201m\]\$ \[\033[00m\]'
+#PS1='${debian_chroot:+($debian_chroot)}\[\033[01;38;5;46m\]\u\[\033[01;38;5;226m\]@\[\033[01;38;5;85m\]\h \[\033[01;38;5;226m\]\w\n\[\033[01;38;5;45m\]\t \[\033[01;38;5;201m\]\$ \[\033[00m\]'
 
-if [ "$(id -u)" -eq 0 ]; then
-    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;38;5;196m\]\u\[\033[01;38;5;226m\]@\[\033[01;38;5;85m\]\h \[\033[01;38;5;226m\]\w\n\[\033[01;38;5;45m\]\t \[\033[01;38;5;201m\]\$ \[\033[00m\]'
-else
-    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;38;5;46m\]\u\[\033[01;38;5;226m\]@\[\033[01;38;5;85m\]\h \[\033[01;38;5;226m\]\w\n\[\033[01;38;5;45m\]\t \[\033[01;38;5;201m\]\$ \[\033[00m\]'
-fi
+#if [ "$(id -u)" -eq 0 ]; then
+#    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;38;5;196m\]\u\[\033[01;38;5;226m\]@\[\033[01;38;5;85m\]\h \[\033[01;38;5;226m\]\w\n\[\033[01;38;5;45m\]\t \[\033[01;38;5;201m\]\$ \[\033[00m\]'
+#else
+#    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;38;5;46m\]\u\[\033[01;38;5;226m\]@\[\033[01;38;5;85m\]\h \[\033[01;38;5;226m\]\w\n\[\033[01;38;5;45m\]\t \[\033[01;38;5;201m\]\$ \[\033[00m\]'
+#fi
 
 
 # Define user specific aliases and functions.
@@ -111,6 +111,7 @@ alias reboot="sudo shutdown -r now"
 INPUT_COLOR="\[\033[0m\]"
 DIR_COLOR="\[\033[1;38;5;208m\]"      # Ярко-оранжевый (жирный)
 LINE_COLOR="\[\033[1;37m\]"           # Ярко-белая граница
+TIME_COLOR="\[\033[1;38;5;39m\]"      # Ярко-голубой для времени
 
 # Псевдографика (Unicode)
 LINE_VERTICAL="\342\224\200"          # "─"
@@ -122,19 +123,17 @@ LINE_CROSS="\342\224\234"             # "├"
 if [[ ${EUID} == 0 ]]; then
     # Стиль для root
     USER_NAME="\[\033[1;38;5;208m\]\u"  # Ярко-оранжевый (жирный)
-    HOST_NAME="\[\033[1;38;5;39m\]\h"   # Ярко-голубой
     ARROW="\[\033[1;38;5;196m\]▶"       # Ярко-красная стрелочка
     PS1="\
 ${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_NAME}\n\
-${LINE_COLOR}${LINE_CROSS}${LINE_VERTICAL} ${HOST_NAME} ${DIR_COLOR}\w ${ARROW} ${INPUT_COLOR}"
+${LINE_COLOR}${LINE_CROSS}${LINE_VERTICAL} ${TIME_COLOR}\t ${DIR_COLOR}\w ${ARROW} ${INPUT_COLOR}"
 else
     # Стиль для обычного пользователя
     USER_NAME="\[\033[1;38;5;46m\]\u"   # Ярко-зелёный
-    HOST_NAME="\[\033[1;38;5;39m\]@\h"  # Ярко-голубой с символом @
     ARROW="\[\033[1;38;5;85m\]▶"        # Ярко-кислотная зелёная стрелочка
     PS1="\
-${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_NAME}${HOST_NAME}\n\
-${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${DIR_COLOR}\w ${ARROW} ${INPUT_COLOR}"
+${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_NAME}\n\
+${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${TIME_COLOR}\t ${DIR_COLOR}\w ${ARROW} ${INPUT_COLOR}"
 fi
 
 
