@@ -153,6 +153,7 @@ alias reboot="sudo shutdown -r now"
 # Функция для определения цвета пользователя
 set_prompt() {
     local reset_color='\[\033[00m\]'           # Сброс цвета
+    local yellow='\[\033[1;93m\]'              # Ярко-желтый для элементов оформления
     
     if [ "$(id -u)" -eq 0 ]; then
         # ROOT пользователь - √
@@ -172,7 +173,7 @@ set_prompt() {
     # Полный путь (абсолютный путь)
     # local current_dir="\w"
     
-    PS1="${line1_color}┌─ ${user_display}${reset_color}\n${line2_color}└─ \t ${current_dir} ▶${reset_color} "
+    PS1="${yellow}┌─${reset_color} ${line1_color}${user_display}${reset_color}\n${yellow}└─${reset_color} ${line2_color}\t ${current_dir} ▶${reset_color} "
 }
 
 # Установка промпта
