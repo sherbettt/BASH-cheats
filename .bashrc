@@ -154,17 +154,18 @@ alias reboot="sudo shutdown -r now"
 set_prompt() {
     local reset_color='\[\033[00m\]'           # Сброс цвета
     local yellow='\[\033[1;93m\]'              # Ярко-желтый для элементов оформления
-    
+    local white='\[\033[1;97m\]'               # Белый цвет для @
+
     if [ "$(id -u)" -eq 0 ]; then
         # ROOT пользователь - √
         local line1_color='\[\033[1;91m\]'     # Ярко-красный
         local line2_color='\[\033[1;92m\]'     # Ярко-зеленый
-        local user_display="\u@\h √"           # Пользователь@Хост + предупреждение
+        local user_display="\u${white}@${reset_color}\h √"  # Белый @ для root
     else
         # Обычный пользователь
         local line1_color='\[\033[1;92m\]'     # Ярко-зеленый
         local line2_color='\[\033[1;93m\]'     # Ярко-оранжевый
-        local user_display="\u"                # Только пользователь
+        local user_display="\u${white}@${reset_color}\h"    # Белый @ для обычных пользователей
     fi
     
     # Короткий путь (только текущая папка)
