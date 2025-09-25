@@ -9,8 +9,21 @@ export EDITOR=/usr/bin/vim
 export VISUAL=$EDITOR
 
 # Simple color PS1
-#PS1='${debian_chroot:+($debian_chroot)}\[\033[01;33m\]\u\[\033[01;36m\]@\[\033[01;38;5;85m\]\h \[\033[01;36m\]\w \[\033[01;35m\]>\[\033[00m\] '
-PS1='${debian_chroot:+($debian_chroot)}\[\033[01;33m\]\u\[\033[01;36m\]@\[\033[01;38;5;85m\]\h \[\033[01;36m\]\w \[\033[01;32m\]>\[\033[00m\] '
+# Вариант 1: Светло-красный root (91) и ярко-желтый хост (93)
+#PS1='${debian_chroot:+($debian_chroot)}\[\033[01;91m\]\u\[\033[01;36m\]@\[\033[01;93m\]\h \[\033[01;36m\]\w \[\033[01;32m\]>\[\033[00m\] '
+
+# Вариант 2: Ярко-красный root (31) и желтый хост (33)
+#PS1='${debian_chroot:+($debian_chroot)}\[\033[01;31m\]\u\[\033[01;36m\]@\[\033[01;33m\]\h \[\033[01;36m\]\w \[\033[01;32m\]>\[\033[00m\] '
+
+# Автоматическое определение: root красный, обычный пользователь желтый
+if [ "$(id -u)" -eq 0 ]; then
+    # ROOT пользователь - красный
+    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;91m\]\u\[\033[01;36m\]@\[\033[01;93m\]\h \[\033[01;36m\]\w \[\033[01;32m\]>\[\033[00m\] '
+else
+    # Обычный пользователь - желтый
+    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;33m\]\u\[\033[01;36m\]@\[\033[01;93m\]\h \[\033[01;36m\]\w \[\033[01;32m\]>\[\033[00m\] '
+fi
+
 
 # You may uncomment the following lines if you want `ls' to be colorized:
 # export LS_OPTIONS='--color=auto'
