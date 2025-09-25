@@ -151,23 +151,23 @@ alias reboot="sudo shutdown -r now"
 # =============================================================================
 
 # Функция для определения цвета пользователя
-#set_prompt() {
-#    local user_color='\[\033[01;38;5;46m\]'  # Зеленый для обычного пользователя
-#    local root_color='\[\033[01;38;5;196m\]' # Красный для root
-#    
-#    if [ "$(id -u)" -eq 0 ]; then
-#        user_color=$root_color
-#    fi
-#    
-#    local at_color='\[\033[01;38;5;226m\]'     # Желтый @
-#    local host_color='\[\033[01;38;5;85m\]'    # Светло-зеленый хост
-#    local dir_color='\[\033[01;38;5;226m\]'    # Желтый директория
-#    local time_color='\[\033[01;38;5;45m\]'    # Голубой время
-#    local prompt_color='\[\033[01;38;5;201m\]' # Розовый промпт
-#    local reset_color='\[\033[00m\]'           # Сброс
-#    
-#    PS1="${user_color}\u${at_color}@${host_color}\h ${dir_color}\w\n${time_color}\t ${prompt_color}\\\$${reset_color} "
-#}
+set_prompt() {
+    local user_color='\[\033[01;38;5;46m\]'  # Зеленый для обычного пользователя
+    local root_color='\[\033[01;38;5;196m\]' # Красный для root
+    
+    if [ "$(id -u)" -eq 0 ]; then
+        user_color=$root_color
+    fi
+    
+    local at_color='\[\033[01;38;5;226m\]'     # Желтый @
+    local host_color='\[\033[01;38;5;85m\]'    # Светло-зеленый хост
+    local dir_color='\[\033[01;38;5;226m\]'    # Желтый директория
+    local time_color='\[\033[01;38;5;45m\]'    # Голубой время
+    local prompt_color='\[\033[01;38;5;201m\]' # Розовый промпт
+    local reset_color='\[\033[00m\]'           # Сброс
+    
+    PS1="${user_color}\u${at_color}@${host_color}\h ${dir_color}\w\n${time_color}\t ${prompt_color}\\\$${reset_color} "
+}
 
 # Установка промпта
 PROMPT_COMMAND=set_prompt
@@ -244,35 +244,6 @@ echo -e "  • LS colors: \033[1;94mBright blue folders\033[0m"
 echo -e "  • Syntax highlighting: \033[1;35mAvailable\033[0m"
 
 
-# PS1
-INPUT_COLOR="\[\033[0m\]"
-DIR_COLOR="\[\033[1;38;5;208m\]"      # Ярко-оранжевый (жирный)
-LINE_COLOR="\[\033[1;37m\]"           # Ярко-белая граница
-TIME_COLOR="\[\033[1;38;5;39m\]"      # Ярко-голубой для времени
-
-# Псевдографика (Unicode)
-LINE_VERTICAL="\342\224\200"          # "─"
-LINE_CORNER_1="\342\224\214"          # "┌"
-LINE_CORNER_2="\342\224\224"          # "└"
-LINE_CROSS="\342\224\234"             # "├"
-
-# Динамические настройки для пользователя/root
-if [[ ${EUID} == 0 ]]; then
-    # Стиль для root
-    USER_NAME="\[\033[1;38;5;208m\]\u"  # Ярко-оранжевый (жирный)
-    ARROW="\[\033[1;38;5;196m\]▶"       # Ярко-красная стрелочка
-    PS1="\
-${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_NAME}\n\
-${LINE_COLOR}${LINE_CROSS}${LINE_VERTICAL} ${TIME_COLOR}\t ${DIR_COLOR}\w ${ARROW} ${INPUT_COLOR}"
-else
-    # Стиль для обычного пользователя
-    USER_NAME="\[\033[1;38;5;46m\]\u"   # Ярко-зелёный
-    ARROW="\[\033[1;38;5;85m\]▶"        # Ярко-кислотная зелёная стрелочка
-    PS1="\
-${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_NAME}\n\
-${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${TIME_COLOR}\t ${DIR_COLOR}\w ${ARROW} ${INPUT_COLOR}"
-fi
-
 
 # цветной bash
 # https://pingvinus.ru/note/bash-promt
@@ -332,4 +303,3 @@ if [[ $- == *i* ]] && [[ -t 1 ]]; then
     # Курсор
     printf "\e]12;#00FF00\a"    # Зеленый курсор
 fi
-#set_bright_colors
