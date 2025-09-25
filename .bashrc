@@ -160,12 +160,12 @@ set_prompt() {
         # ROOT пользователь - √
         local line1_color='\[\033[1;91m\]'     # Ярко-красный
         local line2_color='\[\033[1;92m\]'     # Ярко-зеленый
-        local user_display="\u${white}@${reset_color}\h √"  # Белый @ для root
+        local user_display="\u${white}@${line1_color}\h √"  # Белый @, хост красный
     else
         # Обычный пользователь
         local line1_color='\[\033[1;92m\]'     # Ярко-зеленый
         local line2_color='\[\033[1;93m\]'     # Ярко-оранжевый
-        local user_display="\u${white}@${reset_color}\h"    # Белый @ для обычных пользователей
+        local user_display="\u${white}@${line1_color}\h"    # Белый @, хост зеленый
     fi
     
     # Короткий путь (только текущая папка)
