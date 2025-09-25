@@ -133,7 +133,7 @@ if command -v pygmentize &> /dev/null; then
 fi
 
 if command -v highlight &> /dev/null; then
-    alias ccat='highlight --out-format=xterm256 --syntax=ini'
+    alias ccat='highlight --out-format=xterm256 --syntax=yaml --style=molokai'
 fi
 
 # Apt алиасы (для Debian/Ubuntu)
