@@ -147,26 +147,32 @@ alias shutdown="sudo shutdown -P now"
 alias reboot="sudo shutdown -r now"
 
 # =============================================================================
-# ПРОМПТ (PS1) С ЦВЕТАМИ
+# ПРОМПТ (PS1) С ЦВЕТАМИ (УЛУЧШЕННЫЙ ДВУХСТРОЧНЫЙ)
 # =============================================================================
 
 # Функция для определения цвета пользователя
 set_prompt() {
-    local user_color='\[\033[01;38;5;46m\]'  # Зеленый для обычного пользователя
-    local root_color='\[\033[01;38;5;196m\]' # Красный для root
+    local reset_color='\[\033[00m\]'           # Сброс цвета
     
     if [ "$(id -u)" -eq 0 ]; then
-        user_color=$root_color
+        # ROOT пользователь - ⚠ ОПАСНОСТЬ
+        local line1_color='\[\033[1;91m\]'     # Ярко-красный
+        local line2_color='\[\033[1;92m\]'     # Ярко-зеленый
+        local user_display="\u ⚠"
+    else
+        # Обычный пользователь
+        local line1_color='\[\033[1;92m\]'     # Ярко-зеленый
+        local line2_color='\[\033[1;93m\]'     # Ярко-оранжевый
+        local user_display="\u"
     fi
     
-    local at_color='\[\033[01;38;5;226m\]'     # Желтый @
-    local host_color='\[\033[01;38;5;85m\]'    # Светло-зеленый хост
-    local dir_color='\[\033[01;38;5;226m\]'    # Желтый директория
-    local time_color='\[\033[01;38;5;45m\]'    # Голубой время
-    local prompt_color='\[\033[01;38;5;201m\]' # Розовый промпт
-    local reset_color='\[\033[00m\]'           # Сброс
+    # Короткий путь (только текущая папка)
+    local current_dir="\W"
     
-    PS1="${user_color}\u${at_color}@${host_color}\h ${dir_color}\w\n${time_color}\t ${prompt_color}\\\$${reset_color} "
+    # Полный путь (абсолютный путь)
+    # local current_dir="\w"
+    
+    PS1="${line1_color}┌─ ${user_display}${reset_color}\n${line2_color}└─ \t ${current_dir} ▶${reset_color} "
 }
 
 # Установка промпта
@@ -303,3 +309,4 @@ if [[ $- == *i* ]] && [[ -t 1 ]]; then
     # Курсор
     printf "\e]12;#00FF00\a"    # Зеленый курсор
 fi
+#set_bright_colors
