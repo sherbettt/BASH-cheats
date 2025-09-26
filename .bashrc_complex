@@ -154,26 +154,25 @@ alias reboot="sudo shutdown -r now"
 set_prompt() {
     local reset_color='\[\033[00m\]'           # Reset color
     local white='\[\033[1;97m\]'              # White color for @
+    local host_color='\[\033[1;92m\]'         # Bright green for host (always)
 
     if [ "$(id -u)" -eq 0 ]; then
         # ROOT user
         local user_color='\[\033[1;91m\]'     # Bright red for user
         local info_color='\[\033[1;93m\]'     # Bright yellow for info line
         local prompt_char='#'                 # Root prompt symbol
-        local user_display="\u${white}@${user_color}\h"  # White @, red host
     else
         # Regular user
-        local user_color='\[\033[1;92m\]'     # Bright green for user
+        local user_color='\[\033[1;93m\]'     # Bright yellow for user
         local info_color='\[\033[1;96m\]'     # Bright cyan for info line
         local prompt_char='$'                 # User prompt symbol
-        local user_display="\u${white}@${user_color}\h"  # White @, green host
     fi
 
-    # Short path (current folder only)
-    local current_dir="\W"
+    local user_display="${user_color}\u${white}@${host_color}\h"  # User@Host with colors
+    local full_path="\w"                      # Full path
 
     # Simple two-line prompt
-    PS1="${user_color}${user_display}${reset_color}\n${info_color}\t ${current_dir} ${prompt_char}${reset_color} "
+    PS1="${user_display}${reset_color}\n${info_color}\t ${full_path} ${prompt_char}${reset_color} "
 }
 
 # Set prompt
@@ -298,6 +297,51 @@ echo -e "  > Prompt: \033[1;93mCustom colored\033[0m"
 
 # System information (short version)
 echo -e "\033[1;34mSystem info:\033[0m"
-echo -e "  > User: \033[1;32m$(whoami)\033[0m@\033[1;92m$(hostname)\033[0m"
+echo -e "  > User: \033[1;93m$(whoami)\033[0m@\033[1;92m$(hostname)\033[0m"
 echo -e "  > OS: \033[1;36m$(grep PRETTY_NAME /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '"' || uname -s)\033[0m"
+echo -e "  > Kernel: \033[1;35m$(uname -r)\033[0m"
+echo -e "  > Architecture: \033[1;35m$(uname -m)\033[0m"
 echo -e "  > Uptime: \033[1;33m$(uptime -p 2>/dev/null | sed 's/up //' || uptime)\033[0m"
+echo -e "  > Shell: \033[1;36m$SHELL\033[0m"
+echo -e "  > Terminal: \033[1;36m$TERM\033[0m"
+
+# Memory and disk info
+echo -e "\033[1;34mResources:\033[0m"
+echo -e "  > Memory: \033[1;32m$(free -h | awk '/Mem:/ {print $3 " / " $2 " used"}')\033[0m"
+echo -e "  > Disk: \033[1;32m$(df -h / | awk 'NR==2 {print $4 " free of " $2 " (" $5 " used)"}')\033[0m"
+echo -e "  > Load: \033[1;33m$(cat /proc/loadavg | awk '{print $1 ", " $2 ", " $3}')\033[0m"
+
+# Network info
+echo -e "\033[1;34mNetwork:\033[0m"
+local_ip=$(ip -o addr show scope global | head -1 | awk '{print $4}' | cut -d'/' -f1 2>/dev/null)
+if [ -n "$local_ip" ]; then
+    echo -e "  > Local IP: \033[1;36m$local_ip\033[0m"
+fi
+public_ip=$(curl -s --connect-timeout 3 ifconfig.me 2>/dev/null)
+if [ -n "$public_ip" ]; then
+    echo -e "  > Public IP: \033[1;36m$public_ip\033[0m"
+fi
+
+# Package updates info
+if command -v apt &> /dev/null; then
+    updates=$(apt list --upgradable 2>/dev/null | wc -l)
+    updates=$((updates-1))
+    if [ $updates -gt 0 ]; then
+        echo -e "  > Updates: \033[1;33m$updates packages available\033[0m"
+    else
+        echo -e "  > Updates: \033[1;32msystem up to date\033[0m"
+    fi
+fi
+
+# Current directory info
+echo -e "\033[1;34mCurrent session:\033[0m"
+echo -e "  > Directory: \033[1;35m$(pwd)\033[0m"
+echo -e "  > Files in dir: \033[1;36m$(ls -1 | wc -l)\033[0m"
+echo -e "  > Date/Time: \033[1;33m$(date '+%Y-%m-%d %H:%M:%S')\033[0m"
+
+# Useful tips
+echo -e "\033[1;34mQuick tips:\033[0m"
+echo -e "  > Use \033[1;36mll\033[0m for detailed listing"
+echo -e "  > Use \033[1;36mcls\033[0m to clear screen"
+echo -e "  > Use \033[1;36mh\033[0m to view command history"
+echo -e "  > Use \033[1;36mweather <city>\033[0m for weather info"
