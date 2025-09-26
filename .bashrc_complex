@@ -1,14 +1,14 @@
 # ~/.bashrc
 # The individual per-interactive-shell startup file.
 
-# Если не интерактивный shell - выходим
+# Exit if not running interactively
 case $- in
     *i*) ;;
       *) return;;
 esac
 
 # =============================================================================
-# ГЛОБАЛЬНЫЕ НАСТРОЙКИ
+# GLOBAL SETTINGS
 # =============================================================================
 
 # Source global definitions
@@ -17,27 +17,27 @@ if [ -r /etc/bashrc ]; then
 fi
 
 # =============================================================================
-# НАСТРОЙКИ ИСТОРИИ
+# HISTORY SETTINGS
 # =============================================================================
 
-# Не сохранять duplicate lines или lines starting with space
+# Don't save duplicate lines or lines starting with space
 HISTCONTROL=ignoreboth
 
 # Append to the history file, don't overwrite it
 shopt -s histappend
 
-# Размер истории
+# History size
 HISTSIZE=5000
 HISTFILESIZE=10000
 
-# Сохранять многострочные команды как одну строку
+# Save multi-line commands as one line
 shopt -s cmdhist
 
-# Проверять размер окна после каждой команды
+# Check window size after each command
 shopt -s checkwinsize
 
 # =============================================================================
-# ЦВЕТА И ПОДСВЕТКА
+# COLORS AND HIGHLIGHTING
 # =============================================================================
 
 # Enable color support
@@ -45,10 +45,10 @@ if [ -x /usr/bin/dircolors ]; then
     test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
 fi
 
-# СВЕТЛО-ПУРПУРНЫЕ ПАПКИ (яркие и красивые)
+# LIGHT PURPLE FOLDERS (bright and beautiful)
 export LS_COLORS='rs=0:di=01;95:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'
 
-# Цвета для man pages
+# Colors for man pages
 export MANPAGER="less -R --use-color -Dd+r -Du+b"
 export LESS_TERMCAP_mb=$'\E[1;31m'     # begin blink
 export LESS_TERMCAP_md=$'\E[1;36m'     # begin bold
@@ -58,11 +58,11 @@ export LESS_TERMCAP_se=$'\E[0m'        # reset search highlight
 export LESS_TERMCAP_us=$'\E[1;32m'     # begin underline
 export LESS_TERMCAP_ue=$'\E[0m'        # reset underline
 
-# Цвета для GCC
+# Colors for GCC
 export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
 
 # =============================================================================
-# АЛИАСЫ С ПОДСВЕТКОЙ
+# ALIASES WITH HIGHLIGHTING
 # =============================================================================
 
 # Source aliases file
@@ -70,17 +70,17 @@ if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
 fi
 
-# Основные команды с подсветкой
+# Basic commands with highlighting
 alias ls='ls --color=auto --group-directories-first'
 alias ll='ls -alF --color=auto --group-directories-first'
 alias la='ls -A --color=auto --group-directories-first'
 alias l='ls -CF --color=auto --group-directories-first'
 alias lz='ls -la --color=auto --group-directories-first'
 
-# Улучшенный ls с временем
+# Enhanced ls with time
 alias llt='ls -alF --time-style=+%F_%X --color=auto --group-directories-first'
 
-# Команды с подсветкой
+# Commands with highlighting
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
@@ -89,10 +89,10 @@ alias ip='ip --color=auto'
 alias dmesg='dmesg --color=always'
 alias pacman='pacman --color=auto'
 
-# Безопасность
+# Security
 alias sudo='sudo '
 
-# Утилиты
+# Utilities
 alias tree='tree -Csu -a --du --dirsfirst'
 alias cls='clear'
 alias path='echo -e ${PATH//:/\\n}'
@@ -102,22 +102,22 @@ alias dfh='df -kTh'
 alias h='history'
 alias j='jobs -l'
 
-# Сетевые алиасы
+# Network aliases
 alias getip="curl -s ifconfig.me"
 alias getip2='curl -s 2ip.ru'
 alias localip='ip -c addr show | grep "inet " | grep -v 127.0.0.1'
 alias ipc='ip -c addr show'
 alias ipa='ip -br -c addr show'
 
-# Системные мониторы
+# System monitors
 alias lsblk-more='lsblk --output TYPE,PATH,NAME,FSAVAIL,FSUSE%,SIZE,MOUNTPOINT,UUID,FSTYPE,PTTYPE,PARTUUID'
 
-# Редакторы
+# Editors
 export EDITOR='/usr/bin/mcedit'
 export VISUAL='$EDITOR'
 alias mc-visudo='sudo EDITOR=mcedit visudo'
 
-# Просмотр файлов с подсветкой синтаксиса
+# File viewing with syntax highlighting
 if command -v bat &> /dev/null; then
     alias cat='bat --paging=never --style=plain'
     alias batp='bat -p -S'
@@ -136,7 +136,7 @@ if command -v highlight &> /dev/null; then
     alias ccat='highlight --out-format=xterm256 --syntax=yaml --style=molokai'
 fi
 
-# Apt алиасы (для Debian/Ubuntu)
+# Apt aliases (for Debian/Ubuntu)
 if command -v apt &> /dev/null; then
     alias apta='sudo apt update -y && sudo apt upgrade -y && sudo apt dist-upgrade -y'
     alias repo='grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/*'
@@ -147,59 +147,58 @@ alias shutdown="sudo shutdown -P now"
 alias reboot="sudo shutdown -r now"
 
 # =============================================================================
-# ПРОМПТ (PS1) С ЦВЕТАМИ
+# PROMPT (PS1) WITH COLORS
 # =============================================================================
 
-# Функция для определения цвета пользователя
+# Function to determine user color
 set_prompt() {
-    local reset_color='\[\033[00m\]'           # Сброс цвета
-    local yellow='\[\033[1;93m\]'              # Ярко-желтый для элементов оформления
-    local white='\[\033[1;97m\]'               # Белый цвет для @
+    local reset_color='\[\033[00m\]'           # Reset color
+    local white='\[\033[1;97m\]'              # White color for @
 
     if [ "$(id -u)" -eq 0 ]; then
-        # ROOT пользователь - √
-        local line1_color='\[\033[1;91m\]'     # Ярко-красный
-        local line2_color='\[\033[1;92m\]'     # Ярко-зеленый
-        local user_display="\u${white}@${line1_color}\h √"  # Белый @, хост красный
+        # ROOT user
+        local user_color='\[\033[1;91m\]'     # Bright red for user
+        local info_color='\[\033[1;93m\]'     # Bright yellow for info line
+        local prompt_char='#'                 # Root prompt symbol
+        local user_display="\u${white}@${user_color}\h"  # White @, red host
     else
-        # Обычный пользователь
-        local line1_color='\[\033[1;92m\]'     # Ярко-зеленый
-        local line2_color='\[\033[1;93m\]'     # Ярко-оранжевый
-        local user_display="\u${white}@${line1_color}\h"    # Белый @, хост зеленый
+        # Regular user
+        local user_color='\[\033[1;92m\]'     # Bright green for user
+        local info_color='\[\033[1;96m\]'     # Bright cyan for info line
+        local prompt_char='$'                 # User prompt symbol
+        local user_display="\u${white}@${user_color}\h"  # White @, green host
     fi
-    
-    # Короткий путь (только текущая папка)
+
+    # Short path (current folder only)
     local current_dir="\W"
-    
-    # Полный путь (абсолютный путь)
-    # local current_dir="\w"
-    
-    PS1="${yellow}┌─${reset_color} ${line1_color}${user_display}${reset_color}\n${yellow}└─${reset_color} ${line2_color}\t ${current_dir} ▶${reset_color} "
+
+    # Simple two-line prompt
+    PS1="${user_color}${user_display}${reset_color}\n${info_color}\t ${current_dir} ${prompt_char}${reset_color} "
 }
 
-# Установка промпта
+# Set prompt
 PROMPT_COMMAND=set_prompt
 
 # =============================================================================
-# ДОПОЛНИТЕЛЬНЫЕ ФУНКЦИИ
+# ADDITIONAL FUNCTIONS
 # =============================================================================
 
-# Поиск в истории
+# Search in history
 histgrep() {
     grep --color=auto "$@" ~/.bash_history
 }
 
-# Поиск файла
+# Find file
 ff() {
     find . -type f -iname "*$*" 2>/dev/null
 }
 
-# Подсчет файлов
+# Count files
 countfiles() {
     find . -type f | wc -l
 }
 
-# Извлечение архивов
+# Extract archives
 extract() {
     if [ -f "$1" ] ; then
         case "$1" in
@@ -221,28 +220,28 @@ extract() {
     fi
 }
 
-# Создание резервной копии файла
+# Create file backup
 backup() {
     cp "$1" "$1.bak"
 }
 
-# Погода
+# Weather
 weather() {
     curl -s "wttr.in/$1"
 }
 
-# Создание директории и переход в нее
+# Create directory and enter it
 mkcd() {
     mkdir -p "$1" && cd "$1"
 }
 
-# Копирование с прогрессом
+# Copy with progress
 if command -v pv &> /dev/null; then
     alias cpv='cp -r | pv -l -s $(du -sb | cut -f1) >'
 fi
 
 # =============================================================================
-# ЗАВЕРШЕНИЕ
+# COMPLETION
 # =============================================================================
 
 # Enable programmable completion features
@@ -255,16 +254,16 @@ if ! shopt -oq posix; then
 fi
 
 # =============================================================================
-# ЯРКИЕ ЦВЕТА В ТЕРМИНАЛЕ
+# BRIGHT TERMINAL COLORS
 # =============================================================================
 
-# Яркая цветовая схема для терминала
+# Bright color scheme for terminal
 if [[ $- == *i* ]] && [[ -t 1 ]]; then
-    # Основные цвета
-    printf "\e]10;#FFFFFF\a"  # Текст: ярко-белый
-    printf "\e]11;#000000\a"  # Фон: черный
-    
-    # Цвета ANSI (0-15)
+    # Main colors
+    printf "\e]10;#FFFFFF\a"  # Text: bright white
+    printf "\e]11;#000000\a"  # Background: black
+
+    # ANSI colors (0-15)
     printf "\e]4;0;#000000\a"   # Black
     printf "\e]4;1;#FF5555\a"   # Bright Red
     printf "\e]4;2;#55FF55\a"   # Bright Green
@@ -281,42 +280,24 @@ if [[ $- == *i* ]] && [[ -t 1 ]]; then
     printf "\e]4;13;#FF80FF\a"  # Bright Magenta (intense)
     printf "\e]4;14;#80FFFF\a"  # Bright Cyan (intense)
     printf "\e]4;15;#FFFFFF\a"  # Bright White (intense)
-    
-    # Курсор
-    printf "\e]12;#00FF00\a"    # Зеленый курсор
+
+    # Cursor
+    printf "\e]12;#00FF00\a"    # Green cursor
 fi
 
 # =============================================================================
-# ВНЕШНИЕ УТИЛИТЫ
-# =============================================================================
-
-# SDKMAN (Java development)
-export SDKMAN_DIR="$HOME/.sdkman"
-[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
-
-# NVM (Node Version Manager)
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-
-# =============================================================================
-# ПРИВЕТСТВЕННОЕ СООБЩЕНИЕ
+# WELCOME MESSAGE
 # =============================================================================
 
 echo -e "\033[1;36mBash config loaded successfully!\033[0m"
 echo -e "\033[1;33mTerminal features:\033[0m"
-echo -e "  • Colors: \033[1;32mOK\033[0m"
-echo -e "  • LS colors: \033[1;95mLight purple folders\033[0m"
-echo -e "  • Syntax highlighting: \033[1;35mAvailable\033[0m"
-echo -e "  • Prompt: \033[1;93mCustom colored\033[0m"
+echo -e "  > Colors: \033[1;32mOK\033[0m"
+echo -e "  > LS colors: \033[1;95mLight purple folders\033[0m"
+echo -e "  > Syntax highlighting: \033[1;35mAvailable\033[0m"
+echo -e "  > Prompt: \033[1;93mCustom colored\033[0m"
 
-# Информация о системе (короткая версия)
+# System information (short version)
 echo -e "\033[1;34mSystem info:\033[0m"
-echo -e "  • User: \033[1;32m$(whoami)\033[0m@\033[1;92m$(hostname)\033[0m"
-echo -e "  • OS: \033[1;36m$(grep PRETTY_NAME /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '"' || uname -s)\033[0m"
-echo -e "  • Uptime: \033[1;33m$(uptime -p 2>/dev/null | sed 's/up //' || uptime)\033[0m"
-
-# Полезные ссылки для цветного bash
-# https://pingvinus.ru/note/bash-promt
-# https://ziggi.org/cveta-v-terminale/
-# https://gist.github.com/ziggi/a873de4c020c4752a889
+echo -e "  > User: \033[1;32m$(whoami)\033[0m@\033[1;92m$(hostname)\033[0m"
+echo -e "  > OS: \033[1;36m$(grep PRETTY_NAME /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '"' || uname -s)\033[0m"
+echo -e "  > Uptime: \033[1;33m$(uptime -p 2>/dev/null | sed 's/up //' || uptime)\033[0m"
