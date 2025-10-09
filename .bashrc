@@ -5,7 +5,8 @@
 # PS1='${debian_chroot:+($debian_chroot)}\h:\w\$ '
 # umask 022
 
-export EDITOR=/usr/bin/vim
+#export EDITOR=/usr/bin/vim
+export EDITOR=/usr/bin/mcedit
 export VISUAL=$EDITOR
 
 # Simple color PS1
