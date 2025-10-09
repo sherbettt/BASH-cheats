@@ -200,12 +200,17 @@ EOF
 
 ### 3.1. Проверяем установлен ли systemd-networkd
 ```bash
-# Проверяем наличие службы
-systemctl status systemd-networkd
+# Ищем пакет systemd-networkd
+apt-cache search systemd-networkd
 
-# Если службы нет - устанавливаем
+# Устанавливаем
 apt-get update
 apt-get install systemd-networkd
+#  или
+epmi systemd-networkd
+
+# Проверяем наличие службы
+systemctl status systemd-networkd
 ```
 
 ### 3.2. Включаем и запускаем службу
