@@ -330,16 +330,36 @@ sudo find /path -type f -size 0 -delete
 
 ##  Профилактика и настройка
 
-### 1. **Мониторинг inode:**
+### 1. **Мониторинг inode для проверки всех ФС:**
 ```bash
-# Добавить в crontab проверку
 #!/bin/bash
-THRESHOLD=90
-CURRENT=$(df -i / | awk 'NR==2 {print $5}' | sed 's/%//')
 
-if [ "$CURRENT" -gt "$THRESHOLD" ]; then
-    echo "WARNING: Inode usage is at ${CURRENT}%"
-    # Отправить уведомление
+THRESHOLD=90
+ALERT_TRIGGERED=0
+
+echo "=== INODE USAGE REPORT ==="
+date
+
+# Проверяем все файловые системы кроме временных
+df -i | grep -E '^/dev/' | while read line; do
+    USAGE=$(echo $line | awk '{gsub(/%/,"",$5); print $5}')
+    FILESYSTEM=$(echo $line | awk '{print $1}')
+    MOUNT_POINT=$(echo $line | awk '{print $6}')
+    
+    if [[ "$USAGE" =~ ^[0-9]+$ ]] && [ "$USAGE" -gt "$THRESHOLD" ]; then
+        echo "🚨 ALERT: $FILESYSTEM on $MOUNT_POINT is at ${USAGE}% inode usage"
+        ALERT_TRIGGERED=1
+    else
+        echo "✅ OK: $FILESYSTEM on $MOUNT_POINT - ${USAGE}%"
+    fi
+done
+
+if [ "$ALERT_TRIGGERED" -eq 1 ]; then
+    echo ""
+    echo "=== RECOMMENDED ACTIONS ==="
+    echo "1. Check for many small files: find /path -type f | wc -l"
+    echo "2. Clean temporary files"
+    echo "3. Check log files rotation"
 fi
 ```
 
