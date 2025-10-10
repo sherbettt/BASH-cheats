@@ -9,6 +9,8 @@
 export EDITOR=/usr/bin/mcedit
 export VISUAL=$EDITOR
 
+PS1='${debian_chroot:+($debian_chroot)}\[\033[01;33m\]\u\[\033[01;36m\]@\[\033[01;38;5;85m\]\h \[\033[01;36m\]\w \[\033[01;35m\]>\[\033[00m\] '
+
 # Simple color PS1
 # Вариант 1: Светло-красный root (91) и ярко-желтый хост (93)
 #PS1='${debian_chroot:+($debian_chroot)}\[\033[01;91m\]\u\[\033[01;36m\]@\[\033[01;93m\]\h \[\033[01;36m\]\w \[\033[01;32m\]>\[\033[00m\] '
