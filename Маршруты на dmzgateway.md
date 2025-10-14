@@ -423,3 +423,257 @@ iface wlp1s0 inet dhcp
 - [ ] Счетчики iptables на шлюзе увеличиваются
 
 Эта инструкция покрывает все аспекты настройки маршрутизации между сетями. Сохраните её для будущего использования!
+
+
+--------
+
+## 🔧 Дополнение 1: Мониторинг и логирование
+
+### Настройка логирования дропнутых пакетов на шлюзе
+```bash
+# Добавляем правила для логирования
+iptables -I FORWARD -s 192.168.87.0/24 -d 192.168.46.0/24 -j LOG --log-prefix "FW-FORWARD-87-46: "
+iptables -I FORWARD -s 192.168.87.0/24 -d 192.168.45.0/24 -j LOG --log-prefix "FW-FORWARD-87-45: "
+
+# Смотрим логи в реальном времени
+tail -f /var/log/syslog | grep FW-FORWARD
+
+# Или для journald
+journalctl -f | grep FW-FORWARD
+```
+
+### Мониторинг трафика через шлюз
+```bash
+# Скрипт для мониторинга счетчиков iptables
+#!/bin/bash
+watch -n 5 'iptables -L FORWARD -nv && echo "---" && iptables -t nat -L -nv'
+
+# Или однострочник
+while true; do clear; date; iptables -L FORWARD -nv; iptables -t nat -L -nv; sleep 5; done
+```
+
+## 🔧 Дополнение 2: Безопасность
+
+### Базовые правила безопасности на шлюзе
+```bash
+# Защита от spoofing
+iptables -A FORWARD -s 192.168.87.0/24 -i eth1 -j DROP    # 87.x не должен приходить с eth1
+iptables -A FORWARD -s 192.168.87.0/24 -i eth2 -j DROP    # 87.x не должен приходить с eth2
+
+# Ограничение SSH доступа к шлюзу только из trusted сетей
+iptables -I INPUT -p tcp --dport 22 -s 192.168.87.0/24 -j ACCEPT
+iptables -I INPUT -p tcp --dport 22 -j DROP
+
+# Защита от flood ping
+iptables -A INPUT -p icmp --icmp-type echo-request -m limit --limit 1/s -j ACCEPT
+iptables -A INPUT -p icmp --icmp-type echo-request -j DROP
+```
+
+## 🔧 Дополнение 3: Расширенная диагностика
+
+### Скрипт полной диагностики сети
+```bash
+#!/bin/bash
+# save as network-check.sh
+
+echo "=== COMPREHENSIVE NETWORK DIAGNOSIS ==="
+
+echo "1. Basic connectivity:"
+ping -c 2 192.168.87.2 && echo "✓ dmzgateway accessible" || echo "✗ dmzgateway unreachable"
+ping -c 2 192.168.46.1 && echo "✓ dmznet gateway accessible" || echo "✗ dmznet gateway unreachable" 
+ping -c 2 192.168.45.1 && echo "✓ pgnet gateway accessible" || echo "✗ pgnet gateway unreachable"
+
+echo ""
+echo "2. Routing table:"
+ip route show
+
+echo ""
+echo "3. ARP table:"
+ip neigh show
+
+echo ""
+echo "4. Interface status:"
+ip addr show | grep -E "(wlp1s0|eth0|eth1|eth2)"
+
+echo ""
+echo "5. Check specific hosts:"
+for host in 192.168.46.4 192.168.45.50 192.168.45.51; do
+    ping -c 1 -W 1 $host &>/dev/null && echo "✓ $host accessible" || echo "✗ $host unreachable"
+done
+
+echo ""
+echo "6. Tracepath to internal networks:"
+tracepath 192.168.46.4 2>/dev/null | head -5
+```
+
+### Проверка портов и сервисов
+```bash
+# Проверка доступности конкретных портов
+nc -zv 192.168.46.4 22    # SSH
+nc -zv 192.168.46.4 80    # HTTP
+nc -zv 192.168.46.4 443   # HTTPS
+
+# Скрипт проверки основных портов
+for host in 192.168.46.4 192.168.45.50; do
+    echo "Checking $host:"
+    for port in 22 80 443 53; do
+        nc -zv -w 1 $host $port 2>/dev/null && echo "  PORT $port: OPEN" || echo "  PORT $port: CLOSED"
+    done
+done
+```
+
+## 🔧 Дополнение 4: Резервное копирование и восстановление
+
+### Бэкап конфигурации шлюза
+```bash
+#!/bin/bash
+# save as backup-gateway-config.sh
+
+BACKUP_DIR="/root/network-backup"
+DATE=$(date +%Y%m%d_%H%M%S)
+
+mkdir -p $BACKUP_DIR
+
+echo "Backing up gateway configuration..."
+
+# iptables rules
+iptables-save > $BACKUP_DIR/iptables-rules-$DATE.v4
+ip6tables-save > $BACKUP_DIR/iptables-rules-$DATE.v6
+
+# network configuration
+cp /etc/network/interfaces $BACKUP_DIR/interfaces-$DATE
+cp /etc/sysctl.conf $BACKUP_DIR/sysctl.conf-$DATE
+
+# important files
+cp /etc/iptables/rules.v4 $BACKUP_DIR/ 2>/dev/null || true
+
+# create restore script
+cat > $BACKUP_DIR/restore-config-$DATE.sh << 'EOF'
+#!/bin/bash
+echo "Restoring gateway configuration..."
+iptables-restore < iptables-rules-$DATE.v4
+cp interfaces-$DATE /etc/network/interfaces
+cp sysctl.conf-$DATE /etc/sysctl.conf
+sysctl -p
+echo "Restore complete. Reboot or restart networking."
+EOF
+
+chmod +x $BACKUP_DIR/restore-config-$DATE.sh
+
+echo "Backup completed in: $BACKUP_DIR"
+ls -la $BACKUP_DIR/*-$DATE*
+```
+
+## 🔧 Дополнение 5: Автоматизация и обслуживание
+
+### Скрипт автоматического восстановления маршрутов
+```bash
+#!/bin/bash
+# save as /usr/local/bin/check-routes.sh
+
+# Check if routes exist, if not - add them
+ROUTE_45=$(ip route show 192.168.45.0/24)
+ROUTE_46=$(ip route show 192.168.46.0/24)
+
+if [ -z "$ROUTE_45" ]; then
+    echo "$(date): Adding missing route to 192.168.45.0/24"
+    ip route add 192.168.45.0/24 via 192.168.87.2 dev wlp1s0
+fi
+
+if [ -z "$ROUTE_46" ]; then
+    echo "$(date): Adding missing route to 192.168.46.0/24" 
+    ip route add 192.168.46.0/24 via 192.168.87.2 dev wlp1s0
+fi
+
+# Add to crontab for automatic checking every 5 minutes
+# */5 * * * * /usr/local/bin/check-routes.sh
+```
+
+### Мониторинг состояния шлюза
+```bash
+#!/bin/bash
+# save as gateway-monitor.sh
+
+GATEWAY="192.168.87.2"
+LOG_FILE="/var/log/gateway-monitor.log"
+
+check_gateway() {
+    if ping -c 2 -W 1 $GATEWAY &> /dev/null; then
+        echo "$(date): Gateway $GATEWAY is UP" >> $LOG_FILE
+        return 0
+    else
+        echo "$(date): ALERT - Gateway $GATEWAY is DOWN" >> $LOG_FILE
+        # Можно добавить отправку уведомления
+        return 1
+    fi
+}
+
+check_gateway
+```
+
+## 🔧 Дополнение 6: Расширенные сценарии
+
+### Настройка QoS (качество обслуживания)
+```bash
+# Установка пакетов для QoS
+apt-get install wondershaper
+
+# Ограничение bandwidth для внутренних сетей
+wondershaper eth1 1024 512    # dmznet: 1Mbps down, 512Kbps up
+wondershaper eth2 1024 512    # pgnet: 1Mbps down, 512Kbps up
+
+# Сброс ограничений
+wondershaper clear eth1
+wondershaper clear eth2
+```
+
+### Перенаправление портов (port forwarding)
+```bash
+# Пример: перенаправление порта 80 с шлюза на внутренний хост
+iptables -t nat -A PREROUTING -p tcp -i eth0 --dport 80 -j DNAT --to-destination 192.168.46.4:80
+iptables -A FORWARD -p tcp -d 192.168.46.4 --dport 80 -j ACCEPT
+
+# Перенаправление SSH на конкретный хост
+iptables -t nat -A PREROUTING -p tcp -i eth0 --dport 2222 -j DNAT --to-destination 192.168.46.4:22
+iptables -A FORWARD -p tcp -d 192.168.46.4 --dport 22 -j ACCEPT
+```
+
+## 🔧 Дополнение 7: Полезные alias и функции
+
+### Добавить в ~/.bashrc на шлюзе и ноутбуке
+```bash
+# Network aliases
+alias routes='ip route show'
+alias routes-add='sudo ip route add 192.168.45.0/24 via 192.168.87.2 dev wlp1s0 && sudo ip route add 192.168.46.0/24 via 192.168.87.2 dev wlp1s0'
+alias routes-del='sudo ip route del 192.168.45.0/24 2>/dev/null; sudo ip route del 192.168.46.0/24 2>/dev/null; echo "Routes removed"'
+alias fw-status='sudo iptables -L FORWARD -nv && echo "--- NAT ---" && sudo iptables -t nat -L -nv'
+
+# Quick ping tests
+alias ping-gw='ping 192.168.87.2'
+alias ping-dmz='ping 192.168.46.1'
+alias ping-pg='ping 192.168.45.1'
+alias ping-internal='for h in 192.168.46.4 192.168.45.50; do ping -c 1 $h; done'
+
+# Network info function
+function netinfo() {
+    echo "=== Network Information ==="
+    echo "IP Addresses:" && ip addr show | grep inet
+    echo ""
+    echo "Routing Table:" && ip route show
+    echo ""
+    echo "ARP Table:" && ip neigh show
+}
+```
+
+## 📋 Чек-лист дополнительных настроек
+
+- [ ] Настроено логирование дропнутых пакетов
+- [ ] Добавлены базовые правила безопасности
+- [ ] Созданы скрипты диагностики
+- [ ] Настроено резервное копирование конфигурации
+- [ ] Добавлены автоматические проверки маршрутов
+- [ ] Созданы полезные alias и функции
+- [ ] При необходимости настроен QoS
+- [ ] При необходимости настроен port forwarding
+
+Эти дополнения сделают вашу сетевую инфраструктуру более надежной, безопасной и удобной в обслуживании.
