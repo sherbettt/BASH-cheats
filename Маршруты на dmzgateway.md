@@ -1,7 +1,7 @@
-- **MASTER GATEWAY** : **[102 (dmzgateway)](https://192.168.87.6:8006/#v1:0:=lxc%2F102:4:::::::)**
-- **MASTER GATEWAY1** : **[117 (dmzgateway1)](https://192.168.87.6:8006/#v1:0:=lxc%2F117:4:::::::)**
-- **MASTER GATEWAY2** : **[187 (dmzgateway2)](https://192.168.87.6:8006/#v1:0:=lxc%2F187:4:::::::)**
-- **MASTER GATEWAY3** : **[186 (dmzgateway3)](https://192.168.87.6:8006/#v1:0:=lxc%2F186:4:::::::)**
+- **MASTER GATEWAY** : **[(dmzgateway)](https://192.168.87.20:8006/#v1:0:=lxc%2F102:4::::::11:)**
+- **MASTER GATEWAY1** : **[(dmzgateway1)](https://192.168.87.20:8006/#v1:0:=lxc%2F117:4::::::11:)**
+- **MASTER GATEWAY2** : **[(dmzgateway2)](https://192.168.87.20:8006/#v1:0:=lxc%2F186:4::::::11:)**
+- **MASTER GATEWAY3** : **[(dmzgateway3)](https://192.168.87.20:8006/#v1:0:=lxc%2F187:4::::::11:)**
 <br/>
 
 
