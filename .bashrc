@@ -9,38 +9,53 @@
 export EDITOR=/usr/bin/mcedit
 export VISUAL=$EDITOR
 
-PS1='${debian_chroot:+($debian_chroot)}\[\033[01;33m\]\u\[\033[01;36m\]@\[\033[01;38;5;85m\]\h \[\033[01;36m\]\w \[\033[01;35m\]>\[\033[00m\] '
-
 # Simple color PS1
-# Вариант 1: Светло-красный root (91) и ярко-желтый хост (93)
-#PS1='${debian_chroot:+($debian_chroot)}\[\033[01;91m\]\u\[\033[01;36m\]@\[\033[01;93m\]\h \[\033[01;36m\]\w \[\033[01;32m\]>\[\033[00m\] '
+# PS1='${debian_chroot:+($debian_chroot)}\[\033[01;31m\]\u\[\033[01;33m\]@\[\033[01;36m\]\h \[\033[01;33m\]\w \[\033[01;35m\]\$ \[\033[00m\]'
+# PS1='${debian_chroot:+($debian_chroot)}\[\033[01;33m\]\u\[\033[01;36m\]@\[\033[01;38;5;85m\]\h \[\033[01;36m\]\w \[\033[01;35m\]>\[\033[00m\] '
 
-# Вариант 2: Ярко-красный root (31) и желтый хост (33)
-#PS1='${debian_chroot:+($debian_chroot)}\[\033[01;31m\]\u\[\033[01;36m\]@\[\033[01;33m\]\h \[\033[01;36m\]\w \[\033[01;32m\]>\[\033[00m\] '
+# Complex PS1
+INPUT_COLOR="\[\033[0m\]"
+DIR_COLOR="\[\033[1;38;5;208m\]"      # Ярко-оранжевый (жирный)
+LINE_COLOR="\[\033[1;37m\]"           # Ярко-белая граница
 
-# Автоматическое определение: root красный, обычный пользователь желтый
-if [ "$(id -u)" -eq 0 ]; then
-    # ROOT пользователь - красный
-    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;91m\]\u\[\033[01;36m\]@\[\033[01;93m\]\h \[\033[01;36m\]\w \[\033[01;32m\]>\[\033[00m\] '
+# Псевдографика (Unicode)
+LINE_VERTICAL="\342\224\200"          # "─"
+LINE_CORNER_1="\342\224\214"          # "┌"
+LINE_CORNER_2="\342\224\224"          # "└"
+LINE_CROSS="\342\224\234"             # "├"
+
+# Динамические настройки для пользователя/root
+if [[ ${EUID} == 0 ]]; then
+    # Стиль для root (3 строки + оранжевый вместо красного)
+    USER_NAME="\[\033[1;38;5;208m\]\u"  # Ярко-оранжевый (жирный)
+    HOST_NAME="\[\033[1;38;5;39m\]\h"   # Ярко-голубой
+    SYMBOL="\[\033[1;38;5;196m\]#"      # Ярко-красный #
+    PS1="\
+${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_NAME}\n\
+${LINE_COLOR}${LINE_CROSS}${LINE_VERTICAL} ${HOST_NAME} ${DIR_COLOR}${DIR}\n\
+${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${SYMBOL} ${INPUT_COLOR}"
 else
-    # Обычный пользователь - желтый
-    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;33m\]\u\[\033[01;36m\]@\[\033[01;93m\]\h \[\033[01;36m\]\w \[\033[01;32m\]>\[\033[00m\] '
+    # Стиль для обычного пользователя (2 строки)
+    USER_NAME="\[\033[1;38;5;46m\]\u"   # Ярко-зелёный
+    HOST_NAME="\[\033[1;38;5;39m\]\h"   # Ярко-голубой
+    SYMBOL="\[\033[1;38;5;196m\]\$"     # Ярко-красный $
+    PS1="\
+${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_NAME} ${DIR_COLOR}${DIR}\n\
+${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${SYMBOL} ${INPUT_COLOR}"
 fi
 
 
-# You may uncomment the following lines if you want `ls' to be colorized:
-# export LS_OPTIONS='--color=auto'
-# eval "$(dircolors)"
-# alias ls='ls $LS_OPTIONS'
-# alias ll='ls $LS_OPTIONS -l'
-# alias l='ls $LS_OPTIONS -lA'
-#
 # Some more alias to avoid making mistakes:
 # alias rm='rm -i'
 # alias cp='cp -i'
 # alias mv='mv -i'
 
 # color aliases
+export LS_OPTIONS='--color=auto'
+eval "$(dircolors)"
+alias ls='ls $LS_OPTIONS'
+alias ll='ls $LS_OPTIONS -l'
+alias l='ls $LS_OPTIONS -lA'
 alias sudo='sudo '
 alias ls='ls --color=always'
 alias ll='ll --color=always'
@@ -80,3 +95,9 @@ alias ipc='ip -c addr show'
 alias ipa='ip -br -c addr show'
 alias lsblk-more='lsblk --output TYPE,PATH,NAME,FSAVAIL,FSUSE%,SIZE,MOUNTPOINT,UUID,FSTYPE,PTTYPE,PARTUUID'
 alias mc-visudo='sudo EDITOR=mcedit visudo'
+
+
+# цветной bash
+# https://pingvinus.ru/note/bash-promt
+# https://ziggi.org/cveta-v-terminale/
+# https://gist.github.com/ziggi/a873de4c020c4752a889
