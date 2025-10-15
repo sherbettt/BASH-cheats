@@ -45,6 +45,49 @@ ${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${SYMBOL} ${INPUT_COLOR}"
 fi
 
 
+# ===== СИСТЕМНАЯ ИНФОРМАЦИЯ =====
+
+# Основная функция
+show_system_info() {
+    echo -e "\033[1;34m=== СИСТЕМНАЯ ИНФОРМАЦИЯ ===\033[0m"
+    
+    # Диски
+    echo -e "\033[1;32m● ДИСКИ:\033[0m"
+    df -h / /home /boot 2>/dev/null | grep -v tmpfs | awk 'NR==1 || /\/dev\//'
+    
+    # Память
+    echo -e "\n\033[1;32m● ПАМЯТЬ:\033[0m"
+    free -h | awk 'NR==1{print "          " $0} NR==2{print "ОЗУ:    " $0} NR==3{print "Своп:   " $0}'
+    
+    # Сеть
+    echo -e "\n\033[1;32m● СЕТЬ:\033[0m"
+    ip -br -c addr show | grep -v "LOOPBACK" | head -3
+    
+    # Время работы
+    echo -e "\n\033[1;32m● ВРЕМЯ РАБОТЫ:\033[0m"
+    uptime -p
+    echo
+}
+
+# Компактная версия
+quick_system_info() {
+    echo -e "\033[1;36m💾 $(df -h / --output=pcent | tail -1 | tr -d ' ') | 🎯 $(free -h | awk 'NR==2{print $3"/"$2}') | 🌐 $(ip -4 -br addr show | grep -v LOOPBACK | awk '{print $3}' | head -1)\033[0m"
+}
+
+# Алиасы
+alias sysinfo='show_system_info'
+alias sysquick='quick_system_info'
+
+# Автопоказ при SSH подключении
+if [ -n "$SSH_CONNECTION" ] && [ -z "$SYSTEM_INFO_SHOWN" ]; then
+    show_system_info
+    export SYSTEM_INFO_SHOWN=1
+fi
+
+
+
+
+
 # Some more alias to avoid making mistakes:
 # alias rm='rm -i'
 # alias cp='cp -i'
