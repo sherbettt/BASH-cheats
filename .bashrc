@@ -10,39 +10,48 @@ export EDITOR=/usr/bin/mcedit
 export VISUAL=$EDITOR
 
 # Simple color PS1
-# PS1='${debian_chroot:+($debian_chroot)}\[\033[01;31m\]\u\[\033[01;33m\]@\[\033[01;36m\]\h \[\033[01;33m\]\w \[\033[01;35m\]\$ \[\033[00m\]'
-# PS1='${debian_chroot:+($debian_chroot)}\[\033[01;33m\]\u\[\033[01;36m\]@\[\033[01;38;5;85m\]\h \[\033[01;36m\]\w \[\033[01;35m\]>\[\033[00m\] '
+# Компактный яркий PS1 с полным путем
+#PS1='\[\033[1;32m\]\u\[\033[1;36m\]@\[\033[1;35m\]\h \[\033[1;33m\]\w \[\033[1;31m\]\$\[\033[0m\] '
+
+# Или с псевдографикой в одну строку:
+#PS1='\[\033[1;37m\]┌─\[\033[1;32m\]\u\[\033[1;36m\]@\[\033[1;35m\]\h \[\033[1;33m\]\w\n\[\033[1;37m\]└─\[\033[1;31m\]\$\[\033[0m\] '
+
 
 # Complex PS1
+# Яркие цвета для PS1
 INPUT_COLOR="\[\033[0m\]"
 DIR_COLOR="\[\033[1;38;5;208m\]"      # Ярко-оранжевый (жирный)
 LINE_COLOR="\[\033[1;37m\]"           # Ярко-белая граница
+USER_COLOR="\[\033[1;38;5;46m\]"      # Ярко-зелёный
+HOST_COLOR="\[\033[1;38;5;39m\]"      # Ярко-голубой
+SYMBOL_COLOR="\[\033[1;38;5;196m\]"   # Ярко-красный
 
 # Псевдографика (Unicode)
 LINE_VERTICAL="\342\224\200"          # "─"
 LINE_CORNER_1="\342\224\214"          # "┌"
 LINE_CORNER_2="\342\224\224"          # "└"
-LINE_CROSS="\342\224\234"             # "├"
 
-# Динамические настройки для пользователя/root
+# Для обычного пользователя (2 строки с полным путем)
+PS1="\
+${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_COLOR}\u${HOST_COLOR}@\h\n\
+${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${DIR_COLOR}\w ${SYMBOL_COLOR}\$ ${INPUT_COLOR}"
+
+# Для root (3 строки с полным путем)
 if [[ ${EUID} == 0 ]]; then
-    # Стиль для root (3 строки + оранжевый вместо красного)
-    USER_NAME="\[\033[1;38;5;208m\]\u"  # Ярко-оранжевый (жирный)
-    HOST_NAME="\[\033[1;38;5;39m\]\h"   # Ярко-голубой
-    SYMBOL="\[\033[1;38;5;196m\]#"      # Ярко-красный #
     PS1="\
-${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_NAME}\n\
-${LINE_COLOR}${LINE_CROSS}${LINE_VERTICAL} ${HOST_NAME} ${DIR_COLOR}${DIR}\n\
-${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${SYMBOL} ${INPUT_COLOR}"
-else
-    # Стиль для обычного пользователя (2 строки)
-    USER_NAME="\[\033[1;38;5;46m\]\u"   # Ярко-зелёный
-    HOST_NAME="\[\033[1;38;5;39m\]\h"   # Ярко-голубой
-    SYMBOL="\[\033[1;38;5;196m\]\$"     # Ярко-красный $
-    PS1="\
-${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_NAME} ${DIR_COLOR}${DIR}\n\
-${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${SYMBOL} ${INPUT_COLOR}"
+${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_COLOR}\u\n\
+${LINE_COLOR}${LINE_VERTICAL}${LINE_VERTICAL} ${HOST_COLOR}\h\n\
+${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${DIR_COLOR}\w ${SYMBOL_COLOR}# ${INPUT_COLOR}"
 fi
+
+
+# Функция для краткого статуса в PS1
+#get_quick_status() {
+#    echo -n "[💾$(df -h / --output=pcent 2>/dev/null | tail -1 | tr -d ' ')]"
+#}
+
+# PS1 с системной информацией
+#PS1="\[\033[1;37m\]┌─\[\033[1;32m\]\u\[\033[1;36m\]@\[\033[1;35m\]\h \$(get_quick_status) \[\033[1;33m\]\w\n\[\033[1;37m\]└─\[\033[1;31m\]\\$\[\033[0m\] "
 
 
 # ===== СИСТЕМНАЯ ИНФОРМАЦИЯ =====
@@ -83,8 +92,6 @@ if [ -n "$SSH_CONNECTION" ] && [ -z "$SYSTEM_INFO_SHOWN" ]; then
     show_system_info
     export SYSTEM_INFO_SHOWN=1
 fi
-
-
 
 
 
@@ -139,8 +146,3 @@ alias ipa='ip -br -c addr show'
 alias lsblk-more='lsblk --output TYPE,PATH,NAME,FSAVAIL,FSUSE%,SIZE,MOUNTPOINT,UUID,FSTYPE,PTTYPE,PARTUUID'
 alias mc-visudo='sudo EDITOR=mcedit visudo'
 
-
-# цветной bash
-# https://pingvinus.ru/note/bash-promt
-# https://ziggi.org/cveta-v-terminale/
-# https://gist.github.com/ziggi/a873de4c020c4752a889
