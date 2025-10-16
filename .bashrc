@@ -25,7 +25,6 @@ SYMBOL_COLOR="\[\033[1;38;5;208m\]"   # Оранжевый для $
 
 # Цвета для root
 ROOT_USER_COLOR="\[\033[1;38;5;196m\]"    # Ярко-красный жирный
-ROOT_HOST_COLOR="\[\033[1;38;5;21m\]"     # Ярко-синий жирный
 ROOT_SYMBOL_COLOR="\[\033[1;38;5;208m\]"  # Оранжевый для #
 
 # Псевдографика (Unicode)
@@ -41,15 +40,15 @@ ${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${DIR_COLOR}\w ${SYMBOL_COLOR}\$ $
 # Для root (2 строки, как у пользователя)
 if [[ ${EUID} == 0 ]]; then
     PS1="\
-${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${ROOT_USER_COLOR}\u${AT_COLOR}@${ROOT_HOST_COLOR}\h\n\
+${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${ROOT_USER_COLOR}\u${AT_COLOR}@${HOST_COLOR}\h\n\
 ${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${DIR_COLOR}\w ${ROOT_SYMBOL_COLOR}# ${INPUT_COLOR}"
 fi
+
 
 # Яркая версия pwd
 pwd() {
     echo -e "\033[1;97mcurrent path:\033[1;93m $(command pwd)\033[0m"
 }
-
 
 
 # Функция для вывода системной информации
