@@ -103,6 +103,15 @@ fi
 alias sinfo='sysinfo'
 alias status='echo -e "\033[1;97mСистемный статус:\033[0m" && sysinfo'
 
+
+## Folder colors
+# Light
+#export LS_COLORS="di=1;94:ln=1;95:so=1;92:pi=1;93:ex=1;91:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43"
+# Dark
+#export LS_COLORS="di=1;34:ln=1;35:so=1;32:pi=1;33:ex=1;31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43"
+# Solarized
+export LS_COLORS="di=36:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43"
+
 # Color aliases with brighter colors
 export LS_OPTIONS='--color=auto'
 eval "$(dircolors)"
