@@ -45,12 +45,6 @@ ${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${DIR_COLOR}\w ${ROOT_SYMBOL_COLOR
 fi
 
 
-# Яркая версия pwd
-pwd() {
-    echo -e "\033[1;97mcurrent path:\033[1;93m $(command pwd)\033[0m"
-}
-
-
 # Функция для вывода системной информации
 sysinfo() {
     echo -e "\033[1;97m┌───────────────────── СИСТЕМНАЯ ИНФОРМАЦИЯ ─────────────────────\033[0m"
@@ -103,6 +97,12 @@ if [[ $- == *i* ]]; then
     fi
 fi
 
+
+
+# Quick system info commands
+alias sinfo='sysinfo'
+alias status='echo -e "\033[1;97mСистемный статус:\033[0m" && sysinfo'
+
 # Color aliases with brighter colors
 export LS_OPTIONS='--color=auto'
 eval "$(dircolors)"
@@ -150,17 +150,12 @@ alias h='history'
 alias j='jobs -l'
 alias r='rlogin'
 alias which='type -all'
-alias du='du -kh'
-alias df='df -kTh'
+alias duk='du -kh'
+alias dfk='df -kTh'
 alias ipc='ip -c addr show'
 alias ipa='ip -br -c addr show'
 alias ipr='ip addr show | grep -E "192.168.(87|46|45)\.(2|1)"'
 alias lsblk-more='lsblk --output TYPE,PATH,NAME,FSAVAIL,FSUSE%,SIZE,MOUNTPOINT,UUID,FSTYPE,PTTYPE,PARTUUID'
 alias mc-visudo='sudo EDITOR=mcedit visudo'
-
-# Quick system info commands
-alias sinfo='sysinfo'
-alias status='echo -e "\033[1;97mСистемный статус:\033[0m" && sysinfo'
-
 
 
