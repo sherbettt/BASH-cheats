@@ -121,7 +121,7 @@ alias pacman='pacman --color=always'
 alias diff='diff --color=always'
 
 # System monitoring aliases
-alias df-tmpfs='df -hT / /home /boot /var 2>/dev/null | grep -v "^tmpfs"'
+alias df-tmpfs='df -hT / /home /boot /var 2>/dev/null | grep -v "^tmpfs"'   # информация о дисковом пространстве для (/), (/home), загрузочного раздела (/boot) и раздела (/var), но исключает временные файловые системы tmpfs из вывода
 alias free-w='free --si --lohi --total -w'
 alias ps-cpu-sort='ps aux --sort=-%cpu | head -10'
 
