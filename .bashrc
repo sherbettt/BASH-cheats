@@ -121,11 +121,9 @@ alias pacman='pacman --color=always'
 alias diff='diff --color=always'
 
 # System monitoring aliases
-alias disks='df -hT / /home /boot /var 2>/dev/null | grep -v "^tmpfs"'
-alias memory='free -h'
-alias network='ip -br -c addr show'
-alias connections='ss -tulpn'
-alias processes='ps aux --sort=-%cpu | head -10'
+alias df-tmpfs='df -hT / /home /boot /var 2>/dev/null | grep -v "^tmpfs"'
+alias free-w='free --si --lohi --total -w'
+alias ps-cpu-sort='ps aux --sort=-%cpu | head -10'
 
 # Utility aliases
 alias sudo='sudo '
