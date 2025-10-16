@@ -50,28 +50,28 @@ sysinfo() {
     echo -e "\033[1;97m┌───────────────────── СИСТЕМНАЯ ИНФОРМАЦИЯ ─────────────────────\033[0m"
 
     # Сеть
-    echo -e "\033[1;96m│ СЕТЬ:\033[0m"
+    echo -e "\033[1;96m│ NETWORK:\033[0m"
     ip -br -c addr show | head -5 | while read line; do
         echo -e "\033[1;97m│ \033[1;36m$line\033[0m"
     done
 
     # Диски
     echo -e "\033[1;97m│\033[0m"
-    echo -e "\033[1;93m│ ДИСКИ:\033[0m"
+    echo -e "\033[1;93m│ DISKS:\033[0m"
     df -h / /home /boot 2>/dev/null | while read line; do
         echo -e "\033[1;97m│ \033[1;33m$line\033[0m"
     done
 
     # Память
     echo -e "\033[1;97m│\033[0m"
-    echo -e "\033[1;92m│ ПАМЯТЬ:\033[0m"
+    echo -e "\033[1;92m│ MEMORY:\033[0m"
     free -h | while read line; do
         echo -e "\033[1;97m│ \033[1;32m$line\033[0m"
     done
 
     # Время работы системы
     echo -e "\033[1;97m│\033[0m"
-    echo -e "\033[1;95m│ ВРЕМЯ РАБОТЫ:\033[0m"
+    echo -e "\033[1;95m│ UPTIME:\033[0m"
     uptime -p | while read line; do
         echo -e "\033[1;97m│ \033[1;35m$line\033[0m"
     done
