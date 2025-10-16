@@ -16,26 +16,33 @@ export VISUAL=$EDITOR
 INPUT_COLOR="\[\033[0m\]"
 DIR_COLOR="\[\033[1;38;5;208m\]"      # Ярко-оранжевый (жирный)
 LINE_COLOR="\[\033[1;97m\]"           # Ярко-белая граница (97 - самый яркий белый)
-USER_COLOR="\[\033[1;38;5;46m\]"      # Ярко-зелёный
-HOST_COLOR="\[\033[1;38;5;39m\]"      # Ярко-голубой
-SYMBOL_COLOR="\[\033[1;38;5;196m\]"   # Ярко-красный
+
+# Цвета для обычного пользователя
+USER_COLOR="\[\033[1;38;5;46m\]"      # Ярко-зелёный (светло-зелёный)
+HOST_COLOR="\[\033[1;38;5;22m\]"      # Тёмно-зелёный жирный
+AT_COLOR="\[\033[1;38;5;165m\]"       # Пурпурный для @
+SYMBOL_COLOR="\[\033[1;38;5;208m\]"   # Оранжевый для $
+
+# Цвета для root
+ROOT_USER_COLOR="\[\033[1;38;5;196m\]"    # Ярко-красный жирный
+ROOT_HOST_COLOR="\[\033[1;38;5;21m\]"     # Ярко-синий жирный
+ROOT_SYMBOL_COLOR="\[\033[1;38;5;208m\]"  # Оранжевый для #
 
 # Псевдографика (Unicode)
 LINE_VERTICAL="\342\224\200"          # "─"
 LINE_CORNER_1="\342\224\214"          # "┌"
 LINE_CORNER_2="\342\224\224"          # "└"
 
-# Для обычного пользователя (2 строки с полным путем)
+# Для обычного пользователя (2 строки)
 PS1="\
-${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_COLOR}\u${HOST_COLOR}@\h\n\
+${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_COLOR}\u${AT_COLOR}@${HOST_COLOR}\h\n\
 ${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${DIR_COLOR}\w ${SYMBOL_COLOR}\$ ${INPUT_COLOR}"
 
-# Для root (3 строки с полным путем)
+# Для root (2 строки, как у пользователя)
 if [[ ${EUID} == 0 ]]; then
     PS1="\
-${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${USER_COLOR}\u\n\
-${LINE_COLOR}${LINE_VERTICAL}${LINE_VERTICAL} ${HOST_COLOR}\h\n\
-${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${DIR_COLOR}\w ${SYMBOL_COLOR}# ${INPUT_COLOR}"
+${LINE_COLOR}${LINE_CORNER_1}${LINE_VERTICAL} ${ROOT_USER_COLOR}\u${AT_COLOR}@${ROOT_HOST_COLOR}\h\n\
+${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${DIR_COLOR}\w ${ROOT_SYMBOL_COLOR}# ${INPUT_COLOR}"
 fi
 
 # Яркая версия pwd
