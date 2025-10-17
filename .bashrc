@@ -45,33 +45,43 @@ ${LINE_COLOR}${LINE_CORNER_2}${LINE_VERTICAL} ${DIR_COLOR}\w ${ROOT_SYMBOL_COLOR
 fi
 
 
+# Яркая версия pwd
+pwd() {
+    echo -e "\033[1;97mТекущий путь:\033[1;93m $(command pwd)\033[0m"
+}
+
+# Альтернативная яркая версия pwd (более компактная)
+pwds() {
+    echo -e "\033[1;96m📁 \033[1;93m$(command pwd)\033[0m"
+}
+
 # Функция для вывода системной информации
 sysinfo() {
     echo -e "\033[1;97m┌───────────────────── СИСТЕМНАЯ ИНФОРМАЦИЯ ─────────────────────\033[0m"
 
     # Сеть
-    echo -e "\033[1;96m│ NETWORK:\033[0m"
+    echo -e "\033[1;96m│ СЕТЬ:\033[0m"
     ip -br -c addr show | head -5 | while read line; do
         echo -e "\033[1;97m│ \033[1;36m$line\033[0m"
     done
 
     # Диски
     echo -e "\033[1;97m│\033[0m"
-    echo -e "\033[1;93m│ DISKS:\033[0m"
+    echo -e "\033[1;93m│ ДИСКИ:\033[0m"
     df -h / /home /boot 2>/dev/null | while read line; do
         echo -e "\033[1;97m│ \033[1;33m$line\033[0m"
     done
 
     # Память
     echo -e "\033[1;97m│\033[0m"
-    echo -e "\033[1;92m│ MEMORY:\033[0m"
+    echo -e "\033[1;92m│ ПАМЯТЬ:\033[0m"
     free -h | while read line; do
         echo -e "\033[1;97m│ \033[1;32m$line\033[0m"
     done
 
     # Время работы системы
     echo -e "\033[1;97m│\033[0m"
-    echo -e "\033[1;95m│ UPTIME:\033[0m"
+    echo -e "\033[1;95m│ ВРЕМЯ РАБОТЫ:\033[0m"
     uptime -p | while read line; do
         echo -e "\033[1;97m│ \033[1;35m$line\033[0m"
     done
@@ -99,19 +109,6 @@ fi
 
 
 
-# Quick system info commands
-alias sinfo='sysinfo'
-alias status='echo -e "\033[1;97mСистемный статус:\033[0m" && sysinfo'
-
-
-## Folder colors
-# Light
-#export LS_COLORS="di=1;94:ln=1;95:so=1;92:pi=1;93:ex=1;91:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43"
-# Dark
-#export LS_COLORS="di=1;34:ln=1;35:so=1;32:pi=1;33:ex=1;31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43"
-# Solarized
-export LS_COLORS="di=36:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43"
-
 # Color aliases with brighter colors
 export LS_OPTIONS='--color=auto'
 eval "$(dircolors)"
@@ -130,9 +127,9 @@ alias pacman='pacman --color=always'
 alias diff='diff --color=always'
 
 # System monitoring aliases
-alias df-tmpfs='df -hT / /home /boot /var 2>/dev/null | grep -v "^tmpfs"'   # информация о дисковом пространстве для (/), (/home), загрузочного раздела (/boot) и раздела (/var), но исключает временные файловые системы tmpfs из вывода
+alias df-tmpfs='df -hT / /home /boot /var 2>/dev/null | grep -v "^tmpfs"'
 alias free-w='free --si --lohi --total -w'
-alias ps-cpu-sort='ps aux --sort=-%cpu | head -10'
+alias ps-cpu-sort='ps aux --sort=-%cpu | head -15'
 
 # Utility aliases
 alias sudo='sudo '
@@ -151,19 +148,29 @@ alias batc='bat --config-dir; bat --cache-dir'
 alias batp='bat -p -S'
 alias getip="curl -s ifconfig.me ; echo"
 alias getip2='curl -s 2ip.ru ; echo'
-   # curl -s https://yandex.ru/internet | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}'
 alias localip='ip -br addr show | grep -v "127.0.0.1"'
 alias h='history'
 alias j='jobs -l'
 alias r='rlogin'
 alias which='type -all'
-alias duk='du -kh'
-alias dfk='df -kTh'
+alias du='du -kh'
+alias df='df -kTh'
 alias ipc='ip -c addr show'
 alias ipa='ip -br -c addr show'
-alias ipr='ip addr show | grep -E "192.168.(87|46|45)\.(2|1)"'
 alias lsblk-more='lsblk --output TYPE,PATH,NAME,FSAVAIL,FSUSE%,SIZE,MOUNTPOINT,UUID,FSTYPE,PTTYPE,PARTUUID'
 alias mc-visudo='sudo EDITOR=mcedit visudo'
+
+# Quick system info commands
+alias sinfo='sysinfo'
+alias status='echo -e "\033[1;97mСистемный статус:\033[0m" && sysinfo'
+
+# яркие диреетории
+eval "$(dircolors ~/.dircolors)"
+
+# Bash completion
+if [ -f /usr/share/bash-completion/bash_completion ]; then
+    source /usr/share/bash-completion/bash_completion
+fi
 
 
 # Цветной вывод getent passwd с форматированием
