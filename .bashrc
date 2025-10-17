@@ -187,7 +187,7 @@ getent_color() {
     }'
 }
 
-alias cgetent='color_getent'
+alias getentc1='getent_color'
 
 
 # Улучшенная цветная версия с выравниванием столбцов
@@ -203,4 +203,4 @@ getent_color_pretty() {
     done
 }
 
-alias cgetent3='color_getent_pretty'
+alias getentc2='getent_color_pretty'
