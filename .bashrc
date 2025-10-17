@@ -166,3 +166,41 @@ alias lsblk-more='lsblk --output TYPE,PATH,NAME,FSAVAIL,FSUSE%,SIZE,MOUNTPOINT,U
 alias mc-visudo='sudo EDITOR=mcedit visudo'
 
 
+# Цветной вывод getent passwd с форматированием
+getent_color() {
+    getent passwd | awk -F: '
+    BEGIN {
+        user_color="\033[1;33m"      # желтый
+        uid_color="\033[1;32m"       # зеленый  
+        gid_color="\033[1;36m"       # голубой
+        home_color="\033[1;35m"      # пурпурный
+        shell_color="\033[1;31m"     # красный
+        reset="\033[0m"
+    }
+    {
+        printf "%s%-20s%s %s%-8s%s %s%-8s%s %s%-30s%s %s%s%s\n", 
+            user_color, $1, reset,
+            uid_color, $3, reset,
+            gid_color, $4, reset,
+            home_color, $6, reset,
+            shell_color, $7, reset
+    }'
+}
+
+alias cgetent='color_getent'
+
+
+# Улучшенная цветная версия с выравниванием столбцов
+getent_color_pretty() {
+    getent passwd | while IFS=: read -r user pass uid gid gecos home shell; do
+        if [ "$uid" -ge 1000 ]; then
+            printf "\033[1;32m%-20s\033[0m \033[1;34m%-8s\033[0m \033[1;36m%-30s\033[0m \033[1;33m%s\033[0m\n" "$user" "$uid" "$home" "$shell"
+        elif [ "$uid" -eq 0 ]; then
+            printf "\033[1;31m%-20s\033[0m \033[1;31m%-8s\033[0m \033[1;31m%-30s\033[0m \033[1;31m%s\033[0m\n" "$user" "$uid" "$home" "$shell"
+        else
+            printf "\033[1;35m%-20s\033[0m \033[1;35m%-8s\033[0m \033[1;35m%-30s\033[0m \033[1;35m%s\033[0m\n" "$user" "$uid" "$home" "$shell"
+        fi
+    done
+}
+
+alias cgetent3='color_getent_pretty'
