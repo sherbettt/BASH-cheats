@@ -216,5 +216,149 @@ echo "=== SYSTEM READY ==="
 ### ⚠️ **Оставшиеся ограничения:**
 - Parsec требует ядро 6.1.141-1-generic (нужна перезагрузка)
 - Auditd запускается через обертку (не как systemd сервис)
+<br/>
+<br/>
 
-**Система готова к использованию!** 🚀
+-------------
+
+# Инструкция по полному отключению Parsec в Astra Linux
+
+## Анализ проблемы
+
+Parsec не работал из-за:
+- Модуль ядра не загружен (несовместимость ядер)
+- Службы зависали в состоянии ошибки
+- Блокировали работу системы и Ansible
+
+## Полная процедура отключения Parsec
+
+### 1. Остановка всех служб Parsec
+
+```bash
+# Останавливаем все службы Parsec
+systemctl stop parsec.service 2>/dev/null || true
+systemctl stop parsec-aud.service 2>/dev/null || true  
+systemctl stop parsec-tools.service 2>/dev/null || true
+systemctl stop parsec-kiosk2.service 2>/dev/null || true
+systemctl stop parsecfs.mount 2>/dev/null || true
+```
+
+### 2. Отключение автозапуска служб
+
+```bash
+# Отключаем автозапуск всех служб Parsec
+systemctl disable parsec.service 2>/dev/null || true
+systemctl disable parsec-aud.service 2>/dev/null || true
+systemctl disable parsec-tools.service 2>/dev/null || true
+systemctl disable parsec-kiosk2.service 2>/dev/null || true
+systemctl disable parsecfs.mount 2>/dev/null || true
+```
+
+### 3. Блокировка служб (mask)
+
+```bash
+# Маскируем службы чтобы их нельзя было случайно запустить
+systemctl mask parsec.service 2>/dev/null || true
+systemctl mask parsec-aud.service 2>/dev/null || true
+systemctl mask parsec-tools.service 2>/dev/null || true
+systemctl mask parsec-kiosk2.service 2>/dev/null || true
+```
+
+### 4. Удаление модулей из автозагрузки
+
+```bash
+# Удаляем модуль parsec из автозагрузки ядра
+sed -i '/^parsec$/d' /etc/modules
+
+# Удаляем конфигурационные файлы автозагрузки модулей
+rm -f /etc/modules-load.d/parsec.conf 2>/dev/null || true
+```
+
+### 5. Выгрузка модулей ядра
+
+```bash
+# Выгружаем модули parsec из памяти ядра
+rmmod parsec 2>/dev/null || true
+rmmod parsec-cifs 2>/dev/null || true
+```
+
+### 6. Отмонтирование файловых систем
+
+```bash
+# Отмонтируем файловые системы Parsec если они есть
+umount -a -t parsecfs 2>/dev/null || true
+```
+
+## Проверка полного отключения
+
+### Команды для проверки:
+
+```bash
+echo "=== COMPLETE PARSEC DISABLE VERIFICATION ==="
+
+echo "1. Service Status:"
+systemctl list-unit-files | grep parsec
+
+echo "2. Loaded Kernel Modules:"
+lsmod | grep parsec || echo "No parsec modules loaded"
+
+echo "3. Running Processes:"
+ps aux | grep -i parsec | grep -v grep || echo "No parsec processes running"
+
+echo "4. Autostart Configuration:"
+grep -r parsec /etc/modules* /etc/systemd* 2>/dev/null || echo "No parsec in autostart"
+
+echo "5. Mounted Filesystems:"
+mount | grep parsec || echo "No parsec filesystems mounted"
+
+echo "✅ Parsec completely disabled"
+```
+
+### Ожидаемый результат проверки:
+
+```
+=== COMPLETE PARSEC DISABLE VERIFICATION ===
+1. Service Status:
+parsecfs.mount static
+parsec-aud.service masked
+parsec-kiosk2.service masked
+parsec-tools.service masked
+parsec.service masked
+
+2. Loaded Kernel Modules:
+No parsec modules loaded
+
+3. Running Processes:
+No parsec processes running
+
+4. Autostart Configuration:
+No parsec in autostart
+
+5. Mounted Filesystems:
+No parsec filesystems mounted
+
+✅ Parsec completely disabled
+```
+
+## Однострочные команды для быстрого отключения
+
+### Через SSH на сервере:
+```bash
+systemctl stop parsec.service parsec-aud.service parsec-tools.service parsec-kiosk2.service 2>/dev/null || true; systemctl disable parsec.service parsec-aud.service parsec-tools.service parsec-kiosk2.service 2>/dev/null || true; systemctl mask parsec.service parsec-aud.service parsec-tools.service parsec-kiosk2.service 2>/dev/null || true; sed -i '/^parsec$/d' /etc/modules; rm -f /etc/modules-load.d/parsec.conf 2>/dev/null || true; rmmod parsec parsec-cifs 2>/dev/null || true; umount -a -t parsecfs 2>/dev/null || true; echo "Parsec disabled"
+```
+
+### Через Ansible:
+```bash
+ansible 192.168.87.178 -m shell -a "systemctl stop parsec.service parsec-aud.service parsec-tools.service parsec-kiosk2.service 2>/dev/null || true; systemctl disable parsec.service parsec-aud.service parsec-tools.service parsec-kiosk2.service 2>/dev/null || true; systemctl mask parsec.service parsec-aud.service parsec-tools.service parsec-kiosk2.service 2>/dev/null || true; sed -i '/^parsec$/d' /etc/modules; rm -f /etc/modules-load.d/parsec.conf 2>/dev/null || true; rmmod parsec parsec-cifs 2>/dev/null || true; umount -a -t parsecfs 2>/dev/null || true; echo 'Parsec completely disabled'" -b
+```
+
+## Результат
+
+После выполнения этих действий:
+- ✅ **Все службы Parsec остановлены и заблокированы**
+- ✅ **Модули ядра выгружены из памяти**
+- ✅ **Автозагрузка отключена**
+- ✅ **Ansible больше не будет получать ошибки от Parsec**
+- ✅ **Система готова к дальнейшей настройке**
+
+**Parsec полностью отключен без удаления пакетов** - это безопасный подход, который позволяет при необходимости восстановить функциональность позже.
