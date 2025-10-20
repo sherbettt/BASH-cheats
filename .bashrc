@@ -108,10 +108,11 @@ if [[ $- == *i* ]]; then
 fi
 
 
+# яркие директории
+eval "$(dircolors ~/.dircolors)"
 
 # Color aliases with brighter colors
 export LS_OPTIONS='--color=auto'
-eval "$(dircolors)"
 alias ls='ls $LS_OPTIONS'
 alias ll='ls $LS_OPTIONS -l'
 alias l='ls $LS_OPTIONS -lA'
@@ -164,8 +165,6 @@ alias mc-visudo='sudo EDITOR=mcedit visudo'
 alias sinfo='sysinfo'
 alias status='echo -e "\033[1;97mСистемный статус:\033[0m" && sysinfo'
 
-# яркие диреетории
-eval "$(dircolors ~/.dircolors)"
 
 # Bash completion
 if [ -f /usr/share/bash-completion/bash_completion ]; then
