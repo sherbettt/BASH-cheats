@@ -2,14 +2,14 @@
 
 ## Содержание
 1. [Начальная настройка Ansible](#начальная-настройка-ansible)
-2. [Управление плейбуками и тегами](#управление-плейбуками-и-тегами)
-3. [Работа с базой данных PostgreSQL](#работа-с-базой-данных-postgresql)
-4. [Проверка состояния системы и сервисов](#проверка-состояния-системы-и-сервисов)
-5. [Управление службами Runtel](#управление-службами-runtel)
-6. [Patroni и репликация](#patroni-и-репликация)
-7. [Устранение неполадок](#устранение-неполадок)
-8. [FreeSWITCH и HAProxy](#freeswitch-и-haproxy)
-9. [SSH настройки для кластера](#ssh-настройки-для-кластера)
+2. [SSH настройки для кластера](#ssh-настройки-для-кластера)
+3. [Управление плейбуками и тегами](#управление-плейбуками-и-тегами)
+4. [Работа с базой данных PostgreSQL](#работа-с-базой-данных-postgresql)
+5. [Проверка состояния системы и сервисов](#проверка-состояния-системы-и-сервисов)
+6. [Управление службами Runtel](#управление-службами-runtel)
+7. [Patroni и репликация](#patroni-и-репликация)
+8. [Устранение неполадок](#устранение-неполадок)
+9. [FreeSWITCH и HAProxy](#freeswitch-и-haproxy)
 
 ---
 
@@ -45,6 +45,39 @@ ansible-playbook -i inventory.ini playbook-clust-test.yml --tags="haproxy,redis"
 ```bash
 ansible-playbook -i inventory.ini playbook-clust-test.yml --skip-tags freeswitch
 ansible-playbook -i inventory.ini playbook-clust-test.yml --skip-tags="patroni,haproxy,redis"
+```
+
+---
+
+## SSH настройки для кластера
+
+### SSH редактирование
+Добавить в `/etc/ssh/ssh_config`:
+```ini
+Host *
+    HostkeyAlgorithms +ssh-rsa,ecdsa-sha2-nistp256,ssh-ed25519
+    KexAlgorithms +diffie-hellman-group14-sha256
+    PubkeyAcceptedAlgorithms +ssh-rsa,ecdsa-sha2-nistp256,ssh-ed25519
+    SendEnv LANG LC_*
+    HashKnownHosts yes
+    GSSAPIAuthentication yes
+```
+
+Добавить в `/etc/ssh/sshd_config`:
+```ini
+# КРИТИЧЕСКИ ВАЖНО - алгоритмы для совместимости между узлами кластера
+KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group14-sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512
+HostkeyAlgorithms ssh-rsa,rsa-sha2-256,rsa-sha2-512,ecdsa-sha2-nistp256,ssh-ed25519
+PubkeyAcceptedAlgorithms ssh-rsa,rsa-sha2-256,rsa-sha2-512,ecdsa-sha2-nistp256,ssh-ed25519
+Ciphers chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com
+MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
+```
+
+Раскомментировать в `/etc/ssh/sshd_config`:
+```ini
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
 ```
 
 ---
@@ -476,33 +509,3 @@ ansible -i inventory.ini 192.168.87.66 -m shell -a "systemctl status freeswitch.
 
 ---
 
-## SSH настройки для кластера
-
-### SSH редактирование
-Добавить в `/etc/ssh/ssh_config`:
-```ini
-Host *
-    HostkeyAlgorithms +ssh-rsa,ecdsa-sha2-nistp256,ssh-ed25519
-    KexAlgorithms +diffie-hellman-group14-sha256
-    PubkeyAcceptedAlgorithms +ssh-rsa,ecdsa-sha2-nistp256,ssh-ed25519
-    SendEnv LANG LC_*
-    HashKnownHosts yes
-    GSSAPIAuthentication yes
-```
-
-Добавить в `/etc/ssh/sshd_config`:
-```ini
-# КРИТИЧЕСКИ ВАЖНО - алгоритмы для совместимости между узлами кластера
-KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group14-sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512
-HostkeyAlgorithms ssh-rsa,rsa-sha2-256,rsa-sha2-512,ecdsa-sha2-nistp256,ssh-ed25519
-PubkeyAcceptedAlgorithms ssh-rsa,rsa-sha2-256,rsa-sha2-512,ecdsa-sha2-nistp256,ssh-ed25519
-Ciphers chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com
-MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
-```
-
-Раскомментировать в `/etc/ssh/sshd_config`:
-```ini
-HostKey /etc/ssh/ssh_host_rsa_key
-HostKey /etc/ssh/ssh_host_ecdsa_key
-HostKey /etc/ssh/ssh_host_ed25519_key
-```
