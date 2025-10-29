@@ -1,5 +1,7 @@
 # Установка приложения Runtel на кластер - Полная шпаргалка
 
+<!-- **[Применение installer_pbxv2_cluster](https://gitlab.runtel.org/runtel/installer_pbxv2_cluster)** -->
+
 ## Содержание
 1. [Начальная настройка Ansible](#начальная-настройка-ansible)
 2. [SSH настройки для кластера](#ssh-настройки-для-кластера)
