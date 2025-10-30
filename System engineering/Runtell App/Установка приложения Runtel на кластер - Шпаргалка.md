@@ -87,7 +87,8 @@ HostKey /etc/ssh/ssh_host_ed25519_key
 ## Работа с базой данных PostgreSQL
 
 ### Настройка .pgpass
-Создать файл `/var/lib/postgresql/.pgpass` или `/root/.pgpass` с правами 600:
+Создать файл для пользователя (postgres:postgres) с правами 600 `/var/lib/postgresql/.pgpass`, 
+<br/> а для (root:root) с правами 600 `/root/.pgpass`:
 ```conf
 # Прямое подключение к PostgreSQL (5433)
 192.168.87.38:5433:*:postgres:AdminDBPassComplex
