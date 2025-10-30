@@ -23,6 +23,26 @@
 sudo ln -s /home/kiko0625/projects/git/installer_pbxv2_cluster /etc/ansible/roles/installer_pbxv2_cluster
 ```
 
+### Создать инвенторку
+```ini
+## /home/<user_name>/projects/git/installer_pbxv2_cluster/inventory.ini
+
+#==============
+# Runtel Platform Test Cluster
+[cluster-test]
+192.168.87.38
+192.168.87.127
+192.168.87.148
+192.168.87.66
+
+[cluster-test:vars]
+ansible_user=root
+debug_enabled=True
+ansible_ssh_private_key_file=~/.ssh/id_ed25519
+#ansible_env_LANG=en_US.UTF-8
+#ansible_env_LC_ALL=en_US.UTF-8
+```
+
 ### Проверка хостов ansible
 ```bash
 ansible -i inventory.ini --list-hosts all
