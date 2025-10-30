@@ -1,21 +1,22 @@
+
 # Установка приложения Runtel на кластер - Полная шпаргалка
 
 <!-- **[Применение installer_pbxv2_cluster](https://gitlab.runtel.org/runtel/installer_pbxv2_cluster)** -->
 
 ## Содержание
-1. [Начальная настройка Ansible](#начальная-настройка-ansible)
-2. [SSH настройки для кластера](#ssh-настройки-для-кластера)
-3. [Управление плейбуками и тегами](#управление-плейбуками-и-тегами)
-4. [Работа с базой данных PostgreSQL](#работа-с-базой-данных-postgresql)
-5. [Проверка состояния системы и сервисов](#проверка-состояния-системы-и-сервисов)
-6. [Управление службами Runtel](#управление-службами-runtel)
-7. [Patroni и репликация](#patroni-и-репликация)
-8. [Устранение неполадок](#устранение-неполадок)
-9. [FreeSWITCH и HAProxy](#freeswitch-и-haproxy)
+1. [Начальная настройка Ansible](#1-начальная-настройка-ansible)
+2. [SSH настройки для кластера](#2-ssh-настройки-для-кластера)
+3. [Управление плейбуками и тегами](#3-управление-плейбуками-и-тегами)
+4. [Работа с базой данных PostgreSQL](#4-работа-с-базой-данных-postgresql)
+5. [Проверка состояния системы и сервисов](#5-проверка-состояния-системы-и-сервисов)
+6. [Управление службами Runtel](#6-управление-службами-runtel)
+7. [Patroni и репликация](#7-patroni-и-репликация)
+8. [Устранение неполадок](#8-устранение-неполадок)
+9. [FreeSWITCH и HAProxy](#9-freeswitch-и-haproxy)
 
 ---
 
-## Начальная настройка Ansible
+## 1. Начальная настройка Ansible
 
 ### Создать симлинку в системной директории ролей
 ```bash
@@ -29,29 +30,7 @@ ansible -i inventory.ini --list-hosts all
 
 ---
 
-## Управление плейбуками и тегами
-
-### Посмотреть доступные теги:
-```bash
-ansible-playbook -i inventory.ini playbook-clust-test.yml --list-tags
-```
-
-### Запуск по тегам
-```bash
-# Отдельные теги
-ansible-playbook -i inventory.ini playbook-clust-test.yml --tags="patroni"
-ansible-playbook -i inventory.ini playbook-clust-test.yml --tags="haproxy,redis"
-```
-
-### Пропуск тегов
-```bash
-ansible-playbook -i inventory.ini playbook-clust-test.yml --skip-tags freeswitch
-ansible-playbook -i inventory.ini playbook-clust-test.yml --skip-tags="patroni,haproxy,redis"
-```
-
----
-
-## SSH настройки для кластера
+## 2. SSH настройки для кластера
 
 ### SSH редактирование
 Добавить в `/etc/ssh/ssh_config`:
@@ -84,7 +63,29 @@ HostKey /etc/ssh/ssh_host_ed25519_key
 
 ---
 
-## Работа с базой данных PostgreSQL
+## 3. Управление плейбуками и тегами
+
+### Посмотреть доступные теги:
+```bash
+ansible-playbook -i inventory.ini playbook-clust-test.yml --list-tags
+```
+
+### Запуск по тегам
+```bash
+# Отдельные теги
+ansible-playbook -i inventory.ini playbook-clust-test.yml --tags="patroni"
+ansible-playbook -i inventory.ini playbook-clust-test.yml --tags="haproxy,redis"
+```
+
+### Пропуск тегов
+```bash
+ansible-playbook -i inventory.ini playbook-clust-test.yml --skip-tags freeswitch
+ansible-playbook -i inventory.ini playbook-clust-test.yml --skip-tags="patroni,haproxy,redis"
+```
+
+---
+
+## 4. Работа с базой данных PostgreSQL
 
 ### Настройка .pgpass
 Создать файл для пользователя (postgres:postgres) с правами 600 `/var/lib/postgresql/.pgpass`, 
@@ -254,7 +255,7 @@ ansible app-clust3 -m shell -a "rm -rf /etc/runtel/ /opt/runtel/web-v2/" -b
 
 ---
 
-## Проверка состояния системы и сервисов
+## 5. Проверка состояния системы и сервисов
 
 ### После установки проверьте
 ```bash
@@ -288,7 +289,7 @@ pwdx $(pgrep -f "patroni /etc/patroni/config.yml")
 
 ---
 
-## Управление службами Runtel
+## 6. Управление службами Runtel
 
 ### Проверка служб
 ```bash
@@ -309,7 +310,7 @@ journalctl -xeu runtel-iface-v2.service --no-pager --lines=12 | ccze -A
 
 ---
 
-## Patroni и репликация
+## 7. Patroni и репликация
 
 ### Проверка HAProxy вместе с БД
 ```bash
@@ -361,7 +362,7 @@ psql -U postgres
 
 ---
 
-## Устранение неполадок
+## 8. Устранение неполадок
 
 ### Проблемы с Patroni
 ```bash
@@ -397,7 +398,7 @@ patronictl -c /etc/patroni/config.yml failover --master app-clust1 --candidate a
 
 ---
 
-## FreeSWITCH и HAProxy
+## 9. FreeSWITCH и HAProxy
 
 ### Управление FreeSWITCH и HAProxy на app-clust4
 
