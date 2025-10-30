@@ -5,22 +5,22 @@
 
 ## Содержание
 1. [Начальная настройка Ansible](#1-начальная-настройка-ansible)
-2. [SSH настройки для кластера](#2-ssh-настройки-для-кластера)
-3. [Управление плейбуками и тегами](#3-управление-плейбуками-и-тегами)
-4. [Работа с базой данных PostgreSQL](#4-работа-с-базой-данных-postgresql)
-5. [Проверка состояния системы и сервисов](#5-проверка-состояния-системы-и-сервисов)
-6. [Управление службами Runtel](#6-управление-службами-runtel)
-7. [Patroni и репликация](#7-patroni-и-репликация)
-8. [Устранение неполадок](#8-устранение-неполадок)
-9. [FreeSWITCH и HAProxy](#9-freeswitch-и-haproxy)
-
+2. [Управление плейбуками и тегами](#2-управление-плейбуками-и-тегами)
+3. [Работа с базой данных PostgreSQL](#3-работа-с-базой-данных-postgresql)
+4. [Проверка состояния системы и сервисов](#4-проверка-состояния-системы-и-сервисов)
+5. [Управление службами Runtel](#5-управление-службами-runtel)
+6. [Patroni и репликация](#6-patroni-и-репликация)
+7. [Устранение неполадок](#7-устранение-неполадок)
+8. [FreeSWITCH и HAProxy](#8-freeswitch-и-haproxy)
+9. [Установка приложения Runtel](#9-установка-приложения-runtel)
 ---
+
 
 ## 1. Начальная настройка Ansible
 
 ### Создать симлинку в системной директории ролей
 ```bash
-sudo ln -s /home/kiko0625/projects/git/installer_pbxv2_cluster /etc/ansible/roles/installer_pbxv2_cluster
+sudo ln -s /home/<user_name>/projects/git/installer_pbxv2_cluster /etc/ansible/roles/installer_pbxv2_cluster
 ```
 
 ### Создать инвенторку
@@ -30,10 +30,10 @@ sudo ln -s /home/kiko0625/projects/git/installer_pbxv2_cluster /etc/ansible/role
 #==============
 # Runtel Platform Test Cluster
 [cluster-test]
-192.168.87.38
-192.168.87.127
-192.168.87.148
-192.168.87.66
+192.168.87.38		# app-clust1
+192.168.87.127	# app-clust2
+192.168.87.148	# app-clust3
+192.168.87.66		# app-clust4
 
 [cluster-test:vars]
 ansible_user=root
@@ -50,40 +50,7 @@ ansible -i inventory.ini --list-hosts all
 
 ---
 
-## 2. SSH настройки для кластера
-
-### SSH редактирование
-Добавить в `/etc/ssh/ssh_config`:
-```ini
-Host *
-    HostkeyAlgorithms +ssh-rsa,ecdsa-sha2-nistp256,ssh-ed25519
-    KexAlgorithms +diffie-hellman-group14-sha256
-    PubkeyAcceptedAlgorithms +ssh-rsa,ecdsa-sha2-nistp256,ssh-ed25519
-    SendEnv LANG LC_*
-    HashKnownHosts yes
-    GSSAPIAuthentication yes
-```
-
-Добавить в `/etc/ssh/sshd_config`:
-```ini
-# КРИТИЧЕСКИ ВАЖНО - алгоритмы для совместимости между узлами кластера
-KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group14-sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512
-HostkeyAlgorithms ssh-rsa,rsa-sha2-256,rsa-sha2-512,ecdsa-sha2-nistp256,ssh-ed25519
-PubkeyAcceptedAlgorithms ssh-rsa,rsa-sha2-256,rsa-sha2-512,ecdsa-sha2-nistp256,ssh-ed25519
-Ciphers chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com
-MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
-```
-
-Раскомментировать в `/etc/ssh/sshd_config`:
-```ini
-HostKey /etc/ssh/ssh_host_rsa_key
-HostKey /etc/ssh/ssh_host_ecdsa_key
-HostKey /etc/ssh/ssh_host_ed25519_key
-```
-
----
-
-## 3. Управление плейбуками и тегами
+## 2. Управление плейбуками и тегами
 
 ### Посмотреть доступные теги:
 ```bash
@@ -105,11 +72,11 @@ ansible-playbook -i inventory.ini playbook-clust-test.yml --skip-tags="patroni,h
 
 ---
 
-## 4. Работа с базой данных PostgreSQL
+## 3. Работа с базой данных PostgreSQL
 
-### Настройка .pgpass
+### Настройка `.pgpass`
 Создать файл для пользователя (postgres:postgres) с правами 600 `/var/lib/postgresql/.pgpass`, 
-<br/> а для (root:root) с правами 600 `/root/.pgpass`:
+<br/> а для root (root:root) с правами 600 `/root/.pgpass`:
 ```conf
 # Прямое подключение к PostgreSQL (5433)
 192.168.87.38:5433:*:postgres:AdminDBPassComplex
@@ -129,6 +96,17 @@ localhost:5433:*:postgres:AdminDBPassComplex
 192.168.87.38:5432:*:rt_pbx:VeryComplexPass123
 192.168.87.127:5432:*:rt_pbx:VeryComplexPass123
 192.168.87.148:5432:*:rt_pbx:VeryComplexPass123
+```
+
+### (опционально) Настроить переменные окружения для удобства
+```bash
+# Добавить в ~/.bashrc пользователя postgres
+echo "export PGHOST=/var/lib/postgresql/patroni" >> ~/.bashrc
+echo "export PGPORT=5433" >> ~/.bashrc
+source ~/.bashrc
+
+# Теперь можно просто
+psql -U postgres
 ```
 
 ### Структура директорий PostgreSQL
@@ -152,9 +130,8 @@ localhost:5433:*:postgres:AdminDBPassComplex
 
 ### Подключение к БД
 ```bash
-# Через HAProxy к БД на порту 5432
+# Зайти под соответствующим пользователем
 su - postgres
-psql -h localhost -p 5432
 
 # Через HAProxy (должно работать всегда, если он запущен)
 psql -h 192.168.87.38 -p 5432 -U postgres
@@ -237,26 +214,41 @@ psql -h 192.168.87.38 -p 5432 -U rt_pbx -d rt_pbx_v2 -c "SELECT * FROM license L
 psql -h 192.168.87.38 -p 5432 -U rt_pbx -d rt_pbx_v2 -c "SELECT * FROM \"user\" LIMIT 5;"
 ```
 
-### Удаление таблиц БД
+### Удаление Баз Данных
+> **ВАЖНО!** 
+>	**Предварительно остановить службы.**
+> **В противном случае, если сервисы запущены, будет выполняться переподключение.**
+{.is-warning}
+
+> Для выполнения запроса, пользователь, от которого он будет выполняться, должен иметь права суперпользователя в PostgreSQL.
+{.is-info}
+
+
 ```bash
-# Если требуется удалить таблицы БД
+# Остановить службы
+systemctl stop runtel-cdr-v2.service runtel-core-v2.service runtel-event-hunter-v2.service runtel-event-sender-v2.service runtel-iface-v2.service --no-pager
+
+# Удалить БД
 sudo -u postgres psql -c "DROP DATABASE IF EXISTS rt_pbx_v2;"
 sudo -u postgres psql -c "DROP DATABASE IF EXISTS rt_pbx_v2_stat;"
 sudo -u postgres psql -c "DROP DATABASE IF EXISTS rt_pbx_v2_media;"
 sudo -u postgres psql -c "DROP DATABASE IF EXISTS rt_pbx_v2_logging;"
 
-# или командой ansible
+# или Ad-Hoc командой ansible
 # на одном из хостов
-ansible app-clust3 -m shell -a "systemctl stop runtel-cdr-v2.service runtel-core-v2.service runtel-event-hunter-v2.service runtel-event-sender-v2.service runtel-iface-v2.service --no-pager" -b
+ansible 192.168.87.148 -m shell -a "systemctl stop runtel-cdr-v2.service runtel-core-v2.service runtel-event-hunter-v2.service runtel-event-sender-v2.service runtel-iface-v2.service --no-pager" -b
 
 # На всех хостах кластера
-ansible -i inventory.ini app-clust1,app-clust2,app-clust3 -m shell -a "systemctl stop runtel-cdr-v2.service runtel-core-v2.service runtel-event-hunter-v2.service runtel-event-sender-v2.service runtel-iface-v2.service --no-pager" -b
+ansible -i inventory.ini 192.168.87.38,192.168.87.127,192.168.87.148 -m shell -a "systemctl stop runtel-cdr-v2.service runtel-core-v2.service runtel-event-hunter-v2.service runtel-event-sender-v2.service runtel-iface-v2.service --no-pager" -b
 
 # Проверить оставшиеся подключения к базе rt_pbx_v2 (на лидере)
-ansible -i inventory.ini app-clust3 -m shell -a "psql -h 192.168.87.148 -p 5432 -U postgres -c 'SELECT datname, usename, application_name, client_addr FROM pg_stat_activity WHERE datname = \"rt_pbx_v2\";'" -b
+ansible -i inventory.ini 192.168.87.148 -m shell -a "psql -h 192.168.87.148 -p 5432 -U postgres -c 'SELECT datname, usename, application_name, client_addr FROM pg_stat_activity WHERE datname = \"rt_pbx_v2\";'" -b
 
 # Завершить ВСЕ подключения к базе rt_pbx_v2 (на лидере)
-ansible -i inventory.ini app-clust3 -m shell -a "psql -h 192.168.87.148 -p 5432 -U postgres -c 'SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = \"rt_pbx_v2\" AND pid <> pg_backend_pid();'" -b
+ansible -i inventory.ini 192.168.87.148 -m shell -a "psql -h 192.168.87.148 -p 5432 -U postgres -c \"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname like '%rt_pbx_v2%' AND pid <> pg_backend_pid();\"" -b --extra-vars "ansible_ssh_common_args='-o StrictHostKeyChecking=no'"
+
+ #или руками
+ psql -h 192.168.87.148 -p 5432 -U postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname like  '%rt_pbx_v2%' AND pid <> pg_backend_pid();"
 
 # Удалить все базы
 ansible -i inventory.ini app-clust3 -m shell -a "psql -h 192.168.87.148 -p 5432 -U postgres -c 'DROP DATABASE IF EXISTS rt_pbx_v2;'" -b
@@ -270,20 +262,20 @@ ansible -i inventory.ini app-clust3 -m shell -a \
 do psql -h 192.168.87.148 -p 5432 -U postgres -c \"DROP DATABASE IF EXISTS \\\"\$db\\\"\"; done" -b
 
 # Очистка конфигурации
-ansible app-clust3 -m shell -a "rm -rf /etc/runtel/ /opt/runtel/web-v2/" -b
+ansible app-clust3 -m shell -a "rm -rf /etc/runtel/" -b
 ```
 
 ---
 
-## 5. Проверка состояния системы и сервисов
+## 4. Проверка состояния системы и сервисов
 
 ### После установки проверьте
 ```bash
-ansible -i inventory.ini app-clust3 -m shell -a "psql -h 192.168.87.148 -p 5432 -U postgres -d rt_pbx_v2 -c '\du'" -b
-ansible 192.168.87.178 -m shell -a "sudo -u postgres psql -d rt_pbx_v2 -c 'SELECT email, username FROM users;'" -b
-ansible 192.168.87.178 -m shell -a "systemctl status runtel-core-v2 runtel-iface-v2" -b
-ansible 192.168.87.178 -m shell -a "ss -tulnp | grep runtel" -b
-ansible 192.168.87.178 -m shell -a "grep -A10 'location /api' /etc/nginx/templates/root" -b
+ansible -i inventory.ini 192.168.87.148 -m shell -a "psql -h 192.168.87.148 -p 5432 -U postgres -d rt_pbx_v2 -c '\du'" -b
+ansible -i inventory.ini 192.168.87.148 -m shell -a "sudo -u postgres psql -d rt_pbx_v2 -c 'SELECT email, username FROM users;'" -b
+ansible -i inventory.ini 192.168.87.148 -m shell -a "systemctl status runtel-core-v2 runtel-iface-v2" -b
+ansible -i inventory.ini 192.168.87.148 -m shell -a "ss -tulnp | grep runtel" -b
+ansible -i inventory.ini 192.168.87.148 -m shell -a "grep -A10 'location /api' /etc/nginx/templates/root" -b
 ```
 
 ### Проверка основных портов
@@ -309,12 +301,13 @@ pwdx $(pgrep -f "patroni /etc/patroni/config.yml")
 
 ---
 
-## 6. Управление службами Runtel
+## 5. Управление службами Runtel
 
 ### Проверка служб
 ```bash
-ansible 192.168.87.178 -m shell -a "systemctl status runtel-core-v2 runtel-iface-v2" -b
-ansible 192.168.87.178 -m shell -a "ss -tulnp | grep runtel" -b
+ansible -i inventory.ini cluster-test -m shell -a "systemctl list-units runtel*" -b
+ansible -i inventory.ini 192.168.87.148 -m shell -a "systemctl status runtel-cdr-v2.service runtel-core-v2.service runtel-event-hunter-v2.service runtel-event-sender-v2.service runtel-iface-v2.service" -b
+ansible -i inventory.ini 192.168.87.148 -m shell -a "ss -tulnp | grep runtel" -b
 ```
 
 ### Проверка Redis
@@ -325,12 +318,30 @@ redis-cli -h 127.0.0.1 -p 6380 AUTH "VeryComplexPass"
 
 ### Просмотр логов
 ```bash
-journalctl -xeu runtel-iface-v2.service --no-pager --lines=12 | ccze -A
+journalctl -xeu runtel-iface-v2.service --no-pager --lines=12
+```
+
+### Управление службами приложения Runtel по тэгу
+```bash
+# Перезагружает systemd и перезапускает все службы Runtel
+ansible-playbook -i inventory.ini playbook-clust-test.yml --limit 192.168.87.66 --tags="runtel"
+
+# Принудительный перезапуск
+ansible-playbook -i inventory.ini playbook-clust-test.yml --limit 192.168.87.66 --tags="force-restart"
+
+# Только перезагрузка systemd
+ansible-playbook -i inventory.ini playbook-clust-test.yml --limit 192.168.87.66 --tags="reload"
+
+# Проверка состояния служб
+ansible-playbook -i inventory.ini playbook-clust-test.yml --limit 192.168.87.66 --tags="check"
+
+# Включение автозапуска
+ansible-playbook -i inventory.ini playbook-clust-test.yml --limit 192.168.87.66 --tags="autostart"
 ```
 
 ---
 
-## 7. Patroni и репликация
+## 6. Patroni и репликация
 
 ### Проверка HAProxy вместе с БД
 ```bash
@@ -349,8 +360,9 @@ psql -h 192.168.87.38 -p 5432 -U postgres -c "SELECT datname, usename, state, qu
 psql -h 192.168.87.38 -p 5432 -U postgres -c "CREATE TABLE IF NOT EXISTS test_cluster (id serial, ts timestamptz DEFAULT now());"
 
 # Проверим на репликах
-psql -h 192.168.87.127 -p 5432 -U postgres -c "SELECT * FROM test_cluster;"
-psql -h 192.168.87.148 -p 5432 -U postgres -c "SELECT * FROM test_cluster;"
+psql -h 192.168.87.38 -p 5433 -U postgres -c "SELECT * FROM test_cluster;"
+psql -h 192.168.87.127 -p 5433 -U postgres -c "SELECT * FROM test_cluster;"
+psql -h 192.168.87.148 -p 5433 -U postgres -c "SELECT * FROM test_cluster;"
 
 # На лидере - информация о репликации
 psql -h 192.168.87.38 -p 5432 -U postgres -c "
@@ -369,20 +381,9 @@ psql -h 192.168.87.127 -p 5432 -U postgres -c "SELECT pg_is_in_recovery(), pg_la
 psql -h 192.168.87.148 -p 5432 -U postgres -c "SELECT pg_is_in_recovery(), pg_last_wal_receive_lsn(), pg_last_wal_replay_lsn();"
 ```
 
-### Настроить переменные окружения для удобства
-```bash
-# Добавить в ~/.bashrc пользователя postgres
-echo "export PGHOST=/var/lib/postgresql/patroni" >> ~/.bashrc
-echo "export PGPORT=5433" >> ~/.bashrc
-source ~/.bashrc
-
-# Теперь можно просто
-psql -U postgres
-```
-
 ---
 
-## 8. Устранение неполадок
+## 7. Устранение неполадок
 
 ### Проблемы с Patroni
 ```bash
@@ -418,7 +419,20 @@ patronictl -c /etc/patroni/config.yml failover --master app-clust1 --candidate a
 
 ---
 
-## 9. FreeSWITCH и HAProxy
+## 8. FreeSWITCH и HAProxy
+> Данные действия нужны в том случае, если основной деплой завершился с ошибкой и требуется переустановка отдельных модулей.
+{.is-info}
+
+#### Проверить необходимый хост
+Проверить в плейбук список неоходимых IP адресов в переменной **`fs_hosts`** (в нашем случае 192.168.87.66)
+```yml
+***
+    # список хостов приложений
+    app_hosts: ["192.168.87.38", "192.168.87.127", "192.168.87.148"]
+    # список медиахостов
+    fs_hosts: ["192.168.87.38", "192.168.87.127", "192.168.87.148", "192.168.87.66"]
+***
+```
 
 ### Управление FreeSWITCH и HAProxy на app-clust4
 
@@ -448,31 +462,55 @@ ansible -i inventory.ini 192.168.87.66 -m apt -a "name=haproxy state=absent purg
 # Посмотреть все доступные теги в плейбуке:
 ansible-playbook -i inventory.ini playbook-clust-test.yml --list-tags
 
+ ## Получим
+ [autostart, check, db, disable, etcd, force-restart, fs, haproxy, patroni, postgresql, redis, reload, runtel, ssh, stop]
+
 # Или посмотреть в задачах:
 grep -r "freeswitch" tasks/ --include="*.yml"
 grep -r "haproxy" tasks/ --include="*.yml"
 
 # Посмотреть mediahost_install.yml (там обычно freeswitch)
 grep -A5 -B5 "freeswitch" tasks/mediahost_install.yml
+grep -A5 -B5 "freeswitch" . -r
 
 # Посмотреть haproxy_install.yml
 grep -A5 -B5 "haproxy" tasks/haproxy_install.yml
-
-# Быстрая проверка тегов:
-ansible-playbook -i inventory.ini playbook-clust-test.yml --tags="haproxy" --list-tasks
-ansible-playbook -i inventory.ini playbook-clust-test.yml --tags="fs" --list-tasks
+grep -A5 -B5 "haproxy" . -r
 ```
+
+#### Быстрая проверка тегов:
+```bash
+# Посмотреть задачи с тегом haproxy
+ansible-playbook -i inventory.ini playbook-clust-test.yml --tags="haproxy" --list-tasks
+
+# Посмотреть задачи с тегом fs (вероятно freeswitch)
+ansible-playbook -i inventory.ini playbook-clust-test.yml --tags="fs" --list-tasks
+
+# Или посмотреть все задачи чтобы найти правильные теги
+ansible-playbook -i inventory.ini playbook-clust-test.yml --list-tasks | grep -E "(freeswitch|haproxy)"
+```
+
+#### Найденные теги:
+
+**Для FreeSWITCH:**
+- `freeswitch` - основной тег для установки FreeSWITCH
+- `freeswitch, sysctl` - для настройки sysctl
+
+**Для HAProxy:**
+- `haproxy` - основной тег (включает задачи из `haproxy_install.yml` и `haproxy_media_install.yml`)
+- `install, haproxy` - дополнительные теги
+
 
 #### Установка после определения тегов:
 ```bash
 # Установить FreeSWITCH
-ansible-playbook -i inventory.ini playbook-clust-test.yml --tags="freeswitch" --limit 192.168.87.66
+ansible-playbook -i inventory.ini playbook-clust-test.yml --limit 192.168.87.66 --tags="freeswitch"
 
 # Установить HAProxy
-ansible-playbook -i inventory.ini playbook-clust-test.yml --tags="haproxy" --limit 192.168.87.66
+ansible-playbook -i inventory.ini playbook-clust-test.yml --limit 192.168.87.66 --tags="haproxy"
 
 # Или одной командой
-ansible-playbook -i inventory.ini playbook-clust-test.yml --tags="freeswitch,haproxy" --limit 192.168.87.66
+ansible-playbook -i inventory.ini playbook-clust-test.yml --limit 192.168.87.66 --tags="freeswitch,haproxy"
 ```
 
 #### Проверка установки:
@@ -483,7 +521,7 @@ ansible -i inventory.ini 192.168.87.66 -m shell -a "systemctl status freeswitch"
 
 # Проверить HAProxy
 ansible -i inventory.ini 192.168.87.66 -m shell -a "dpkg -l | grep haproxy" -b
-ansible -i inventory.ini 192.168.87.66 -m shell -a "ls -la /etc/haproxy/haproxy.cfg" -b
+ansible -i inventory.ini 192.168.87.66 -m shell -a "ls -alF /etc/haproxy/haproxy.cfg" -b
 ansible -i inventory.ini 192.168.87.66 -m shell -a "systemctl status haproxy" -b
 ```
 
@@ -532,4 +570,81 @@ ansible -i inventory.ini 192.168.87.66 -m shell -a "systemctl status freeswitch.
 ```
 
 ---
+
+
+## 9. Установка приложения Runtel 
+> Данные действия нужны в том случае, если требуется на один хостов с каким-либо модулем поставить приложение.
+{.is-info}
+
+
+#### Добавить необходимый хост
+
+Добавить в плейбук неоходимый IP к переменной **`app_hosts`** (в нашем случае 192.168.87.66 [app-clust4] ), т.к. ранее на него уже был установлен медиахост.
+```yml
+***
+    # список хостов приложений
+    app_hosts: ["192.168.87.38", "192.168.87.127", "192.168.87.148", "192.168.87.66"]
+    # список медиахостов
+    fs_hosts: ["192.168.87.38", "192.168.87.127", "192.168.87.148", "192.168.87.66"]
+***
+```
+
+#### Поиск тегов для установки:
+```bash
+# Посмотреть все доступные теги в плейбуке:
+ansible-playbook -i inventory.ini playbook-clust-test.yml --list-tags
+
+ ## Получим
+ [autostart, check, db, disable, etcd, force-restart, fs, haproxy, patroni, postgresql, redis, reload, runtel, ssh, stop]
+
+# Посмотрим какие задачи есть в плейбуке на установку
+ansible-playbook -i inventory.ini playbook-clust-test.yml --list-tasks | grep -i install
+
+# Посмотреть задачи с тегом haproxy
+ansible-playbook -i inventory.ini playbook-clust-test.yml --tags="runtel" --list-tasks
+```
+
+#### Проверка перед установкой приложения Runtel на узел app-clust4
+```bash
+ansible-playbook -i inventory.ini playbook-clust-test.yml --limit 192.168.87.66 --check --diff
+```
+
+#### Установка приложения Runtel на узел app-clust4
+```bash
+# Режим проверки (без реальных изменений)
+ansible-playbook -i inventory.ini playbook-clust-test.yml --limit 192.168.87.66 --check --diff
+
+# Запустим плейбук БЕЗ тегов - это установит все необходимое
+ansible-playbook -i inventory.ini playbook-clust-test.yml --limit 192.168.87.66
+```
+
+#### Проверим состояние после установки
+```bash
+# Что уже установлено на app-clust4
+ansible -i inventory.ini 192.168.87.66 -m shell -a "dpkg -l | grep -iE runtel" -b
+ansible -i inventory.ini 192.168.87.66 -m shell -a "dpkg -l | grep -iE '(runtel|nginx)'" -b
+ansible -i inventory.ini 192.168.87.66 -m shell -a "systemctl list-units runtel*" -b
+
+# Проверим порты
+ansible -i inventory.ini 192.168.87.66 -m shell -a "ss -tulpn | grep -E '(4810|6379|8021)'" -b
+ansible -i inventory.ini 192.168.87.66 -m shell -a "ls -alF /etc/runtel/" -b
+ansible -i inventory.ini 192.168.87.66 -m shell -a "cat /etc/runtel/base.yaml | grep -i port" -b
+
+# Проверка на хосте
+# Проверим конфигурацию приложения - там указаны порты
+cat /etc/runtel/base.json | grep -i port
+cat /etc/runtel/env | grep -i port
+
+# Или посмотрим конфиги служб
+grep -r "port" /etc/runtel/
+
+# Все listening порты
+lsof -i -P -n | grep LISTEN
+
+# Только LISTEN порты iface
+lsof -iTCP -sTCP:LISTEN | grep iface
+```
+
+
+
 
