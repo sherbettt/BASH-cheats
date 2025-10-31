@@ -1,5 +1,5 @@
 
-# Установка приложения Runtel на кластер - Полная шпаргалка
+# Установка приложения Runtel на кластер - шпаргалка
 
 <!-- **[Применение installer_pbxv2_cluster](https://gitlab.runtel.org/runtel/installer_pbxv2_cluster)** -->
 
@@ -573,7 +573,7 @@ ansible -i inventory.ini 192.168.87.66 -m shell -a "systemctl status freeswitch.
 
 
 ## 9. Установка приложения Runtel 
-> Данные действия нужны в том случае, если требуется на один хостов с каким-либо модулем поставить приложение.
+> Данные действия нужны в том случае, если требуется на один из хостов с каким-либо модулем поставить приложение.
 {.is-info}
 
 
@@ -632,7 +632,7 @@ ansible -i inventory.ini 192.168.87.66 -m shell -a "cat /etc/runtel/base.yaml | 
 
 # Проверка на хосте
 # Проверим конфигурацию приложения - там указаны порты
-cat /etc/runtel/base.json | grep -i port
+cat /etc/runtel/base.yaml | grep -i port
 cat /etc/runtel/env | grep -i port
 
 # Или посмотрим конфиги служб
@@ -645,6 +645,11 @@ lsof -i -P -n | grep LISTEN
 lsof -iTCP -sTCP:LISTEN | grep iface
 ```
 
+#### Принудительно создать таблицы
+```bash
+# Перезапустить iface службу на лидере - она должна создать таблицы
+ansible -i inventory.ini 192.168.87.148 -m shell -a "systemctl restart runtel-iface-v2" -b
 
-
-
+# Проверить создание таблиц
+ansible -i inventory.ini 192.168.87.148 -m shell -a "psql -h 192.168.87.38 -p 5432 -U postgres -d rt_pbx_v2 -c '\dt'" -b
+```
