@@ -80,22 +80,27 @@ ansible-playbook -i inventory.ini playbook-clust-test.yml --skip-tags="patroni,h
 ```conf
 # Прямое подключение к PostgreSQL (5433)
 192.168.87.38:5433:*:postgres:AdminDBPassComplex
-192.168.87.127:5433:*:postgres:AdminDBPassComplex
-192.168.87.148:5433:*:postgres:AdminDBPassComplex
+192.168.87.66:5433:*:postgres:AdminDBPassComplex
+192.168.87.195:5433:*:postgres:AdminDBPassComplex
 
 # Подключение через HAProxy (5432)
 192.168.87.38:5432:*:postgres:AdminDBPassComplex
-192.168.87.127:5432:*:postgres:AdminDBPassComplex
-192.168.87.148:5432:*:postgres:AdminDBPassComplex
+192.168.87.66:5432:*:postgres:AdminDBPassComplex
+192.168.87.195:5432:*:postgres:AdminDBPassComplex
 
-# локальные адреса
+# Локальные адреса
 localhost:5433:*:postgres:AdminDBPassComplex
 127.0.0.1:5433:*:postgres:AdminDBPassComplex
 
-# Пользователь rt_pbx - все базы данных
+# Пользователь rt_pbx - все базы данных (прямое подключение 5433)
+192.168.87.38:5433:*:rt_pbx:VeryComplexPass123
+192.168.87.66:5433:*:rt_pbx:VeryComplexPass123
+192.168.87.195:5433:*:rt_pbx:VeryComplexPass123
+
+# Пользователь rt_pbx - все базы данных (через HAProxy 5432)
 192.168.87.38:5432:*:rt_pbx:VeryComplexPass123
-192.168.87.127:5432:*:rt_pbx:VeryComplexPass123
-192.168.87.148:5432:*:rt_pbx:VeryComplexPass123
+192.168.87.66:5432:*:rt_pbx:VeryComplexPass123
+192.168.87.195:5432:*:rt_pbx:VeryComplexPass123
 ```
 
 ### (опционально) Настроить переменные окружения для удобства
