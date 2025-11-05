@@ -50,7 +50,7 @@ ansible -i inventory.ini --list-hosts all
 
 ---
 
-## 2. Управление плейбуками и тегами
+## 2.1. Управление плейбуками и тегами
 
 ### Посмотреть доступные теги:
 ```bash
@@ -69,6 +69,54 @@ ansible-playbook -i inventory.ini playbook-clust-test.yml --tags="haproxy,redis"
 ansible-playbook -i inventory.ini playbook-clust-test.yml --skip-tags freeswitch
 ansible-playbook -i inventory.ini playbook-clust-test.yml --skip-tags="patroni,haproxy,redis"
 ```
+
+
+## 2.2. Добавление ключа вручную
+Отлично! Вот как вручную применить ключ на серверах:
+
+## Способ 1: Добавить ключ в apt-key (рекомендуемый)
+
+```bash
+# На каждом сервере выполни:
+apt-key add /etc/nginx/runtel.gpg
+```
+
+## Способ 2: Скопировать ключ в директорию trusted.gpg.d
+
+```bash
+# На каждом сервере:
+cp /etc/nginx/runtel.gpg /etc/apt/trusted.gpg.d/runtel.gpg
+chmod 644 /etc/apt/trusted.gpg.d/runtel.gpg
+```
+
+## Способ 3: Добавить репозиторий с указанием ключа
+
+```bash
+# На каждом сервере:
+echo "deb [signed-by=/etc/nginx/runtel.gpg] http://repo.runtel.ru/ $(lsb_release -cs) main" > /etc/apt/sources.list.d/runtel.list
+apt update
+```
+
+## Проверить, что ключ добавлен:
+
+```bash
+# Проверить список ключей
+apt-key list
+
+# Или посмотреть конкретно runtel ключ
+apt-key list | grep -A5 -B5 runtel
+```
+
+## Быстрая команда для всех серверов через Ansible:
+
+```bash
+# Добавить ключ на все ноды
+ansible -i inventory.ini all -m shell -a "apt-key add /etc/nginx/runtel.gpg" -b
+
+# Проверить
+ansible -i inventory.ini all -m shell -a "apt-key list | grep -i runtel" -b
+```
+
 
 ---
 
