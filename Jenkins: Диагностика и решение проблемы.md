@@ -85,6 +85,23 @@ find /var/lib/jenkins/ -type f | wc -l
 - Файлов в Jenkins: с ~7M до 2.1M
 - Файлов в проблемной job'е: с 6.5M до 1.7M
 
-## Выявленная проблема
-**Job `pbx_v2_deb11_dev60`** создавал огромное количество файлов в своих сборках, что полностью исчерпывало доступные inodes в файловой системе.
+### 8. Посмотрим что занимает место в оставшихся build'ах
+```bash
+for build in /var/lib/jenkins/jobs/pbx_v2_deb11_dev60/builds/*/; do
+    file_count=$(sudo find "$build" -type f | wc -l)
+    size=$(sudo du -sh "$build" 2>/dev/null | cut -f1)
+    echo "Build $(basename $build): $file_count files, $size"
+done | sort -k2 -rn | head -10
+```
+```bash
+# Посмотрим какие поддиректории создают больше всего файлов
+sudo find /var/lib/jenkins/jobs/pbx_v2_deb11_dev60/builds/ -type f | awk -F/ '{if(NF>=8) print $7}' | sort | uniq -c | sort -rn | head -10
+```
+```bash
+# Оставить только последние 20 сборок (вместо 50)
+sudo find /var/lib/jenkins/jobs/pbx_v2_deb11_dev60/builds -mindepth 1 -maxdepth 1 -type d | sort -rn | tail -n +21 | xargs sudo rm -rf
 
+# Проверим результат
+echo "Files after cleanup: $(find /var/lib/jenkins/jobs/pbx_v2_deb11_dev60/ -type f | wc -l)"
+df -i /
+```
