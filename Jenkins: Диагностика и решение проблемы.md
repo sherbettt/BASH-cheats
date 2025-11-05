@@ -265,6 +265,8 @@ echo "0 2 * * 0 /usr/local/bin/jenkins_maintenance.sh" | sudo crontab -
 ## Мониторинг
 Для мониторинга можно добавить простую проверку в cron:
 ```bash
+crontab -e
+## добавляем
 # Ежедневная проверка inodes
-echo "0 8 * * * echo \"\$(date): Inodes usage: \$(df -i / | awk 'NR==2 {print \$5}')\" >> /var/log/inodes_check.log" | sudo crontab -
+0 8 * * * echo "$(date): Inodes usage: $(df -i / | awk 'NR==2 {print $5}')" >> /var/log/inodes_check.log
 ```
