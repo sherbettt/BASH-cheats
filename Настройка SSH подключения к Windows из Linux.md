@@ -101,6 +101,7 @@ scp maxro@192.168.87.125:"C:/Users/maxro/Documents/file.txt" /home/user/
 Из SSH сессии Windows:
 ```bash
 scp "C:\path\to\file" linux_user@linux_ip:/path/
+scp "C:\Users\maxro\Documents\SKUD_1Oct_10Nov (clear time).ods" kiko0625@192.168.87.151:/home/kiko0625/Документы/SKUD
 ```
 
 ## 🚪 **Этап 6: Завершение работы**
