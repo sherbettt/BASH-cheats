@@ -226,3 +226,143 @@ fi
 ### "SSL handshake failed":
 - Несоответствие ключа и сертификата
 - Неправильная цепочка сертификатов
+
+--------------
+<br/>
+
+# 📋 Последовательность действий генерации SSL сертификатов
+
+## ✅ Уже сделано:
+
+### 1. **Создание SSL сертификата**
+- Создан конфиг `san.conf` с настройками для host.dogma.ru
+- Сгенерирован приватный ключ: `host.dogma.ru.key` (2048 бит)
+- Сгенерирован сертификат: `host.dogma.ru.crt` (самоподписанный)
+- Сертификат включает SAN: host.dogma.ru, www.host.dogma.ru, dogma.ru, www.dogma.ru, 127.0.0.1
+- Срок действия: 1 год (до 24.11.2026)
+
+### 2. **Проверка сертификата**
+- ✅ Ключ валиден: `RSA key ok`
+- ✅ Ключ и сертификат соответствуют: MD5 хэши совпадают
+- ✅ Сертификат содержит все нужные домены
+
+## 🔜 Что нужно сделать дальше:
+
+### 1. **Перенос на продакшен-сервер**
+```bash
+# С текущей машины на сервер
+scp /etc/ssl/host.dogma.ru/host.dogma.ru.crt user@server_ip:/tmp/
+scp /etc/ssl/host.dogma.ru/host.dogma.ru.key user@server_ip:/tmp/
+
+# Или создать заново на сервере теми же командами
+```
+
+### 2. **Настройка на сервере**
+```bash
+# 1. Создать директории
+sudo mkdir -p /etc/ssl/host.dogma.ru
+sudo mkdir -p /var/www/host.dogma.ru
+
+# 2. Переместить файлы
+sudo mv /tmp/host.dogma.ru.* /etc/ssl/host.dogma.ru/
+
+# 3. Настроить права
+sudo chmod 600 /etc/ssl/host.dogma.ru/host.dogma.ru.key
+sudo chmod 644 /etc/ssl/host.dogma.ru/host.dogma.ru.crt
+sudo chown root:root /etc/ssl/host.dogma.ru/host.dogma.ru.key
+```
+
+### 3. **Создание Nginx конфига**
+```bash
+sudo nano /etc/nginx/sites-available/host.dogma.ru
+```
+
+**Содержимое конфига:**
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name host.dogma.ru www.host.dogma.ru dogma.ru www.dogma.ru;
+    
+    ssl_certificate /etc/ssl/host.dogma.ru/host.dogma.ru.crt;
+    ssl_certificate_key /etc/ssl/host.dogma.ru/host.dogma.ru.key;
+    
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512;
+    ssl_prefer_server_ciphers off;
+    
+    root /var/www/host.dogma.ru;
+    index index.html index.htm;
+    
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
+
+server {
+    listen 80;
+    server_name host.dogma.ru www.host.dogma.ru dogma.ru www.dogma.ru;
+    return 301 https://$server_name$request_uri;
+}
+```
+
+### 4. **Активация сайта**
+```bash
+# Активировать сайт
+sudo ln -s /etc/nginx/sites-available/host.dogma.ru /etc/nginx/sites-enabled/
+
+# Проверить синтаксис
+sudo nginx -t
+
+# Перезагрузить nginx
+sudo systemctl reload nginx
+```
+
+### 5. **Создание тестовой страницы**
+```bash
+# Создать тестовую страницу
+sudo tee /var/www/host.dogma.ru/index.html > /dev/null << EOF
+<!DOCTYPE html>
+<html>
+<head>
+    <title>host.dogma.ru</title>
+</head>
+<body>
+    <h1>Hello from host.dogma.ru!</h1>
+    <p>SSL сертификат работает!</p>
+</body>
+</html>
+EOF
+```
+
+### 6. **Настройка DNS**
+- В DNS прописать A-запись: `host.dogma.ru` → IP_адрес_сервера
+- При необходимости добавить CNAME: `www.host.dogma.ru` → `host.dogma.ru`
+
+### 7. **Проверка firewall**
+```bash
+# Проверить открытые порты
+sudo ufw status
+# или
+sudo iptables -L
+
+# Если нужно открыть порты
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+```
+
+## 🎯 Краткий чек-лист:
+- [ ] Перенести файлы на сервер
+- [ ] Настроить права доступа
+- [ ] Создать Nginx конфиг
+- [ ] Активировать сайт
+- [ ] Создать тестовую страницу
+- [ ] Настроить DNS
+- [ ] Проверить firewall
+- [ ] Протестировать работу
+
+## ⚠️ Важные заметки:
+- **Самоподписанный сертификат** будет вызывать предупреждение в браузерах
+- **Для продакшена** лучше использовать Let's Encrypt
+- **Проверьте** что домен host.dogma.ru resolvable с сервера
+
+Теперь у вас есть полный план действий! 🚀
