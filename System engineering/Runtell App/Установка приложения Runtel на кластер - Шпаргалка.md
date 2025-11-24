@@ -117,13 +117,27 @@ ansible -i inventory.ini all -m shell -a "apt-key add /etc/nginx/runtel.gpg" -b
 ansible -i inventory.ini all -m shell -a "apt-key list | grep -i runtel" -b
 ```
 
-## Общая работа Ansible:
+### Посмотреть доступные теги:
 ```bash
-ANSIBLE_FORCE_COLOR=1 ansible-playbook -i inventory.ini playbook-clust-test.yml -vvv 2>&1 | tee debug_$(date +%Y%m%d_%H%M%S).log
-
+ansible-playbook -i inventory.ini playbook-clust-test.yml --list-tags
 ```
 
+### Запуск по тегам
+```bash
+# Отдельные теги
+ansible-playbook -i inventory.ini playbook-clust-test.yml --tags="patroni"
+ansible-playbook -i inventory.ini playbook-clust-test.yml --tags="haproxy,redis"
+```
+
+### Пропуск тегов
+```bash
+ansible-playbook -i inventory.ini playbook-clust-test.yml --skip-tags freeswitch
+ansible-playbook -i inventory.ini playbook-clust-test.yml --skip-tags="patroni,haproxy,redis"
+```
 ---
+<br/>
+
+
 
 ## 3. Работа с базой данных PostgreSQL
 
@@ -157,6 +171,27 @@ localhost:5433:*:postgres:AdminDBPassComplex
 ```
 
 ### (опционально) Настроить переменные окружения для удобства
+```bash
+# Добавить в ~/.bashrc пользователя postgres
+echo "export PGHOST=/var/lib/postgresql/patroni" >> ~/.bashrc
+echo "export PGPORT=5433" >> ~/.bashrc
+source ~/.bashrc
+
+# Теперь можно просто
+psql -U postgres
+```
+
+### Поиск сокета БД для переменных окружения
+```bash
+ls -alF /var/run/postgresql/
+
+# Поищем сокеты в системе (скоре всего в /var/lib/postgresql/patroni/.s.PGSQL.5433)
+find / -name ".s.PGSQL.5433" 2>/dev/null
+find /var/run -name ".s.PGSQL.*" 2>/dev/null
+find /var/lib/postgresql /tmp /var/tmp -name ".s.PGSQL.5433" 2>/dev/null
+```
+
+### Настроить переменные окружения для удобства
 ```bash
 # Добавить в ~/.bashrc пользователя postgres
 echo "export PGHOST=/var/lib/postgresql/patroni" >> ~/.bashrc
