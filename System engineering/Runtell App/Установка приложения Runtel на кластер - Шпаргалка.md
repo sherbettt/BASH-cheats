@@ -117,6 +117,11 @@ ansible -i inventory.ini all -m shell -a "apt-key add /etc/nginx/runtel.gpg" -b
 ansible -i inventory.ini all -m shell -a "apt-key list | grep -i runtel" -b
 ```
 
+## Общая работа Ansible:
+```bash
+ANSIBLE_FORCE_COLOR=1 ansible-playbook -i inventory.ini playbook-clust-test.yml -vvv 2>&1 | tee debug_$(date +%Y%m%d_%H%M%S).log
+
+```
 
 ---
 
