@@ -27,20 +27,32 @@ sudo ln -s /home/<user_name>/projects/git/installer_pbxv2_cluster /etc/ansible/r
 ```ini
 ## /home/<user_name>/projects/git/installer_pbxv2_cluster/inventory.ini
 
-#==============
 # Runtel Platform Test Cluster
-[cluster-test]
-192.168.87.38		# app-clust1
-192.168.87.127	# app-clust2
-192.168.87.148	# app-clust3
-192.168.87.66		# app-clust4
+[cluster_test]
+192.168.87.38
+192.168.87.66
+192.168.87.195
+192.168.87.148
 
-[cluster-test:vars]
+[cluster_test:vars]
 ansible_user=root
-debug_enabled=True
+debug_enabled=True                                  # созданная переменная для управления отладкой
 ansible_ssh_private_key_file=~/.ssh/id_ed25519
 #ansible_env_LANG=en_US.UTF-8
 #ansible_env_LC_ALL=en_US.UTF-8
+
+#[all:vars]
+#auth_password=RootRuntelPass
+#http_hostname=cluster-test.runtel.org
+#domain_suffix=runtel.org
+
+
+# Если ставим кластером за NAT
+#[mrg]
+#10.223.232.2 ansible_host=178.176.229.225 ansible_port=9022 ansible_user=root
+#10.223.232.3 ansible_host=178.176.229.225 ansible_port=9023 ansible_user=root
+#10.223.232.4 ansible_host=178.176.229.225 ansible_port=9024 ansible_user=root
+
 ```
 
 ### Проверка хостов ansible
