@@ -1,7 +1,7 @@
 
 # Установка приложения Runtel на кластер - шпаргалка
 
-<!-- **[Применение installer_pbxv2_cluster](https://gitlab.runtel.org/runtel/installer_pbxv2_cluster)** -->
+ **[Применение installer_pbxv2_cluster](https://gitlab.runtel.org/runtel/installer_pbxv2_cluster)** 
 
 ## Содержание
 1. [Начальная настройка Ansible](#1-начальная-настройка-ansible)
@@ -47,74 +47,35 @@ ansible_ssh_private_key_file=~/.ssh/id_ed25519
 ```bash
 ansible -i inventory.ini --list-hosts all
 ```
-
+### Проверка синтаксиса
+```bash
+ansible-playbook -i inventory.ini playbook-clust-test.yml --syntax-check
+```
+### Проверка пинга до хостов
+```bash
+ansible -i inventory.ini cluster_test -m ping
+```
 ---
+<br/>
 
-## 2.1. Управление плейбуками и тегами
+## 2. Управление плейбуками и тегами
 
-### Посмотреть доступные теги:
+### Вывод с отладкой:
 ```bash
-ansible-playbook -i inventory.ini playbook-clust-test.yml --list-tags
-```
+# С цветовым выводом (если нужно сохранить цвета)
+ansible-playbook -i inventory.ini playbook-clust-test.yml | tee -a output.log
 
-### Запуск по тегам
-```bash
-# Отдельные теги
-ansible-playbook -i inventory.ini playbook-clust-test.yml --tags="patroni"
-ansible-playbook -i inventory.ini playbook-clust-test.yml --tags="haproxy,redis"
-```
+# Или с ансибловскими цветами:
+ANSIBLE_FORCE_COLOR=1 ansible-playbook -i inventory.ini playbook-clust-test.yml | tee output.log
 
-### Пропуск тегов
-```bash
-ansible-playbook -i inventory.ini playbook-clust-test.yml --skip-tags freeswitch
-ansible-playbook -i inventory.ini playbook-clust-test.yml --skip-tags="patroni,haproxy,redis"
-```
+# С прогресс-барами (если нужно)
+ANSIBLE_FORCE_COLOR=1 ansible-playbook -i inventory.ini playbook-clust-test.yml -vv | tee "debug_$(date +%Y%m%d_%H%M%S).log"
 
+# С максимальной детализацией и временной меткой
+ANSIBLE_FORCE_COLOR=1 ansible-playbook -i inventory.ini playbook-clust-test.yml -vvv 2>&1 | tee debug_$(date +%Y%m%d_%H%M%S).log
 
-## 2.2. Добавление ключа вручную
-Отлично! Вот как вручную применить ключ на серверах:
-
-## Способ 1: Добавить ключ в apt-key (рекомендуемый)
-
-```bash
-# На каждом сервере выполни:
-apt-key add /etc/nginx/runtel.gpg
-```
-
-## Способ 2: Скопировать ключ в директорию trusted.gpg.d
-
-```bash
-# На каждом сервере:
-cp /etc/nginx/runtel.gpg /etc/apt/trusted.gpg.d/runtel.gpg
-chmod 644 /etc/apt/trusted.gpg.d/runtel.gpg
-```
-
-## Способ 3: Добавить репозиторий с указанием ключа
-
-```bash
-# На каждом сервере:
-echo "deb [signed-by=/etc/nginx/runtel.gpg] http://repo.runtel.ru/ $(lsb_release -cs) main" > /etc/apt/sources.list.d/runtel.list
-apt update
-```
-
-## Проверить, что ключ добавлен:
-
-```bash
-# Проверить список ключей
-apt-key list
-
-# Или посмотреть конкретно runtel ключ
-apt-key list | grep -A5 -B5 runtel
-```
-
-## Быстрая команда для всех серверов через Ansible:
-
-```bash
-# Добавить ключ на все ноды
-ansible -i inventory.ini all -m shell -a "apt-key add /etc/nginx/runtel.gpg" -b
-
-# Проверить
-ansible -i inventory.ini all -m shell -a "apt-key list | grep -i runtel" -b
+# Проверка
+ANSIBLE_FORCE_COLOR=1 ansible-playbook -i inventory.ini playbook-clust-test.yml -vv --check --diff
 ```
 
 ### Посмотреть доступные теги:
@@ -138,13 +99,12 @@ ansible-playbook -i inventory.ini playbook-clust-test.yml --skip-tags="patroni,h
 <br/>
 
 
-
-## 3. Работа с базой данных PostgreSQL
+## 3.1. Работа с базой данных PostgreSQL
 
 ### Настройка `.pgpass`
 Создать файл для пользователя (postgres:postgres) с правами 600 `/var/lib/postgresql/.pgpass`, 
 <br/> а для root (root:root) с правами 600 `/root/.pgpass`:
-```conf
+```c
 # Прямое подключение к PostgreSQL (5433)
 192.168.87.38:5433:*:postgres:AdminDBPassComplex
 192.168.87.66:5433:*:postgres:AdminDBPassComplex
@@ -168,17 +128,15 @@ localhost:5433:*:postgres:AdminDBPassComplex
 192.168.87.38:5432:*:rt_pbx:VeryComplexPass123
 192.168.87.66:5432:*:rt_pbx:VeryComplexPass123
 192.168.87.195:5432:*:rt_pbx:VeryComplexPass123
-```
 
-### (опционально) Настроить переменные окружения для удобства
-```bash
-# Добавить в ~/.bashrc пользователя postgres
-echo "export PGHOST=/var/lib/postgresql/patroni" >> ~/.bashrc
-echo "export PGPORT=5433" >> ~/.bashrc
-source ~/.bashrc
+# Внешине БД
+192.168.87.60:5432:*:rt_pbxx:VeryComplexPass123
+192.168.87.61:5432:*:rt_pbxx:VeryComplexPass123
+192.168.87.62:5432:*:rt_pbxx:VeryComplexPass123
 
-# Теперь можно просто
-psql -U postgres
+192.168.87.60:5433:*:rt_pbxx:VeryComplexPass123
+192.168.87.61:5433:*:rt_pbxx:VeryComplexPass123
+192.168.87.62:5433:*:rt_pbxx:VeryComplexPass123
 ```
 
 ### Поиск сокета БД для переменных окружения
@@ -357,8 +315,268 @@ do psql -h 192.168.87.148 -p 5432 -U postgres -c \"DROP DATABASE IF EXISTS \\\"\
 # Очистка конфигурации
 ansible app-clust3 -m shell -a "rm -rf /etc/runtel/" -b
 ```
-
 ---
+<br/>
+
+
+## 3.2 Если БД внешняя
+
+### требуется создать пустые БД
+Ниже приведён пример, какими должны быть БД
+```postgresql
+ rt_pbx_v2_ext         | rt_pbx   | UTF8      | ru_RU.UTF-8 | ru_RU.UTF-8 |            | libc             |
+ rt_pbx_v2_logging_ext | rt_pbx   | UTF8      | ru_RU.UTF-8 | ru_RU.UTF-8 |            | libc             |
+ rt_pbx_v2_media_ext   | rt_pbx   | UTF8      | ru_RU.UTF-8 | ru_RU.UTF-8 |            | libc             |
+ rt_pbx_v2_stat_ext    | rt_pbx   | UTF8      | ru_RU.UTF-8 | ru_RU.UTF-8 |            | libc             |
+```
+
+### Проверка исходных БД
+```bash
+# Посмотреть что сейчас в исходных БД
+echo "=== Таблицы в исходных БД ==="
+for DB in rt_pbx_v2_71 rt_pbx_v2_logging_71 rt_pbx_v2_media_71 rt_pbx_v2_stat_71; do
+    echo "БД: $DB"
+    psql -h /var/lib/postgresql/patroni -p 5433 -U postgres -d $DB -c "SELECT COUNT(*) as table_count FROM pg_tables WHERE schemaname = 'public';"
+done
+```
+
+### Создать БД с пустыми таблицами
+```bash
+# Создаем каждую БД отдельной командой
+psql -h /var/lib/postgresql/patroni -p 5433 -U postgres -c "CREATE DATABASE rt_pbx_v2_ext WITH OWNER = rt_pbx ENCODING = 'UTF8' LC_COLLATE = 'ru_RU.UTF-8' LC_CTYPE = 'ru_RU.UTF-8' TEMPLATE = template0;"
+
+psql -h /var/lib/postgresql/patroni -p 5433 -U postgres -c "CREATE DATABASE rt_pbx_v2_logging_ext WITH OWNER = rt_pbx ENCODING = 'UTF8' LC_COLLATE = 'ru_RU.UTF-8' LC_CTYPE = 'ru_RU.UTF-8' TEMPLATE = template0;"
+
+psql -h /var/lib/postgresql/patroni -p 5433 -U postgres -c "CREATE DATABASE rt_pbx_v2_media_ext WITH OWNER = rt_pbx ENCODING = 'UTF8' LC_COLLATE = 'ru_RU.UTF-8' LC_CTYPE = 'ru_RU.UTF-8' TEMPLATE = template0;"
+
+psql -h /var/lib/postgresql/patroni -p 5433 -U postgres -c "CREATE DATABASE rt_pbx_v2_stat_ext WITH OWNER = rt_pbx ENCODING = 'UTF8' LC_COLLATE = 'ru_RU.UTF-8' LC_CTYPE = 'ru_RU.UTF-8' TEMPLATE = template0;"
+
+# или через цикл создать 
+for DB in rt_pbx_v2_ext rt_pbx_v2_logging_ext rt_pbx_v2_media_ext rt_pbx_v2_stat_ext; do
+    echo "Создаю БД: $DB"
+    psql -h /var/lib/postgresql/patroni -p 5433 -U postgres -c \
+        "CREATE DATABASE $DB WITH OWNER = rt_pbx ENCODING = 'UTF8' LC_COLLATE = 'ru_RU.UTF-8' LC_CTYPE = 'ru_RU.UTF-8' TEMPLATE = template0;"
+done
+```
+
+### Дополнительно: Установить комментарий к БД (опционально)
+```bash
+for DB in rt_pbx_v2_ext rt_pbx_v2_logging_ext rt_pbx_v2_media_ext rt_pbx_v2_stat_ext; do
+    psql -h /var/lib/postgresql/patroni -p 5433 -U postgres -c \
+        "COMMENT ON DATABASE $DB IS 'Пустая БД для тестирования, создана $(date)';"
+done
+
+# Проверить комментарии
+psql -h /var/lib/postgresql/patroni -p 5433 -U postgres -c "
+SELECT 
+    datname as database,
+    pg_size_pretty(pg_database_size(datname)) as size,
+    obj_description(oid, 'pg_database') as comment
+FROM pg_database 
+WHERE datname LIKE '%_ext';
+"
+```
+
+### Проверка полученных БД
+```bash
+# Проверить - таблиц не должно быть
+psql -h /var/lib/postgresql/patroni -p 5433 -U postgres -d rt_pbx_v2_ext -c "\dt"
+# Должно быть: "Не найдено отношений."
+
+psql -h /var/lib/postgresql/patroni -p 5433 -U postgres -d rt_pbx_v2_logging_ext -c "\dt"
+psql -h /var/lib/postgresql/patroni -p 5433 -U postgres -d rt_pbx_v2_media_ext -c "\dt"
+psql -h /var/lib/postgresql/patroni -p 5433 -U postgres -d rt_pbx_v2_stat_ext -c "\dt"
+
+# Проверить что таблиц нет (должны быть пустые)
+for DB in rt_pbx_v2_ext rt_pbx_v2_logging_ext rt_pbx_v2_media_ext rt_pbx_v2_stat_ext; do
+    echo "=== Проверка БД: $DB ==="
+    psql -h /var/lib/postgresql/patroni -p 5433 -U postgres -d $DB -c "\dt+"
+done
+
+# Посмотреть что будет в новых БД (пустые)
+echo "=== Что будет в новых БД ==="
+for DB in rt_pbx_v2_ext rt_pbx_v2_logging_ext rt_pbx_v2_media_ext rt_pbx_v2_stat_ext; do
+    echo "БД: $DB (будет создана)"
+    echo "  - 0 таблиц (абсолютно пустая)"
+done
+
+# Проверить список всех БД
+psql -h /var/lib/postgresql/patroni -p 5433 -U postgres -c "\l" | grep -E "(Name|_ext)"
+```
+
+### Дополнительная проверка через SQL
+```bash
+# Подробная проверка всех созданных БД
+psql -h /var/lib/postgresql/patroni -p 5433 -U postgres -c "
+SELECT 
+    d.datname as \"База данных\",
+    pg_size_pretty(pg_database_size(d.datname)) as \"Размер\",
+    (SELECT COUNT(*) FROM pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema')) as \"Таблиц\",
+    (SELECT COUNT(*) FROM pg_views WHERE schemaname NOT IN ('pg_catalog', 'information_schema')) as \"Представлений\",
+    (SELECT COUNT(*) FROM pg_indexes WHERE schemaname NOT IN ('pg_catalog', 'information_schema')) as \"Индексов\"
+FROM pg_database d
+WHERE d.datname LIKE '%_ext'
+ORDER BY d.datname;
+"
+
+# Или подробнее
+psql -h /var/lib/postgresql/patroni -p 5433 -U postgres -c "
+SELECT 
+    datname as \"База данных\",
+    datdba::regrole as \"Владелец\",
+    pg_size_pretty(pg_database_size(datname)) as \"Размер\",
+    pg_encoding_to_char(encoding) as \"Кодировка\",
+    datcollate as \"Коллация\"
+FROM pg_database 
+WHERE datname LIKE '%_ext'
+ORDER BY datname;
+"
+```
+
+
+### Если нужно удалить и пересоздать (если уже созданы с ошибкой)
+```bash
+# Удалить если существуют
+for DB in rt_pbx_v2_ext rt_pbx_v2_logging_ext rt_pbx_v2_media_ext rt_pbx_v2_stat_ext; do
+    psql -h /var/lib/postgresql/patroni -p 5433 -U postgres -c "DROP DATABASE IF EXISTS $DB;"
+done
+
+# Создать заново
+for DB in rt_pbx_v2_ext rt_pbx_v2_logging_ext rt_pbx_v2_media_ext rt_pbx_v2_stat_ext; do
+    psql -h /var/lib/postgresql/patroni -p 5433 -U postgres <<EOF
+CREATE DATABASE $DB 
+WITH OWNER = rt_pbxx 
+ENCODING = 'UTF8' 
+LC_COLLATE = 'ru_RU.UTF-8' 
+LC_CTYPE = 'ru_RU.UTF-8' 
+TEMPLATE = template0;
+EOF
+done
+
+# Дать права (опционально)
+for DB in rt_pbx_v2_ext rt_pbx_v2_logging_ext rt_pbx_v2_media_ext rt_pbx_v2_stat_ext; do
+    psql -h /var/lib/postgresql/patroni -p 5433 -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DB TO rt_pbxx;"
+done
+```
+---
+<br/>
+
+
+## 3.3 Если на одной из нод БД не среплицировалась
+
+### Создать БД на app3 через временное переключение в мастер:
+```bash
+# Временный switchover на app3
+patronictl -c /etc/patroni/config.yml switchover --master app --candidate app3 --force
+
+# Создать БД на app3 (теперь он мастер)
+for DB in rt_pbx_v2_ext rt_pbx_v2_logging_ext rt_pbx_v2_media_ext rt_pbx_v2_stat_ext; do
+    ssh root@192.168.87.62 "psql -h /var/lib/postgresql/patroni -p 5433 -U postgres -c \
+        'CREATE DATABASE IF NOT EXISTS $DB WITH OWNER = rt_pbx ENCODING = \"UTF8\" \
+        LC_COLLATE = \"ru_RU.UTF-8\" LC_CTYPE = \"ru_RU.UTF-8\" TEMPLATE = template0;'"
+done
+
+# Вернуть мастер на app
+patronictl -c /etc/patroni/config.yml switchover --master app3 --candidate app --force
+```
+
+### Скопировать БД с app2 на app3
+```bash
+# На app2 сделать дампы БД
+ssh root@192.168.87.61 "mkdir -p /tmp/db_dump"
+for DB in rt_pbx_v2_ext rt_pbx_v2_logging_ext rt_pbx_v2_media_ext rt_pbx_v2_stat_ext; do
+    ssh root@192.168.87.61 "pg_dump -h /var/lib/postgresql/patroni -p 5433 -U postgres -s -Fc -f /tmp/db_dump/${DB}.dump $DB"
+done
+
+# Скопировать на app3
+scp root@192.168.87.61:/tmp/db_dump/*.dump /tmp/
+
+# На app3 восстановить (если сможет - но он реплика!)
+# Это может не сработать из-за режима только чтение
+```
+---
+<br/>
+
+
+
+## 3.3 Если требуется создать пользователя rt_pbxx и пароль для него
+
+```sql
+# Подключитесь к мастеру
+sudo -u postgres psql -p 5433 -h 192.168.87.60
+
+-- Создаем пользователя rt_pbxx и устанавливаем пароль
+CREATE ROLE rt_pbxx LOGIN ENCRYPTED PASSWORD 'нужный_пароль';
+
+-- Дайте права
+ALTER USER rt_pbxx WITH SUPERUSER;
+```
+или записать в файл **`/var/lib/postgresql/.pgpass`**:
+```c
+hostname:port:database:username:password
+
+192.168.87.60:5433:*:rt_pbx:ваш_пароль
+```
+
+### Если требуется сменить пароль
+```sql
+-- Установите пароль для rt_pbx
+ALTER USER rt_pbx WITH PASSWORD 'ваш_пароль';
+
+-- Проверьте, что изменилось
+SELECT usename, passwd FROM pg_shadow WHERE usename = 'rt_pbxx';
+```
+
+### Сравнить хэш пароля
+Если вы знаете пароль, можно проверить, совпадает ли хэш:
+```sql
+-- Сгенерировать хэш пароля для сравнения
+SELECT 'md5' || md5('VeryComplexPass123' || 'rt_pbxx') as md5_hash;
+
+-- Для scram-sha-256 сложнее, но можно проверить через создание временного пользователя
+CREATE USER test_check_password WITH PASSWORD 'VeryComplexPass123';
+SELECT usename, passwd FROM pg_shadow WHERE usename = 'test_check_password';
+DROP USER test_check_password;
+```
+---
+<br/>
+
+
+
+## 3.4 Как найти пользователя приложения `root@runtel.ru`
+Необходимо узнать, где хранятся пользователи `root@runtel.ru` и как их найти в БД.
+```bash
+psql -h 192.168.87.60 -p 5432 -U postgres -d rt_pbx_v2_ext -c "\d+ user" | ccat
+psql -h 192.168.87.60 -p 5432 -U postgres -d rt_pbx_v2_ext -c "SELECT * FROM public.user LIMIT 10;" | ccat
+
+# Проверка в других БД
+for db in rt_pbx_v2_ext rt_pbx_v2_logging_ext rt_pbx_v2_media_ext rt_pbx_v2_stat_ext pbxv2 rt_pbx_v2_71; do
+  echo "=== База данных: $db ==="
+  psql -h 192.168.87.60 -p 5432 -U postgres -d $db -c "SELECT * FROM public.user WHERE email = 'root@runtel.ru' OR login = 'root@runtel.ru';"
+done
+```
+```bash
+# 1. Сколько всего пользователей в системе?
+psql -h 192.168.87.60 -p 5432 -U postgres -d rt_pbx_v2_ext -c "SELECT COUNT(*) as total_users FROM public.user;"
+
+# 2. Проверим другие связанные таблицы
+psql -h 192.168.87.60 -p 5432 -U postgres -d rt_pbx_v2_ext -c "SELECT * FROM public.role WHERE id = 1;"
+
+# 3. Проверим domain_user (возможно, есть связь)
+psql -h 192.168.87.60 -p 5432 -U postgres -d rt_pbx_v2_ext -c "SELECT * FROM public.domain_user WHERE user_id = 1;"
+
+# 4. Проверим user_profile
+psql -h 192.168.87.60 -p 5432 -U postgres -d rt_pbx_v2_ext -c "SELECT * FROM public.user_profile WHERE user_id = 1;"
+```
+```bash
+# Проверим, есть ли другие важные таблицы
+psql -h 192.168.87.60 -p 5432 -U postgres -d rt_pbx_v2_ext -c "\dt settings"
+psql -h 192.168.87.60 -p 5432 -U postgres -d rt_pbx_v2_ext -c "\dt license"
+psql -h 192.168.87.60 -p 5432 -U postgres -d rt_pbx_v2_ext -c "\dt domain"
+```
+---
+<br/>
+
 
 ## 4. Проверка состояния системы и сервисов
 
@@ -391,8 +609,9 @@ ps aux | grep patroni | grep -v grep
 # Какая текущая директория у процесса Patroni
 pwdx $(pgrep -f "patroni /etc/patroni/config.yml")
 ```
-
 ---
+<br/>
+
 
 ## 5. Управление службами Runtel
 
@@ -405,8 +624,20 @@ ansible -i inventory.ini 192.168.87.148 -m shell -a "ss -tulnp | grep runtel" -b
 
 ### Проверка Redis
 ```bash
-redis-cli -h 127.0.0.1 -p 6380 -a "VeryComplexPass" ping
-redis-cli -h 127.0.0.1 -p 6380 AUTH "VeryComplexPass"
+redis-cli -h 127.0.0.1 -p 6380 -a "RedisComplexPass" ping
+redis-cli -h 127.0.0.1 -p 6380 AUTH "RedisComplexPass"
+```
+
+#### Настроить переменные окружения для удобства для Redis
+```bash
+# Добавить в ~/.bashrc переменную
+echo "export REDISCLI_AUTH="RedisComplexPass"" >> ~/.bashrc
+source ~/.bashrc
+
+# Теперь можно просто
+redis-cli -h 127.0.0.1 -p 6380 INFO
+# вместо
+redis-cli -h 127.0.0.1 -p 6380 -a "RedisComplexPass" INFO
 ```
 
 ### Просмотр логов
@@ -431,8 +662,9 @@ ansible-playbook -i inventory.ini playbook-clust-test.yml --limit 192.168.87.66 
 # Включение автозапуска
 ansible-playbook -i inventory.ini playbook-clust-test.yml --limit 192.168.87.66 --tags="autostart"
 ```
-
 ---
+<br/>
+
 
 ## 6. Patroni и репликация
 
@@ -473,8 +705,9 @@ FROM pg_stat_replication;"
 psql -h 192.168.87.127 -p 5432 -U postgres -c "SELECT pg_is_in_recovery(), pg_last_wal_receive_lsn(), pg_last_wal_replay_lsn();"
 psql -h 192.168.87.148 -p 5432 -U postgres -c "SELECT pg_is_in_recovery(), pg_last_wal_receive_lsn(), pg_last_wal_replay_lsn();"
 ```
-
 ---
+<br/>
+
 
 ## 7. Устранение неполадок
 
@@ -509,8 +742,9 @@ patronictl -c /etc/patroni/config.yml reinit postgres app-clust3
 # Принудительный failover (если лидер не отвечает)
 patronictl -c /etc/patroni/config.yml failover --master app-clust1 --candidate app-clust2
 ```
-
 ---
+<br/>
+
 
 ## 8. FreeSWITCH и HAProxy
 > Данные действия нужны в том случае, если основной деплой завершился с ошибкой и требуется переустановка отдельных модулей.
@@ -661,8 +895,8 @@ PermissionsStartOnly=false' mode=0644" -b
 ansible -i inventory.ini 192.168.87.66 -m shell -a "systemctl daemon-reload && systemctl reset-failed freeswitch && systemctl restart freeswitch" -b
 ansible -i inventory.ini 192.168.87.66 -m shell -a "systemctl status freeswitch.service -l --no-pager"
 ```
-
 ---
+<br/>
 
 
 ## 9. Установка приложения Runtel 
@@ -746,3 +980,5 @@ ansible -i inventory.ini 192.168.87.148 -m shell -a "systemctl restart runtel-if
 # Проверить создание таблиц
 ansible -i inventory.ini 192.168.87.148 -m shell -a "psql -h 192.168.87.38 -p 5432 -U postgres -d rt_pbx_v2 -c '\dt'" -b
 ```
+
+также смотри [PSQL dump + таблицы для app серверов](https://github.com/sherbettt/BASH-cheats/blob/main/System%20engineering/16.1.%20PSQL%20dump%20%2B%20таблицы%20для%20app%20серверов.md)
