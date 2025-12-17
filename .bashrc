@@ -154,6 +154,7 @@ alias batc='bat --config-dir; bat --cache-dir'
 alias batp='bat -p -S'
 alias getip="curl -s ifconfig.me ; echo"
 alias getip2='curl -s 2ip.ru ; echo'
+    # curl -s https://yandex.ru/internet | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}'
 alias localip='ip -br addr show | grep -v "127.0.0.1"'
 alias h='history'
 alias j='jobs -l'
