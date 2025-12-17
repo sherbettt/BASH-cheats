@@ -123,10 +123,12 @@ alias ll='ls $LS_OPTIONS -l'
 alias l='ls $LS_OPTIONS -lA'
 
 # Bright color aliases
+alias grep='grep --color=auto'
+alias egrep='egrep --color=auto'
+alias fgrep='fgrep --color=auto'
 alias ls='ls --color=always'
 alias ll='ll --color=always'
 alias dir='dir --color=always'
-alias grep='grep --color=always'
 alias dmesg='dmesg --color=always'
 alias gcc='gcc -fdiagnostics-color=always'
 alias pacman='pacman --color=always'
