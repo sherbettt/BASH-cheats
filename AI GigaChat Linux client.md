@@ -1,7 +1,8 @@
 [Установка GigaCode в VS Codium](https://gitverse.ru/features/gigacode/install/)
 
 https://pypi.org/project/gigachat/
-https://gitverse.ru/gigachatteam/linux-client
+<br/> https://gitverse.ru/gigachatteam/linux-client 
+<br/> https://gitverse.ru/services/gigacode?code=ba9e10e74caed311b32f58a91a18f08ed3ed2299ed15466e22e2d20c9857aec3&ide=vscode
 
 
 ### **1. Установка Python и pip на Ximper Linux**
