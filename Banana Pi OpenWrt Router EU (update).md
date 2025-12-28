@@ -75,16 +75,13 @@ openwrt-24.10.5-mediatek-filogic-openwrt_one-squashfs-sysupgrade.itb
 # Recovery образ
 openwrt-24.10.5-mediatek-filogic-openwrt_one-initramfs.itb
 ```
-```bash
-wget https://downloads.openwrt.org/releases/24.10.5/targets/mediatek/filogic/openwrt-24.10.5-mediatek-filogic-openwrt_one-squashfs-sysupgrade.itb
-wget https://downloads.openwrt.org/releases/24.10.5/targets/mediatek/filogic/openwrt-24.10.5-mediatek-filogic-openwrt_one-initramfs.itb
-```
 
 ### **Команды скачивания:**
 ```bash
 # В recovery режиме
 cd /tmp
-wget http://downloads.openwrt.org/releases/24.10.5/targets/mediatek/filogic/openwrt-24.10.5-mediatek-filogic-openwrt_one-squashfs-sysupgrade.itb
+wget https://downloads.openwrt.org/releases/24.10.5/targets/mediatek/filogic/openwrt-24.10.5-mediatek-filogic-openwrt_one-squashfs-sysupgrade.itb
+wget https://downloads.openwrt.org/releases/24.10.5/targets/mediatek/filogic/openwrt-24.10.5-mediatek-filogic-openwrt_one-initramfs.itb
 ```
 <br/>
 
@@ -127,6 +124,15 @@ uci commit network
 cat /etc/opkg/distfeeds.conf
 # Содержит корректные ссылки для aarch64_cortex-a53
 ```
+```conf
+src/gz openwrt_core https://downloads.openwrt.org/releases/24.10.5/targets/mediatek/filogic/packages
+src/gz openwrt_base https://downloads.openwrt.org/releases/24.10.5/packages/aarch64_cortex-a53/base
+src/gz openwrt_kmods https://downloads.openwrt.org/releases/24.10.5/targets/mediatek/filogic/kmods/6.6.119-1-6a9e125268c43e0bae8cecb014c8ab03
+src/gz openwrt_luci https://downloads.openwrt.org/releases/24.10.5/packages/aarch64_cortex-a53/luci
+src/gz openwrt_packages https://downloads.openwrt.org/releases/24.10.5/packages/aarch64_cortex-a53/packages
+src/gz openwrt_routing https://downloads.openwrt.org/releases/24.10.5/packages/aarch64_cortex-a53/routing
+src/gz openwrt_telephony https://downloads.openwrt.org/releases/24.10.5/packages/aarch64_cortex-a53/telephony
+```
 
 ### **Установка пакетов:**
 ```bash
@@ -134,7 +140,7 @@ cat /etc/opkg/distfeeds.conf
 opkg update
 
 # Установка базовых утилит
-opkg install nano curl htop
+opkg install mc nano curl htop
 
 # Проверка
 nano --version
