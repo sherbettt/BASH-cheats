@@ -192,6 +192,7 @@ opkg list                     # Показать все пакеты
 opkg list-installed          # Показать установленные
 opkg list-upgradable         # Показать доступные обновления
 opkg upgrade <пакет>         # Обновить пакет
+opkg --force-overwrite upgrade luci
 opkg info <пакет>            # Информация о пакете
 
 # Поиск
