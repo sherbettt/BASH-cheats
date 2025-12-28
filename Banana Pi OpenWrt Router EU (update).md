@@ -443,13 +443,277 @@ flowchart LR
 | **Посмотреть все пользовательские правила** | `uci show firewall` |
 | **Включить/выключить фаервол** | `/etc/init.d/firewall enable/disable` <br> `/etc/init.d/firewall start/stop/restart` |
 
-### 💎 Краткий итог
-Ваш фаервол настроен **безопасно и правильно**:
-*   **LAN → WAN**: ✅ Всё разрешено (выход в интернет).
-*   **WAN → LAN**: ❌ Всё заблокировано (основная защита).
-*   **WAN → Роутер**: ❌ Заблокировано, кроме минимально необходимых сетевых протоколов.
+---
 
-**Чтобы открыть доступ извне** (для игр, веб-сервера, удалённого доступа) — вам нужно вручную добавлять правила `redirect` (проброс портов) или `rule` (доступ к самому роутеру) через `uci`, как показано в таблице выше.
+Отлично! Вот полный набор команд для управления правилами фаервола OpenWrt (fw4) **через UCI** и **прямо в nftables**.
+
+## 📦 **1. УПРАВЛЕНИЕ ЧЕРЕЗ UCI (Рекомендуемый способ)**
+
+### 🔍 **Просмотр существующих правил**
+```bash
+# Показать ВСЮ конфигурацию фаервола
+uci show firewall
+
+# Показать только пользовательские правила
+uci show firewall | grep "firewall.@rule" | head -20
+
+# Показать только пробросы портов
+uci show firewall | grep "firewall.@redirect" | head -20
+
+# Показать зоны и сети
+uci show firewall.zone
+```
+
+### ➕ **Добавление новых правил**
+
+#### **A. Разрешить доступ к роутеру из WAN (например, SSH)**
+```bash
+# 1. Создаем правило
+uci add firewall rule
+
+# 2. Настраиваем параметры
+uci set firewall.@rule[-1].name='Allow-WAN-SSH'
+uci set firewall.@rule[-1].src='wan'          # Источник: интернет
+uci set firewall.@rule[-1].dest='lan'         # Назначение: роутер
+uci set firewall.@rule[-1].proto='tcp'        # Протокол TCP
+uci set firewall.@rule[-1].dest_port='22'     # Порт назначения: 22 (SSH)
+uci set firewall.@rule[-1].family='ipv4'      # Только IPv4
+uci set firewall.@rule[-1].target='ACCEPT'    # Действие: разрешить
+
+# 3. Сохраняем и применяем
+uci commit firewall
+service firewall restart
+```
+
+#### **B. Пробросить порт из интернета на устройство в LAN**
+```bash
+# Проброс порта 80 на веб-сервер в LAN
+uci add firewall redirect
+
+uci set firewall.@redirect[-1].name='Forward-WEB-Server'
+uci set firewall.@redirect[-1].src='wan'
+uci set firewall.@redirect[-1].proto='tcp'
+uci set firewall.@redirect[-1].src_dport='80'        # Внешний порт
+uci set firewall.@redirect[-1].dest_ip='192.168.1.100' # IP в LAN
+uci set firewall.@redirect[-1].dest_port='80'        # Внутренний порт
+uci set firewall.@redirect[-1].dest='lan'
+
+uci commit firewall
+service firewall restart
+```
+
+#### **C. Разрешить доступ к определенной службе только из одной подсети в LAN**
+```bash
+# Разрешить HTTP только с 192.168.1.0/24 к маршрутизатору
+uci add firewall rule
+
+uci set firewall.@rule[-1].name='Allow-LAN-Subnet-HTTP'
+uci set firewall.@rule[-1].src='lan'
+uci set firewall.@rule[-1].src_ip='192.168.1.0/24'  # Только эта подсеть
+uci set firewall.@rule[-1].dest='lan'               # На сам роутер
+uci set firewall.@rule[-1].proto='tcp'
+uci set firewall.@rule[-1].dest_port='80'
+uci set firewall.@rule[-1].target='ACCEPT'
+
+uci commit firewall
+service firewall restart
+```
+
+### ✏️ **Редактирование существующих правил**
+```bash
+# 1. Найдите ID правила (обратите внимание на число в квадратных скобках)
+uci show firewall | grep -E "@rule\[[0-9]+\]\.name"
+
+# Пример вывода: firewall.@rule[2].name='Allow-WAN-SSH'
+
+# 2. Измените нужный параметр
+uci set firewall.@rule[2].dest_port='2222'  # Меняем порт с 22 на 2222
+uci set firewall.@rule[2].enabled='0'      # Временно отключаем правило (0=выкл, 1=вкл)
+
+uci commit firewall
+service firewall restart
+```
+
+### ❌ **Удаление правил**
+```bash
+# 1. Найдите ID правила для удаления
+uci show firewall | grep -n "Allow-WAN-SSH"
+
+# 2. Удалите правило по ID
+uci delete firewall.@rule[2]  # Где 2 - номер из вывода выше
+
+# ИЛИ удалите по имени (более безопасно)
+uci delete $(uci show firewall | grep -B1 "Allow-WAN-SSH" | grep "@rule" | cut -d= -f1)
+
+uci commit firewall
+service firewall restart
+```
+
+### 🔄 **Временное отключение/включение правил**
+```bash
+# Отключить правило (остается в конфиге)
+uci set firewall.@rule[2].enabled='0'
+
+# Включить правило
+uci set firewall.@rule[2].enabled='1'
+
+uci commit firewall
+service firewall restart
+```
+
+## ⚡ **2. ПРЯМОЕ УПРАВЛЕНИЕ NFTABLES (Для опытных)**
+
+### 🔍 **Просмотр текущих правил nftables**
+```bash
+# Показать ВСЕ правила (аналогично fw4 print, но более подробно)
+nft list ruleset
+
+# Показать только правила фильтрации
+nft list table inet fw4
+
+# Показать только цепочку input
+nft list chain inet fw4 input
+
+# Показать счётчики (сколько раз сработало правило)
+nft list ruleset -a | grep counter
+```
+
+### ➕ **Добавление временных правил (до перезагрузки)**
+```bash
+# Разрешить HTTPS (443) из WAN на роутер
+nft add rule inet fw4 input iifname { "pppoe-wan", "eth0" } tcp dport 443 ct state new counter accept
+
+# Разрешить диапазон портов для игр
+nft add rule inet fw4 input iifname { "pppoe-wan", "eth0" } tcp dport { 27015-27030 } ct state new counter accept
+
+# Разрешить только с определенного IP
+nft add rule inet fw4 input iifname { "pppoe-wan", "eth0" } ip saddr 93.184.216.34 tcp dport 22 ct state new counter accept
+```
+
+### ❌ **Удаление временных правил**
+```bash
+# 1. Найдите handle правила
+nft list chain inet fw4 input -a
+
+# Пример вывода: ... handle 28 tcp dport 443 ct state new counter accept
+
+# 2. Удалите по handle
+nft delete rule inet fw4 input handle 28
+```
+
+### 💾 **Сохранение правил nftables постоянно**
+```bash
+# 1. Сохраните текущие правила в файл
+nft list ruleset > /etc/nftables.d/custom-rules.nft
+
+# 2. Добавьте в конфиг фаервола
+echo "include \"/etc/nftables.d/custom-rules.nft\"" >> /etc/firewall.user
+
+# 3. Примените при следующей загрузке
+service firewall restart
+```
+
+## 🛡️ **3. УПРАВЛЕНИЕ СЛУЖБОЙ ФАЕРВОЛА**
+
+```bash
+# Перезапустить фаервол
+service firewall restart
+
+# Проверить статус
+service firewall status
+
+# Включить автозагрузку
+/etc/init.d/firewall enable
+
+# Выключить автозагрузку
+/etc/init.d/firewall disable
+
+# Полностью остановить фаервол (НЕ РЕКОМЕНДУЕТСЯ!)
+service firewall stop
+
+# Запустить снова
+service firewall start
+```
+
+## 📋 **4. ПОЛЕЗНЫЕ ШАБЛОНЫ ПРАВИЛ**
+
+### **Для игровых консолей/сервисов:**
+```bash
+# Xbox Live
+uci add firewall rule
+uci set firewall.@rule[-1].name='Xbox-Live'
+uci set firewall.@rule[-1].src='wan'
+uci set firewall.@rule[-1].proto='tcpudp'  # Оба протокола
+uci set firewall.@rule[-1].dest_port='3074'
+uci set firewall.@rule[-1].target='ACCEPT'
+
+# Steam
+uci add firewall rule
+uci set firewall.@rule[-1].name='Steam'
+uci set firewall.@rule[-1].src='wan'
+uci set firewall.@rule[-1].proto='tcpudp'
+uci set firewall.@rule[-1].dest_port='27000-27100'
+uci set firewall.@rule[-1].target='ACCEPT'
+```
+
+### **Для веб-сервера:**
+```bash
+# Проброс HTTP/HTTPS
+uci add firewall redirect
+uci set firewall.@redirect[-1].name='Web-Server'
+uci set firewall.@redirect[-1].src='wan'
+uci set firewall.@redirect[-1].proto='tcp'
+uci set firewall.@redirect[-1].src_dport='80 443'
+uci set firewall.@redirect[-1].dest_ip='192.168.1.10'
+uci set firewall.@redirect[-1].dest_port='80 443'
+```
+
+### **Запретить устройству выход в интернет:**
+```bash
+uci add firewall rule
+uci set firewall.@rule[-1].name='Block-Device'
+uci set firewall.@rule[-1].src='lan'
+uci set firewall.@rule[-1].src_ip='192.168.1.50'  # IP устройства
+uci set firewall.@rule[-1].dest='wan'
+uci set firewall.@rule[-1].target='REJECT'  # Или DROP
+```
+
+## ⚠️ **ВАЖНЫЕ ПРЕДУПРЕЖДЕНИЯ**
+
+1. **Всегда делайте бэкап перед изменениями:**
+   ```bash
+   cp /etc/config/firewall /etc/config/firewall.backup
+   ```
+
+2. **Если заблокировали себя:**
+   ```bash
+   # Подключитесь по кабелю и выполните:
+   uci set firewall.@rule[НЕПРАВИЛЬНОЕ_ПРАВИЛО].enabled='0'
+   uci commit firewall
+   service firewall restart
+   ```
+
+3. **Порядок правил ВАЖЕН!** Правила обрабатываются сверху вниз. Используйте параметр `index` для указания позиции:
+   ```bash
+   uci -P /var/state add firewall rule  # Добавить в начало
+   ```
+
+4. **Проверяйте логи:**
+   ```bash
+   logread | grep firewall
+   dmesg | grep nft
+   ```
+
+## 💎 **КРАТКИЙ ЧЕК-ЛИСТ ДЕЙСТВИЙ**
+
+1. **Просмотреть** → `uci show firewall | grep rule`
+2. **Добавить** → `uci add firewall rule` + настройка параметров
+3. **Изменить** → `uci set firewall.@rule[ID].ПАРАМЕТР=ЗНАЧЕНИЕ`
+4. **Удалить** → `uci delete firewall.@rule[ID]`
+5. **Применить** → `uci commit firewall && service firewall restart`
+6. **Проверить** → `nft list chain inet fw4 input`
+
+**Главное правило:** Меняйте фаервол через `uci` — это сохранит настройки после перезагрузки. Прямые команды `nft` — только для временных тестов!
 
 --------------------------
 
