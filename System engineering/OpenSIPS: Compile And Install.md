@@ -3,6 +3,10 @@
 Прежде всего смотрим документацию вендора:
 - [OpenSIPS/opensips/blob/master/INSTALL](https://github.com/OpenSIPS/opensips/blob/master/INSTALL)
 - [Documentation/Install-CompileAndInstall-3-6](https://www.opensips.org/Documentation/Install-CompileAndInstall-3-6)
+
+Версии:
+- https://apt.opensips.org/pool/bookworm/3.6-releases/o/opensips/
+- https://apt.opensips.org/  для дистрибутивов репозитории 
 <br/>
 
 ## Зависимости для компиляции
