@@ -39,6 +39,15 @@ yarn -v
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+nvm install 24
+nvm use 24
+
+corepack enable
+
+node -v
+npm -v
+yarn -v
 ```
 
 ### 2. Подготовка проекта
