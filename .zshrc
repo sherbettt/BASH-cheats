@@ -116,31 +116,38 @@ source $ZSH/oh-my-zsh.sh
 # - $ZSH_CUSTOM/aliases.zsh
 # - $ZSH_CUSTOM/macos.zsh
 # For a full list of active aliases, run `alias`.
-#
-# Example aliases
-alias zshconfig="mate ~/.zshrc"
-alias ohmyzsh="mate ~/.oh-my-zsh"
+
+# System monitoring aliases
+alias df-tmpfs='df -hT / /home /boot /var 2>/dev/null | grep -v "^tmpfs"'
+alias free-w='free --si --lohi --total -w'
+alias ps-cpu-sort='ps aux --sort=-%cpu | head -15'
+
+# Utility aliases
 alias sudo='sudo '
-alias clear='cls'
+alias tree='tree -Csu -a --du --dirsfirst'
+alias cls='clear'
 alias repo='grep ^ /etc/apt/sources.list /etc/apt/sources.list.d/*'
+alias path='echo -e ${PATH//:/\\n}'
 alias apta='sudo apt update -y && sudo apt upgrade -y && sudo apt dist-upgrade -y'
-alias lz='eza -aghlo -F -U --group-directories-first --icons=automatic --total-size'
-alias lzz='eza -aghli -F -U --group-directories-first --icons=automatic --time-style=long-iso'
-alias ll='ls -alFS --group-directories-first'
+alias ll='ls -alFS --group-directories-first --si --sort=version'
+alias llt='ll --time-style=+%F_%X'
 alias la='ls -A'
 alias l='ls -CF'
-alias bcat='batcat' # for Ubuntu, for ohther - bat
 alias pcat='pygmentize -g'
-alias getip="curl ifconfig.me ; echo"
-alias np='notepad2.exe'
-alias sl='sublime-text.subl'
+alias ccat='highlight --out-format=xterm256 --syntax=yaml --style=molokai'
+alias batc='bat --config-dir; bat --cache-dir'
+alias batp='bat -p -S'
+alias getip="curl -s ifconfig.me ; echo"
+alias getip2='curl -s 2ip.ru ; echo'
+    # curl -s https://yandex.ru/internet | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}'
+alias localip='ip -br addr show | grep -v "127.0.0.1"'
 alias h='history'
 alias j='jobs -l'
 alias r='rlogin'
 alias which='type -all'
-alias path='echo -e ${PATH//:/\\n}'
 alias du='du -kh'
 alias df='df -kTh'
 alias ipc='ip -c addr show'
 alias ipa='ip -br -c addr show'
+alias lsblk-more='lsblk --output TYPE,PATH,NAME,FSAVAIL,FSUSE%,SIZE,MOUNTPOINT,UUID,FSTYPE,PTTYPE,PARTUUID'
 alias mc-visudo='sudo EDITOR=mcedit visudo'
