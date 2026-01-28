@@ -118,6 +118,7 @@ source $ZSH/oh-my-zsh.sh
 # For a full list of active aliases, run `alias`.
 
 # System monitoring aliases
+alias lock='dm-tool lock'
 alias df-tmpfs='df -hT / /home /boot /var 2>/dev/null | grep -v "^tmpfs"'
 alias free-w='free --si --lohi --total -w'
 alias ps-cpu-sort='ps aux --sort=-%cpu | head -15'
@@ -145,8 +146,8 @@ alias h='history'
 alias j='jobs -l'
 alias r='rlogin'
 alias which='type -all'
-alias du='du -kh'
-alias df='df -kTh'
+alias duh='du -kh'
+alias dfh='df -kTh'
 alias ipc='ip -c addr show'
 alias ipa='ip -br -c addr show'
 alias lsblk-more='lsblk --output TYPE,PATH,NAME,FSAVAIL,FSUSE%,SIZE,MOUNTPOINT,UUID,FSTYPE,PTTYPE,PARTUUID'
