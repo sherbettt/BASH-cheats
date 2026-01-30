@@ -30,6 +30,7 @@ source ~/.zshrc
 ```bash
 sudo nano /usr/share/applications/tor-browser.desktop
 ```
+
 Добавить:
 ```ini
 [Desktop Entry]
@@ -40,6 +41,23 @@ Icon=/opt/tor-browser/browser/chrome/icons/default/default128.png
 Categories=Network;WebBrowser;
 Terminal=false
 ```
+или
+```ini
+[Desktop Entry]
+Type=Application
+Name=Tor Browser
+GenericName=Web Browser
+Comment=Browse the web anonymously with Tor
+Exec=sh -c "cd /opt/tor-browser && ./start-tor-browser.desktop"
+Icon=/opt/tor-browser/browser/chrome/icons/default/default128.png
+Terminal=false
+Categories=Network;WebBrowser;Security;
+Keywords=tor;browser;anonymous;privacy;
+StartupNotify=false
+StartupWMClass=Tor Browser
+MimeType=text/html;text/xml;application/xhtml+xml;
+```
+
 Обновить кэш:
 ```bash
 sudo update-desktop-database
