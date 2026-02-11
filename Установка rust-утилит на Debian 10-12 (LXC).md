@@ -43,6 +43,11 @@ source ~/.cargo/env
 rustup install stable
 rustup default stable
 ```
+```bash
+#см.
+https://crates.io/
+```
+
 
 ## 2. Установка утилит
 
