@@ -279,4 +279,27 @@ cargo install cbonsai
 ---------------------------------
 <br/>
 
+# Ошибка OOM killer
+
+Если возникает следующая оишбка
+```bash
+   Compiling zellij-client v0.43.1
+   Compiling zellij v0.43.1
+error: could not compile `zellij` (bin "zellij")
+
+Caused by:
+  process didn't exit successfully: `rustc --crate-name zellij --edition=2021 /home/kkorablin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zellij-0.43.1/src/main.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --diagnostic-width=141 --crate-type bin --emit=dep-info,link -C opt-level=3 -C lto --cfg 'feature="default"' --cfg 'feature="plugins_from_target"' --cfg 'feature="vendored_curl"' --cfg 'feature="web_server_capability"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "disable_automatic_asset_installation", "plugins_from_target", "singlepass", "unstable", "vendored_curl", "web_server_capability"))' -C metadata=b17e15a5ca6e8e2d -C extra-filename=-abe0ad9c56734921 --out-dir /tmp/cargo-installEmXcLE/release/deps -C strip=symbols -L dependency=/tmp/cargo-installEmXcLE/release/deps --extern anyhow=/tmp/cargo-installEmXcLE/release/deps/libanyhow-58c3bab3cbed0251.rlib --extern clap=/tmp/cargo-installEmXcLE/release/deps/libclap-41d3659850b8c44b.rlib --extern dialoguer=/tmp/cargo-installEmXcLE/release/deps/libdialoguer-bbcad3b9e95ea6cd.rlib --extern humantime=/tmp/cargo-installEmXcLE/release/deps/libhumantime-c9c4bb7e715d396e.rlib --extern interprocess=/tmp/cargo-installEmXcLE/release/deps/libinterprocess-a701251718b3110e.rlib --extern isahc=/tmp/cargo-installEmXcLE/release/deps/libisahc-15633944a016cb8a.rlib --extern log=/tmp/cargo-installEmXcLE/release/deps/liblog-3e5cd55873673320.rlib --extern miette=/tmp/cargo-installEmXcLE/release/deps/libmiette-81ca077d4b1f8033.rlib --extern names=/tmp/cargo-installEmXcLE/release/deps/libnames-960dfcdc02af3002.rlib --extern nix=/tmp/cargo-installEmXcLE/release/deps/libnix-ea6ea67f6063f4a3.rlib --extern suggest=/tmp/cargo-installEmXcLE/release/deps/libsuggest-bf3b07e1f1c0ec97.rlib --extern thiserror=/tmp/cargo-installEmXcLE/release/deps/libthiserror-4f8bd496d9e395cb.rlib --extern zellij_client=/tmp/cargo-installEmXcLE/release/deps/libzellij_client-58c29502b1fe04d2.rlib --extern zellij_server=/tmp/cargo-installEmXcLE/release/deps/libzellij_server-25ce25301776d4a2.rlib --extern zellij_utils=/tmp/cargo-installEmXcLE/release/deps/libzellij_utils-649501101e737416.rlib --cap-lints allow -L native=/tmp/cargo-installEmXcLE/release/build/curl-sys-b017a7ac169293fa/out/build -L native=/tmp/cargo-installEmXcLE/release/build/libnghttp2-sys-d556a3bd32556482/out/i/lib -L native=/tmp/cargo-installEmXcLE/release/build/openssl-sys-a979304015175d14/out/openssl-build/install/lib -L native=/tmp/cargo-installEmXcLE/release/build/aws-lc-sys-dc5e76cd148efe21/out -L native=/tmp/cargo-installEmXcLE/release/build/libsqlite3-sys-32b2759d1bcf1285/out -L native=/tmp/cargo-installEmXcLE/release/build/wasmtime-a88d1129e4af7b7a/out` (signal: 9, SIGKILL: kill)
+error: failed to compile `zellij v0.43.1`, intermediate artifacts can be found at `/tmp/cargo-installEmXcLE`.
+To reuse those artifacts with a future compilation, set the environment variable `CARGO_TARGET_DIR` to that path.
+```
+
+Попробуйте Уменьшить нагрузку на память
+```bash
+# Ограничить количество параллельных заданий
+cargo install zellij --jobs 1
+
+# Или с меньшим уровнем оптимизации
+CARGO_PROFILE_RELEASE_OPT_LEVEL=0 cargo install zellij --jobs 1
+```
+
 
