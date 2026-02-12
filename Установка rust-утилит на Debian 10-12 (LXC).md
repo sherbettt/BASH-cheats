@@ -48,6 +48,17 @@ rustup default stable
 https://crates.io/
 ```
 
+Важно: Добавьте ~/.cargo/bin в PATH:
+```bash
+# Для bash
+echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+# Для zsh
+echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
 
 ## 2. Установка утилит
 
@@ -113,3 +124,159 @@ gdu /путь                  # TUI-анализатор (как ncdu)
 ```
 
 Все утилиты используют статическую сборку (`musl`) и работают на любой системе Linux без зависимостей.
+
+-----------------------
+<br/>
+
+
+# Полезные Rust-утилиты (кроме дисковых)
+
+## 🖥️ **Система/Процессы**
+```bash
+# procs — аналог ps, цветной и понятный
+cargo install procs
+
+# bottom — графический монитор процессов (TUI)
+cargo install bottom
+
+# zellij — терминальный мультиплексор (аналог tmux)
+cargo install zellij
+
+# bandwhich — кто жрет сеть (TUI)
+cargo install bandwhich
+```
+
+## 📁 **Файлы/Навигация**
+```bash
+# fd — аналог find, но быстрее и красивее
+cargo install fd-find
+
+# bat — аналог cat с подсветкой синтаксиса
+cargo install bat
+
+# eza — аналог ls (замена exa)
+cargo install eza
+
+# ripgrep — аналог grep, очень быстрый
+cargo install ripgrep
+
+# broot — навигация по дереву папок (TUI)
+cargo install broot
+```
+
+## 🚀 **Производительность/Дебаг**
+```bash
+# hyperfine — бенчмаркинг команд
+cargo install hyperfine
+
+# flamegraph — профайлинг
+cargo install flamegraph
+
+# hexyl — hex-просмотрщик
+cargo install hexyl
+
+# grex — генератор regex из примеров
+cargo install grex
+```
+
+## 📦 **Работа с данными**
+```bash
+# jql — jq на Rust (JSON процессор)
+cargo install jql
+
+# xsv — работа с CSV
+cargo install xsv
+
+# qsv — быстрый CSV toolkit (форк xsv)
+cargo install qsv
+
+# hck — сокращенный cut
+cargo install hck
+```
+
+## 🌐 **Сеть/HTTP**
+```bash
+# httpie — HTTP клиент (аналог curl)
+cargo install httpie
+
+# websocat — websocket клиент
+cargo install websocat
+
+# dog — DNS клиент
+cargo install dog
+
+# mprober — мониторинг сети/системы
+cargo install mprober
+```
+
+## 🎨 **Терминал/UI**
+```bash
+# starship — кастомный промпт
+cargo install starship
+
+# lolcrab — аналог lolcat (цветной вывод)
+cargo install lolcrab
+
+# pastel — работа с цветами
+cargo install pastel
+
+# termsize — размер терминала
+cargo install termsize
+```
+
+## 🔧 **Инструменты разработки**
+```bash
+# cargo-edit — управление Cargo.toml
+cargo install cargo-edit
+
+# cargo-watch — автопересборка при изменениях
+cargo install cargo-watch
+
+# cargo-audit — проверка уязвимостей
+cargo install cargo-audit
+
+# cargo-outdated — устаревшие зависимости
+cargo install cargo-outdated
+
+# bacon — фоновый линтер/компилятор
+cargo install bacon
+```
+
+## 📝 **Текст/Заметки**
+```bash
+# mdbook — генерация книг из Markdown
+cargo install mdbook
+
+# navi — шпаргалки в терминале
+cargo install navi
+
+# tealdeer — быстрый tldr (help-примеры)
+cargo install tealdeer
+```
+
+## 🎮 **Игры/Развлечения**
+```bash
+# gitui — TUI для Git
+cargo install gitui
+
+# onefetch — инфо о репозитории
+cargo install onefetch
+
+# pipes-rs — заставка pipes
+cargo install pipes-rs
+
+# cbonsai — бонсай в терминале
+cargo install cbonsai
+```
+
+## 📦 **Установка готовых бинарников (без Rust)**
+Все эти утилиты также доступны на GitHub Releases:
+- https://github.com/search?q=starship
+- https://github.com/search?q=fd
+- https://github.com/search?q=ripgrep
+- и т.д. — ищем `название-утилиты releases`
+
+---------------------------------
+<br/>
+
+
