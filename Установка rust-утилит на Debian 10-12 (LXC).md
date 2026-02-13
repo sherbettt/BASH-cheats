@@ -2,6 +2,8 @@
 
 ## 1. Скачать готовый бинарник
 ```bash
+curl -LO https://github.com/Canop/dysk/releases/download/v3.6.0b/dysk_3.6.0.zip
+#или
 wget https://github.com/Canop/dysk/releases/download/v3.6.0b/dysk_3.6.0.zip
 unzip dysk_3.6.0.zip
 ```
