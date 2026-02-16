@@ -1,3 +1,7 @@
+Отлично, структура у вас хорошая. Я добавлю новые утилиты для мониторинга CPU и памяти, распределив их по существующим разделам и создав новый раздел для мониторинга. Вот обновленная версия статьи:
+
+---
+
 # Установка dysk на Debian 10 (LXC)
 
 ## 1. Скачать готовый бинарник
@@ -32,6 +36,7 @@ dysk
 ```
 
 **Примечание**: Не требуется обновление Rust/cargo — используем готовую статическую сборку `x86_64-unknown-linux-musl`, работает на любой системе Linux.
+
 <br/>
 
 ----------------------------
@@ -50,7 +55,7 @@ rustup default stable
 https://crates.io/
 ```
 
-Важно: Добавьте ~/.cargo/bin в PATH:
+**Важно: Добавьте ~/.cargo/bin в PATH:**
 ```bash
 # Для bash
 echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.bashrc
@@ -59,8 +64,10 @@ source ~/.bashrc
 # Для zsh
 echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.zshrc
 source ~/.zshrc
-```
 
+# Для устранения надоедливого "correct" в zsh (для procs)
+echo 'alias procs="nocorrect procs"' >> ~/.zshrc
+```
 
 ## 2. Установка утилит
 
@@ -130,7 +137,6 @@ gdu /путь                  # TUI-анализатор (как ncdu)
 -----------------------
 <br/>
 
-
 # Полезные Rust-утилиты (кроме дисковых)
 
 ## 🖥️ **Система/Процессы**
@@ -147,6 +153,19 @@ cargo install zellij
 # bandwhich — кто жрет сеть (TUI)
 cargo install bandwhich
 ```
+
+### 📊 **Мониторинг CPU и памяти (подробнее)**
+
+В отличие от базовых утилит выше, эти инструменты специализируются именно на мониторинге ресурсов:
+
+| Утилита | Описание | Установка | Использование |
+|---------|----------|-----------|---------------|
+| **bottom** (`btm`) | Самый популярный TUI-монитор с графиками CPU, RAM, сети, температуры. Всё настраивается. | `cargo install bottom`<br>или бинарник:<br>`wget https://github.com/ClementTsang/bottom/releases/download/0.10.2/bottom_x86_64-unknown-linux-musl.tar.gz` | `btm` — запуск<br>`?` — справка по клавишам<br>`m` — переключить графики<br>`Ctrl+c` — выход |
+| **procs** | Современная замена `ps`. Удобный поиск, дерево процессов, цветной вывод. | `cargo install procs`<br>или бинарник:<br>`wget https://github.com/dalance/procs/releases/download/v0.14.10/procs-v0.14.10-x86_64-unknown-linux-musl.zip` | `procs` — все процессы<br>`procs nginx` — поиск по имени<br>`procs --tree` — дерево процессов<br>`procs --watch` — обновление каждые 2с |
+| **stomata-cli** | Поиск "пожирателей" памяти. Позволяет "провалиться" в процесс для деталей. | `cargo install stomata-cli` | `stomata -i` — интерактивный режим<br>`stomata -p 1234` — анализ конкретного PID |
+| **procmon** | Простой монитор с информацией о CPU, памяти, потоках и приоритете. | `cargo install procmon` | `procmon` — запуск<br>`procmon --pid 1234` — только PID |
+| **ytop** | TUI-монитор с графиками в стиле "top". | `cargo install ytop`<br>или бинарник:<br>`wget https://github.com/cjbassi/ytop/releases/download/0.7.3/ytop-0.7.3-x86_64-unknown-linux-musl.tar.gz` | `ytop` — запуск<br>стрелки — навигация |
+| **Resources** | GUI-приложение на GTK4. Показывает графики CPU, RAM, GPU, сети, дисков. | `flatpak install flathub net.nokyan.Resources` | Запуск из меню приложений |
 
 ## 📁 **Файлы/Навигация**
 ```bash
@@ -166,6 +185,18 @@ cargo install ripgrep
 cargo install broot
 ```
 
+### 📁 **Базовое использование файловых утилит**
+```bash
+fd .git                    # найти все папки .git
+fd -e rs main              # найти файлы .rs с "main" в имени
+bat file.rs                # показать файл с подсветкой
+bat -A file.txt            # показать невидимые символы
+eza -la --tree             # дерево файлов с деталями
+rg "TODO:" ./src           # поиск текста в файлах
+rg -i "error" --type rust  # регистронезависимый поиск в .rs
+broot                      # запустить навигатор
+```
+
 ## 🚀 **Производительность/Дебаг**
 ```bash
 # hyperfine — бенчмаркинг команд
@@ -179,6 +210,14 @@ cargo install hexyl
 
 # grex — генератор regex из примеров
 cargo install grex
+```
+
+### 🚀 **Примеры использования**
+```bash
+hyperfine 'ls -la'                     # замер времени выполнения
+hyperfine --runs 10 'sleep 1'          # 10 замеров
+hexyl file.bin                         # просмотр в hex
+grex "1.2.3.4" "10.0.0.1"              # сгенерировать regex для IP
 ```
 
 ## 📦 **Работа с данными**
@@ -196,6 +235,14 @@ cargo install qsv
 cargo install hck
 ```
 
+### 📦 **Примеры работы с данными**
+```bash
+jql '.field' file.json                  # извлечь поле из JSON
+xsv table file.csv                       # табличный вывод CSV
+xsv slice -s 10 -e 20 file.csv           # строки 10-20
+hck -f 1,3 file.txt                       # поля 1 и 3
+```
+
 ## 🌐 **Сеть/HTTP**
 ```bash
 # httpie — HTTP клиент (аналог curl)
@@ -211,6 +258,14 @@ cargo install dog
 cargo install mprober
 ```
 
+### 🌐 **Примеры сетевых запросов**
+```bash
+http example.org                          # GET запрос
+http POST example.org name="test"         # POST с данными
+dog example.org A                          # DNS запрос типа A
+websocat ws://echo.websocket.org           # подключение к WebSocket
+```
+
 ## 🎨 **Терминал/UI**
 ```bash
 # starship — кастомный промпт
@@ -224,6 +279,18 @@ cargo install pastel
 
 # termsize — размер терминала
 cargo install termsize
+```
+
+### 🎨 **Настройка и использование**
+```bash
+# starship (добавить в ~/.zshrc или ~/.bashrc)
+echo 'eval "$(starship init bash)"' >> ~/.bashrc
+# или для zsh
+echo 'eval "$(starship init zsh)"' >> ~/.zshrc
+
+pastel color blue                          # показать цвет
+pastel mix blue red                         # смешать цвета
+termsize                                    # показать размер терминала
 ```
 
 ## 🔧 **Инструменты разработки**
@@ -244,6 +311,15 @@ cargo install cargo-outdated
 cargo install bacon
 ```
 
+### 🔧 **Использование в проектах**
+```bash
+cargo add regex                             # добавить зависимость
+cargo watch -x run                           # авто-запуск при изменениях
+cargo audit                                   # проверка уязвимостей
+cargo outdated                                # показать устаревшие крейты
+bacon                                          # фоновый линтер
+```
+
 ## 📝 **Текст/Заметки**
 ```bash
 # mdbook — генерация книг из Markdown
@@ -256,7 +332,16 @@ cargo install navi
 cargo install tealdeer
 ```
 
-## 🎮 **Игры/Развлечения**
+### 📝 **Быстрые справки**
+```bash
+tldr tar                                    # примеры использования tar
+tldr --update                                # обновить кэш
+navi                                          # поиск шпаргалок
+mdbook init mybook                            # создать книгу
+mdbook build                                   # собрать книгу
+```
+
+## 🎮 **Git и разработка**
 ```bash
 # gitui — TUI для Git
 cargo install gitui
@@ -271,31 +356,50 @@ cargo install pipes-rs
 cargo install cbonsai
 ```
 
+### 🎮 **Развлечения и git**
+```bash
+gitui                                          # Git в терминале
+onefetch                                        # статистика репозитория
+pipes-rs                                         # заставка "трубы"
+cbonsai                                           # растущий бонсай
+```
+
 ## 📦 **Установка готовых бинарников (без Rust)**
-Все эти утилиты также доступны на GitHub Releases:
+Все эти утилиты также доступны на GitHub Releases. Ищите файлы с `x86_64-unknown-linux-musl` — это статические сборки, работающие на любой системе Linux:
+
+```bash
+# Общий шаблон для загрузки
+wget https://github.com/AUTHOR/REPO/releases/download/TAG/FILE
+
+# Пример для procs
+wget https://github.com/dalance/procs/releases/download/v0.14.10/procs-v0.14.10-x86_64-unknown-linux-musl.zip
+```
+
+**Где искать:**
 - https://github.com/search?q=starship
 - https://github.com/search?q=fd
 - https://github.com/search?q=ripgrep
-- и т.д. — ищем `название-утилиты releases`
+- или просто "название-утилиты releases" в поиске
 
 ---------------------------------
 <br/>
 
 # Ошибка OOM killer
 
-Если возникает следующая оишбка
+Если возникает следующая ошибка:
 ```bash
    Compiling zellij-client v0.43.1
    Compiling zellij v0.43.1
 error: could not compile `zellij` (bin "zellij")
 
 Caused by:
-  process didn't exit successfully: `rustc --crate-name zellij --edition=2021 /home/kkorablin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zellij-0.43.1/src/main.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --diagnostic-width=141 --crate-type bin --emit=dep-info,link -C opt-level=3 -C lto --cfg 'feature="default"' --cfg 'feature="plugins_from_target"' --cfg 'feature="vendored_curl"' --cfg 'feature="web_server_capability"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "disable_automatic_asset_installation", "plugins_from_target", "singlepass", "unstable", "vendored_curl", "web_server_capability"))' -C metadata=b17e15a5ca6e8e2d -C extra-filename=-abe0ad9c56734921 --out-dir /tmp/cargo-installEmXcLE/release/deps -C strip=symbols -L dependency=/tmp/cargo-installEmXcLE/release/deps --extern anyhow=/tmp/cargo-installEmXcLE/release/deps/libanyhow-58c3bab3cbed0251.rlib --extern clap=/tmp/cargo-installEmXcLE/release/deps/libclap-41d3659850b8c44b.rlib --extern dialoguer=/tmp/cargo-installEmXcLE/release/deps/libdialoguer-bbcad3b9e95ea6cd.rlib --extern humantime=/tmp/cargo-installEmXcLE/release/deps/libhumantime-c9c4bb7e715d396e.rlib --extern interprocess=/tmp/cargo-installEmXcLE/release/deps/libinterprocess-a701251718b3110e.rlib --extern isahc=/tmp/cargo-installEmXcLE/release/deps/libisahc-15633944a016cb8a.rlib --extern log=/tmp/cargo-installEmXcLE/release/deps/liblog-3e5cd55873673320.rlib --extern miette=/tmp/cargo-installEmXcLE/release/deps/libmiette-81ca077d4b1f8033.rlib --extern names=/tmp/cargo-installEmXcLE/release/deps/libnames-960dfcdc02af3002.rlib --extern nix=/tmp/cargo-installEmXcLE/release/deps/libnix-ea6ea67f6063f4a3.rlib --extern suggest=/tmp/cargo-installEmXcLE/release/deps/libsuggest-bf3b07e1f1c0ec97.rlib --extern thiserror=/tmp/cargo-installEmXcLE/release/deps/libthiserror-4f8bd496d9e395cb.rlib --extern zellij_client=/tmp/cargo-installEmXcLE/release/deps/libzellij_client-58c29502b1fe04d2.rlib --extern zellij_server=/tmp/cargo-installEmXcLE/release/deps/libzellij_server-25ce25301776d4a2.rlib --extern zellij_utils=/tmp/cargo-installEmXcLE/release/deps/libzellij_utils-649501101e737416.rlib --cap-lints allow -L native=/tmp/cargo-installEmXcLE/release/build/curl-sys-b017a7ac169293fa/out/build -L native=/tmp/cargo-installEmXcLE/release/build/libnghttp2-sys-d556a3bd32556482/out/i/lib -L native=/tmp/cargo-installEmXcLE/release/build/openssl-sys-a979304015175d14/out/openssl-build/install/lib -L native=/tmp/cargo-installEmXcLE/release/build/aws-lc-sys-dc5e76cd148efe21/out -L native=/tmp/cargo-installEmXcLE/release/build/libsqlite3-sys-32b2759d1bcf1285/out -L native=/tmp/cargo-installEmXcLE/release/build/wasmtime-a88d1129e4af7b7a/out` (signal: 9, SIGKILL: kill)
-error: failed to compile `zellij v0.43.1`, intermediate artifacts can be found at `/tmp/cargo-installEmXcLE`.
-To reuse those artifacts with a future compilation, set the environment variable `CARGO_TARGET_DIR` to that path.
+  process didn't exit successfully: `rustc ...` (signal: 9, SIGKILL: kill)
+error: failed to compile `zellij v0.43.1`
 ```
 
-Попробуйте Уменьшить нагрузку на память
+Это **SIGKILL (signal 9)** — компилятор убит системой OOM Killer из-за нехватки памяти.
+
+### Решение 1: Уменьшить нагрузку на память
 ```bash
 # Ограничить количество параллельных заданий
 cargo install zellij --jobs 1
@@ -304,4 +408,40 @@ cargo install zellij --jobs 1
 CARGO_PROFILE_RELEASE_OPT_LEVEL=0 cargo install zellij --jobs 1
 ```
 
+### Решение 2: Увеличить swap (временно)
+```bash
+# Создать swap-файл 2GB
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
 
+# Установка
+cargo install zellij
+
+# После установки можно отключить
+sudo swapoff /swapfile
+sudo rm /swapfile
+```
+
+### Решение 3: Готовый бинарник (рекомендуется при нехватке памяти)
+```bash
+# Скачать предкомпилированный бинарник
+wget https://github.com/zellij-org/zellij/releases/latest/download/zellij-x86_64-unknown-linux-musl.tar.gz
+tar -xzf zellij-x86_64-unknown-linux-musl.tar.gz
+sudo cp zellij /usr/local/bin/
+```
+
+### Решение 4: Через системный пакет (для Arch/Manjaro)
+```bash
+sudo pacman -S zellij
+```
+
+---------------------------------
+<br/>
+
+# Полезные ссылки
+
+- **crates.io** — репозиторий Rust-пакетов: https://crates.io
+- **GitHub Releases** — готовые бинарники: ищите `название-проекта releases`
+- **Документация утилит** — обычно в репозитории на GitHub есть README с примерами
