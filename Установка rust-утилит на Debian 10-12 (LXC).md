@@ -65,6 +65,8 @@ source ~/.zshrc
 # Для устранения надоедливого "correct" в zsh (для procs)
 echo 'alias procs="nocorrect procs"' >> ~/.zshrc
 ```
+Читай про переменные [Параметры_Cargo](https://www.altlinux.org/Участник:HihinRuslan/Параметры_Cargo)
+
 
 ## 2. Установка утилит
 
