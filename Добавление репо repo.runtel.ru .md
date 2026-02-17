@@ -1,72 +1,267 @@
 # Инструкция по добавлению репозитория runtel.ru и установке OpenSIPS на Debian 12
 
-## 1. Добавление GPG-ключа репозитория
+# Полная инструкция по добавлению репозитория runtel.ru в Debian
 
-**Вариант A: Скачивание ключа с сервера**
+## Содержание
+1. [Проблема и её решение](#проблема)
+2. [Способы добавления GPG-ключа](#способы-добавления-gpg-ключа)
+3. [Способы настройки sources.list](#способы-настройки-sourceslist)
+4. [Комбинированные варианты](#комбинированные-варианты)
+5. [Проверка и устранение ошибок](#проверка-и-устранение-ошибок)
+
+---
+
+## Проблема
+
+При добавлении репозитория `http://repo.runtel.ru` возникает ошибка:
+```
+NO_PUBKEY 325CE60C3AD367DE
+W: Ошибка GPG: http://repo.runtel.ru bookworm InRelease: Следующие подписи не могут быть проверены...
+```
+
+**ID ключа:** `325CE60C3AD367DE`  
+**Файл ключа:** `runtel.gpg`  
+**Источник ключа:** `http://repo.runtel.ru/runtel.gpg`
+
+---
+
+## Способы добавления GPG-ключа
+
+### Способ 1A: Скачивание ключа с сервера
 ```bash
+# Создаём директорию для ключей (если её нет)
+mkdir -p /etc/apt/keyrings
+
+# Скачиваем ключ
 wget -O /etc/apt/keyrings/runtel.gpg http://repo.runtel.ru/runtel.gpg
+
+# Проверяем, что ключ скачался (размер должен быть ~3KB)
+ls -la /etc/apt/keyrings/runtel.gpg
 ```
 
-**Вариант B: Использование локального файла (если уже скачан)**
+### Способ 1B: Использование локального файла
 ```bash
-# Копируем ключ из домашней директории
+# Если ключ уже скачан в другую директорию
+mkdir -p /etc/apt/keyrings
 cp ~/Programs/runtel.gpg /etc/apt/keyrings/runtel.gpg
+# или
+cp /путь/к/скачанному/runtel.gpg /etc/apt/keyrings/runtel.gpg
 ```
 
-**Вариант C: Старый метод (deprecated, но работает)**
+### Способ 1C: Старый метод (deprecated, но работает)
 ```bash
+# Добавление ключа напрямую в системную связку
 wget -q -O - http://repo.runtel.ru/runtel.gpg | apt-key add -
 ```
+**Результат:** появится предупреждение `apt-key is deprecated`, но репозиторий будет работать.
 
-## 2. Настройка sources.list
-
-Редактируем файл `/etc/apt/sources.list`:
+### Способ 1D: Современный метод с конвертацией
 ```bash
+# Скачиваем и конвертируем ключ одной командой
+wget -O- http://repo.runtel.ru/runtel.gpg | gpg --dearmor > /etc/apt/keyrings/runtel.gpg
+```
+
+---
+
+## Способы настройки sources.list
+
+### Способ 2A: Единый файл /etc/apt/sources.list
+```bash
+# Редактируем основной файл репозиториев
+nano /etc/apt/sources.list
+# или
 mcedit /etc/apt/sources.list
+
+# Добавляем в КОНЕЦ файла одну из строк:
 ```
 
-Добавляем в конец файла (или раскомментируем и правим существующую строку):
-```
-# Репозиторий runtel.ru с указанием ключа
+**Варианты строк для добавления:**
+
+```bash
+# 1. Современный метод с signed-by (рекомендуется)
 deb [signed-by=/etc/apt/keyrings/runtel.gpg] http://repo.runtel.ru bookworm main
-```
 
-**Альтернативные варианты записи:**
+# 2. Если нужно добавить дополнительные компоненты
+deb [signed-by=/etc/apt/keyrings/runtel.gpg] http://repo.runtel.ru bookworm main dev contrib non-free
 
-Если используется старый метод apt-key:
-```
+# 3. Старый метод (если использовали apt-key add)
 deb http://repo.runtel.ru bookworm main
-```
 
-Для отключения проверки ключа (не рекомендуется):
-```
+# 4. Временное решение без проверки ключа (не рекомендуется)
 deb [allow-insecure=yes] http://repo.runtel.ru bookworm main
 ```
 
-## 3. Обновление списка пакетов
+### Способ 2B: Отдельный файл в sources.list.d/
+```bash
+# Создаём отдельный файл для репозитория runtel
+nano /etc/apt/sources.list.d/runtel.list
+# или одной командой:
+```
 
 ```bash
+# 1. Современный метод с signed-by
+echo "deb [signed-by=/etc/apt/keyrings/runtel.gpg] http://repo.runtel.ru bookworm main" > /etc/apt/sources.list.d/runtel.list
+
+# 2. Если нужно несколько компонентов
+echo "deb [signed-by=/etc/apt/keyrings/runtel.gpg] http://repo.runtel.ru bookworm main dev" > /etc/apt/sources.list.d/runtel.list
+
+# 3. Старый метод (если использовали apt-key add)
+echo "deb http://repo.runtel.ru bookworm main" > /etc/apt/sources.list.d/runtel.list
+```
+
+---
+
+## Комбинированные варианты
+
+### Вариант I: Современный (рекомендуемый)
+```bash
+# 1. Скачиваем ключ
+mkdir -p /etc/apt/keyrings
+wget -O /etc/apt/keyrings/runtel.gpg http://repo.runtel.ru/runtel.gpg
+
+# 2. Добавляем репозиторий в отдельный файл
+echo "deb [signed-by=/etc/apt/keyrings/runtel.gpg] http://repo.runtel.ru bookworm main" > /etc/apt/sources.list.d/runtel.list
+
+# 3. Обновляем
 apt update
 ```
 
-**Возможные ошибки и решения:**
+### Вариант II: Всё в одном файле
+```bash
+# 1. Скачиваем ключ
+mkdir -p /etc/apt/keyrings
+wget -O /etc/apt/keyrings/runtel.gpg http://repo.runtel.ru/runtel.gpg
 
-1. Если видите ошибку `NO_PUBKEY 325CE60C3AD367DE`:
-   ```bash
-   # Проверьте наличие ключа
-   ll /etc/apt/keyrings/runtel.gpg
-   
-   # Если ключ есть, убедитесь в правильности пути в signed-by
-   # или используйте старый метод:
-   apt-key add /etc/apt/keyrings/runtel.gpg
-   apt update
-   ```
+# 2. Добавляем строку в /etc/apt/sources.list
+echo "deb [signed-by=/etc/apt/keyrings/runtel.gpg] http://repo.runtel.ru bookworm main" >> /etc/apt/sources.list
 
-2. Если видите предупреждение о legacy trusted.gpg:
-   ```bash
-   # Это не критично, пакеты будут работать
-   apt update 2>&1 | grep -v "DEPRECATION"
-   ```
+# 3. Обновляем
+apt update
+```
+
+### Вариант III: Старый метод (с предупреждением)
+```bash
+# 1. Добавляем ключ старым способом
+wget -q -O - http://repo.runtel.ru/runtel.gpg | apt-key add -
+
+# 2. Создаём файл репозитория
+echo "deb http://repo.runtel.ru bookworm main" > /etc/apt/sources.list.d/runtel.list
+
+# 3. Обновляем (будет предупреждение DEPRECATION)
+apt update
+```
+
+### Вариант IV: Экстренный (без проверки ключа)
+```bash
+# ТОЛЬКО ДЛЯ ТЕСТИРОВАНИЯ!
+echo "deb [allow-insecure=yes] http://repo.runtel.ru bookworm main" > /etc/apt/sources.list.d/runtel.list
+apt update --allow-insecure-repositories
+```
+
+---
+
+## Проверка и устранение ошибок
+
+### Проверка после установки
+```bash
+# 1. Проверить, что ключ установлен
+apt-key list | grep -A 2 -B 2 "325CE60C3AD367DE"  # для старого метода
+# или
+ls -la /etc/apt/trusted.gpg.d/ | grep runtel      # для нового метода
+# или
+ls -la /etc/apt/keyrings/runtel.gpg               # проверка наличия файла
+
+# 2. Проверить, что репозиторий добавлен
+apt-cache policy | grep -A 3 "runtel"
+
+# 3. Найти пакеты из репозитория
+apt-cache search runtel | head -5
+```
+
+### Возможные ошибки и их решение
+
+**Ошибка 1: NO_PUBKEY 325CE60C3AD367DE**
+```bash
+# Ключ не установлен или не виден системой
+apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 325CE60C3AD367DE
+# или скачайте ключ заново
+rm -f /etc/apt/keyrings/runtel.gpg
+wget -O /etc/apt/keyrings/runtel.gpg http://repo.runtel.ru/runtel.gpg
+apt-key add /etc/apt/keyrings/runtel.gpg
+```
+
+**Ошибка 2: Файл ключа пустой (0 байт)**
+```bash
+# Удаляем пустой файл и скачиваем заново
+rm -f /etc/apt/keyrings/runtel.gpg
+wget -O /etc/apt/keyrings/runtel.gpg http://repo.runtel.ru/runtel.gpg
+# Проверяем размер
+ls -la /etc/apt/keyrings/runtel.gpg  # должен быть ~3143 байт
+```
+
+**Ошибка 3: Предупреждение DEPRECATION**
+```bash
+# Это не ошибка, а предупреждение об устаревшем методе
+# Можно игнорировать или перейти на новый метод:
+
+# 1. Удаляем старый ключ
+apt-key del "325CE60C3AD367DE"
+
+# 2. Устанавливаем ключ новым методом
+mkdir -p /etc/apt/keyrings
+wget -O /etc/apt/keyrings/runtel.gpg http://repo.runtel.ru/runtel.gpg
+
+# 3. Правим файл репозитория
+sed -i 's|deb http://repo.runtel.ru|deb [signed-by=/etc/apt/keyrings/runtel.gpg] http://repo.runtel.ru|' /etc/apt/sources.list.d/runtel.list
+
+# 4. Обновляем
+apt update
+```
+
+### Полезные команды для управления репозиториями
+
+```bash
+# Включить/отключить репозиторий
+mv /etc/apt/sources.list.d/runtel.list /etc/apt/sources.list.d/runtel.list.bak  # отключить
+mv /etc/apt/sources.list.d/runtel.list.bak /etc/apt/sources.list.d/runtel.list  # включить
+
+# Посмотреть все репозитории
+grep -r "^deb" /etc/apt/sources.list /etc/apt/sources.list.d/
+
+# Удалить репозиторий полностью
+rm /etc/apt/sources.list.d/runtel.list
+rm /etc/apt/keyrings/runtel.gpg
+apt-key del "325CE60C3AD367DE"  # если использовали старый метод
+```
+
+---
+
+## Важные замечания
+
+1. **ID ключа:** `325CE60C3AD367DE` - уникальный идентификатор ключа runtel
+2. **Дистрибутив:** `bookworm` - для Debian 12 (для других версий замените на соответствующий codename)
+3. **Компоненты:** `main` - основные пакеты, `dev` - пакеты для разработки
+4. **Безопасность:** метод с `signed-by` наиболее безопасен, так как ключ привязан к конкретному репозиторию
+5. **Предупреждение DEPRECATION:** появляется только при использовании `apt-key add`, не влияет на работу, но лучше перейти на новый метод
+
+---
+
+## Краткая шпаргалка (самое главное)
+
+```bash
+# Минимальный рабочий вариант (современный)
+mkdir -p /etc/apt/keyrings
+wget -O /etc/apt/keyrings/runtel.gpg http://repo.runtel.ru/runtel.gpg
+echo "deb [signed-by=/etc/apt/keyrings/runtel.gpg] http://repo.runtel.ru bookworm main" > /etc/apt/sources.list.d/runtel.list
+apt update
+
+# Если не работает - экстренный вариант
+apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 325CE60C3AD367DE
+apt update
+```
+
+
+
 
 ## 4. Поиск и установка OpenSIPS
 
