@@ -2,24 +2,38 @@
 
 Тем не менее простую шпаргалку для SLInux  напишу, т.к. удалось случайно.
 
-## 📋 Краткий отчёт: Что мы сделали
 
-### 1️⃣ Установленные пакеты
+## 📗 **ПОЛНАЯ ИНСТРУКЦИЯ: Установка и настройка zapret на Simply Linux (ALT Linux)**
 
-**Для nftables:**
+### Что мы сделали шаг за шагом
+
+---
+
+## **1️⃣ Подготовка системы (установка необходимых пакетов)**
+
 ```bash
-apt-get install nftables libnftnl
+su -
+apt-get update
+apt-get install nftables libnftnl lua5.3
 ```
 
-**Для компиляции (попытки):**
+*Почему:* `nftables` нужен для перенаправления трафика, `lua5.3` — для скриптов zapret.
+
+---
+
+## **2️⃣ Настройка nftables (правила перенаправления трафика)**
+
+Создали файл с правилами:
 ```bash
-apt-get install gcc make libpcap-dev libssl-dev libnetfilter-queue-dev libnfnetlink-dev lua5.3 liblua5.3-devel libcap-devel zlib-devel
+nano /etc/nftables/zapret.nft
 ```
 
-### 2️⃣ Настройка nftables (правила для zapret)
-
-Создали файл `/etc/nftables/zapret.nft`:
+Вставили туда:
 ```nft
+#!/usr/sbin/nft -f
+
+table inet zapret
+delete table inet zapret
 table inet zapret {
     chain post {
         type filter hook postrouting priority 101; policy accept;
@@ -43,17 +57,43 @@ table inet zapret {
 nft -f /etc/nftables/zapret.nft
 ```
 
-### 3️⃣ Настройка параметра ядра
+Проверили:
+```bash
+nft list ruleset
+```
+
+---
+
+## **3️⃣ Настройка параметра ядра (важно для TCP)**
+
 ```bash
 sysctl net.netfilter.nf_conntrack_tcp_be_liberal=1
 echo "net.netfilter.nf_conntrack_tcp_be_liberal=1" >> /etc/sysctl.conf
 ```
 
-### 4️⃣ Zapret: компиляция (неудачно) и готовые бинарники
+---
 
-Скачали и распаковали `zapret2-v0.9.4.3.tar.gz`
+## **4️⃣ Скачивание zapret**
 
-Пытались скомпилировать, но не хватило библиотек. Взяли готовые бинарники:
+```bash
+cd /home/kkorablin/Загрузки/
+# (архив уже был скачан)
+tar -xzf zapret2-v0.9.4.3.tar.gz
+cd zapret2-v0.9.4.3
+```
+
+---
+
+## **5️⃣ Проблема с компиляцией и решение**
+
+Пытались скомпилировать:
+```bash
+make
+```
+Но не хватило библиотек (libcap-devel, zlib-devel и др.)
+
+**Решение:** использовали **готовые бинарники** из папки `binaries/`:
+
 ```bash
 cp binaries/linux-x86_64/nfqws2 ./nfq2/nfqws2
 cp binaries/linux-x86_64/ip2net ./ip2net/ip2net
@@ -61,48 +101,96 @@ cp binaries/linux-x86_64/mdig ./mdig/mdig
 chmod +x ./nfq2/nfqws2 ./ip2net/ip2net ./mdig/mdig
 ```
 
-### 5️⃣ Запуски (что пробовали)
+---
 
-**Первая попытка (fake стратегия):**
+## **6️⃣ Запуск и тестирование стратегий**
+
+### ❌ Первая попытка (не сработала):
 ```bash
 sudo ./nfq2/nfqws2 --qnum=200 --debug --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=fake:blob=fake_default_tls:tcp_md5:tls_mod=rnd,rndsni,dupsid
 ```
 
-**Вторая попытка (multisplit стратегия — **РАБОЧАЯ**):**
+### ✅ **РАБОЧАЯ стратегия (multisplit):**
 ```bash
 sudo ./nfq2/nfqws2 --qnum=200 --debug --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
 ```
 
-**Третья попытка (расширенные порты):**
+### 🔧 Вариант с расширенными портами:
 ```bash
 sudo ./nfq2/nfqws2 --qnum=200 --debug --filter-tcp=80,443,8443 --filter-l7=tls,http --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
 ```
 
-### 6️⃣ Как останавливать zapret
+---
 
-#### Вариант 1: Если запущено вручную (в терминале)
-Просто нажмите `Ctrl+C` в том терминале, где запущен процесс.
+## **7️⃣ Как управлять zapret**
 
-#### Вариант 2: Если процесс остался в фоне
+### **Запуск** (из папки zapret):
 ```bash
-sudo pkill nfqws2
+cd /home/kkorablin/Загрузки/zapret2-v0.9.4.3
+sudo ./nfq2/nfqws2 --qnum=200 --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
 ```
 
-#### Вариант 3: Если сделали systemd сервис (НО МЫ ЕГО НЕ ДЕЛАЛИ)
+### **Остановка**:
 ```bash
-sudo systemctl stop zapret.service
-sudo systemctl disable zapret.service
+sudo pkill -f nfqws2
 ```
+или `Ctrl+C` если запущено в терминале.
 
-### 7️⃣ Проверка, запущен ли zapret
+### **Проверка, работает ли**:
 ```bash
 ps aux | grep nfqws2
 ```
+Если видно `nfqws2` — работает. Если только `grep` — не работает.
 
-### 8️⃣ Удаление правил nftables (если нужно полностью отключить)
+---
+
+## **8️⃣ Просмотр логов и отладка**
+
+С флагом `--debug` видно всё в реальном времени:
+```bash
+sudo ./nfq2/nfqws2 --qnum=200 --debug --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
+```
+
+Без `--debug` тихо работает в фоне.
+
+---
+
+## **9️⃣ Как убрать всё (если надоест)**
+
+Остановить zapret:
+```bash
+sudo pkill -f nfqws2
+```
+
+Удалить правила nftables:
 ```bash
 sudo nft delete table inet zapret
 ```
+
+---
+
+## **📌 ИТОГ: РАБОЧАЯ КОНФИГУРАЦИЯ**
+
+| Компонент | Значение |
+|-----------|----------|
+| **Стратегия** | `multisplit:pos=1:seqovl=5` |
+| **Порты** | TCP 80, 443 |
+| **Команда запуска** | `sudo ./nfq2/nfqws2 --qnum=200 --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5` |
+| **Правила nftables** | В файле `/etc/nftables/zapret.nft` |
+| **Параметр ядра** | `net.netfilter.nf_conntrack_tcp_be_liberal=1` |
+
+---
+
+## ✅ **Что теперь работает**
+- YouTube открывается без тормозов
+- Другие заблокированные сайты тоже могут работать
+
+## ❓ **Если что-то пойдёт не так**
+1. Проверь, запущен ли `nfqws2`: `ps aux | grep nfqws2`
+2. Проверь правила nftables: `sudo nft list ruleset`
+3. Перезапусти с `--debug` и смотри ошибки
+
+
 
 ---
 
