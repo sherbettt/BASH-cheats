@@ -350,4 +350,112 @@ systemctl enable --now opensips
 
 echo "Установка завершена!"
 ```
+-----------------------------------------------------------------------
+
+Отлично! Рад, что всё заработало! Вот полная инструкция того, что мы сделали:
+
+# Инструкция по исправлению проблем с репозиторием runtel в Debian 12
+
+## Проблема
+- Ошибка GPG ключа: `NO_PUBKEY 325CE60C3AD367DE`
+- Ошибка 404 при обновлении пакетов runtel
+- Дублирование репозиториев
+
+## Решение
+
+### Шаг 1: Очистка старых ключей и файлов
+```bash
+# Удалить старые ключи
+rm -f /etc/apt/trusted.gpg.d/runtel.gpg
+rm -f /etc/apt/keyrings/runtel.gpg
+
+# Удалить дублирующиеся файлы репозиториев
+rm -f /etc/apt/sources.list.d/repo_runtel_ru.list
+```
+
+### Шаг 2: Скачать и установить ключ репозитория
+```bash
+# Создать директорию для ключей (если её нет)
+mkdir -p /etc/apt/keyrings
+
+# Скачать ключ и конвертировать в правильный формат
+wget -qO- http://repo.runtel.ru/runtel.gpg | gpg --dearmor > /etc/apt/keyrings/runtel.gpg
+
+# Скопировать ключ в доверенные ключи APT
+cp /etc/apt/keyrings/runtel.gpg /etc/apt/trusted.gpg.d/
+
+# Проверить, что ключ установлен
+apt-key list | grep -A 5 -B 5 runtel
+```
+
+### Шаг 3: Настройка файла репозитория
+```bash
+# Отредактировать файл репозитория
+mcedit /etc/apt/sources.list.d/runtel.list
+```
+
+Добавить следующие строки (объединить main и dev компоненты):
+```
+deb [signed-by=/etc/apt/keyrings/runtel.gpg] http://repo.runtel.ru bookworm main dev
+```
+
+### Шаг 4: Очистка кэша и обновление
+```bash
+# Очистить кэш APT
+apt clean
+rm -rf /var/lib/apt/lists/*
+
+# Обновить списки пакетов
+apt update
+```
+
+### Шаг 5: Блокировка проблемных пакетов (если нужно обновить остальную систему)
+```bash
+# Заблокировать пакеты runtel от обновления
+apt-mark hold runtel-cdr-v2 runtel-core-v2 runtel-event-hunter-v2 runtel-iface-v2 runtel-web-v2
+
+# Обновить остальную систему
+apt upgrade -y
+
+# Проверить заблокированные пакеты
+apt-mark showhold
+
+# Снять блокировку после обновления
+apt-mark unhold runtel-cdr-v2 runtel-core-v2 runtel-event-hunter-v2 runtel-iface-v2 runtel-web-v2
+```
+
+### Шаг 6: Обновление пакетов runtel
+```bash
+# Проверить доступные версии
+apt-cache policy runtel-cdr-v2 runtel-core-v2 runtel-event-hunter-v2 runtel-iface-v2 runtel-web-v2
+
+# Обновить все пакеты runtel
+apt upgrade runtel-cdr-v2 runtel-core-v2 runtel-event-hunter-v2 runtel-iface-v2 runtel-web-v2
+```
+
+### Шаг 7: Проверка
+```bash
+# Проверить, что все обновилось
+apt list --upgradable
+```
+
+## Важные моменты
+1. **Компоненты репозитория**: В файле `runtel.list` мы объединили `main` и `dev` в одну строку: `bookworm main dev`
+2. **Формат ключа**: В Debian 12 ключи должны быть в binary формате, поэтому мы использовали `gpg --dearmor`
+3. **Путь к ключу**: Правильный путь: `signed-by=/etc/apt/keyrings/runtel.gpg`
+4. **Trusted.gpg.d**: Ключ также скопирован в `/etc/apt/trusted.gpg.d/` для совместимости
+
+## Если что-то пойдет не так
+```bash
+# Временное отключение проверки подписи
+# Отредактировать /etc/apt/sources.list.d/runtel.list
+# Изменить [signed-by=...] на [trusted=yes]
+```
+
+Эта инструкция решает:
+- Ошибку GPG ключа (NO_PUBKEY)
+- Ошибку 404 при обновлении
+- Дублирование репозиториев
+- Проблемы с форматом ключей в Debian 12
+
 
