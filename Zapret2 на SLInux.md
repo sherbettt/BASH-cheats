@@ -1,6 +1,3 @@
-Я плохо разбираюсь в сетях иу меня всегда были проблемы с установокой https://github.com/bol-van/zapret2/ на ALT-based дистрибутивы Linux.
-
-Тем не менее простую шпаргалку для SLInux  напишу, т.к. удалось случайно.
 
 
 ## 📗 **ПОЛНАЯ ИНСТРУКЦИЯ: Установка и настройка zapret на Simply Linux (ALT Linux)**
@@ -62,6 +59,12 @@ nft -f /etc/nftables/zapret.nft
 nft list ruleset
 ```
 
+**Важно:** Чтобы правила загружались автоматически при старте системы:
+```bash
+echo "nft -f /etc/nftables/zapret.nft" >> /etc/rc.local
+chmod +x /etc/rc.local
+```
+
 ---
 
 ## **3️⃣ Настройка параметра ядра (важно для TCP)**
@@ -101,9 +104,31 @@ cp binaries/linux-x86_64/mdig ./mdig/mdig
 chmod +x ./nfq2/nfqws2 ./ip2net/ip2net ./mdig/mdig
 ```
 
+**Если всё же хотите скомпилировать самостоятельно:**
+```bash
+apt-get install gcc make libcap-devel zlib-devel libnetfilter-queue-devel libpcap-devel
+make
+```
+
 ---
 
-## **6️⃣ Запуск и тестирование стратегий**
+## **6️⃣ ВАЖНО: Права доступа к Lua файлам**
+
+`nfqws2` после запуска понижает привилегии для безопасности, поэтому ему нужен доступ на чтение к Lua файлам. **Без этого шага zapret не запустится!**
+
+```bash
+# Даем права на чтение и выполнение для всех директорий в пути
+chmod a+x /home/
+chmod a+x /home/kkorablin/
+chmod a+x /home/kkorablin/Загрузки/
+chmod a+x /home/kkorablin/Загрузки/zapret2-v0.9.4.3/
+chmod a+x /home/kkorablin/Загрузки/zapret2-v0.9.4.3/lua/
+chmod a+r /home/kkorablin/Загрузки/zapret2-v0.9.4.3/lua/*.lua
+```
+
+---
+
+## **7️⃣ Запуск и тестирование стратегий**
 
 ### ❌ Первая попытка (не сработала):
 ```bash
@@ -120,9 +145,11 @@ sudo ./nfq2/nfqws2 --qnum=200 --debug --lua-init=@lua/zapret-lib.lua --lua-init=
 sudo ./nfq2/nfqws2 --qnum=200 --debug --filter-tcp=80,443,8443 --filter-l7=tls,http --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
 ```
 
+**Примечание про порты:** Если сайты используют нестандартные порты, добавьте их через запятую. Например: `--filter-tcp=80,443,8443,8080 --filter-udp=443,8443`
+
 ---
 
-## **7️⃣ Как управлять zapret**
+## **8️⃣ Как управлять zapret**
 
 ### **Запуск** (из папки zapret):
 ```bash
@@ -144,7 +171,7 @@ ps aux | grep nfqws2
 
 ---
 
-## **8️⃣ Просмотр логов и отладка**
+## **9️⃣ Просмотр логов и отладка**
 
 С флагом `--debug` видно всё в реальном времени:
 ```bash
@@ -153,18 +180,79 @@ sudo ./nfq2/nfqws2 --qnum=200 --debug --lua-init=@lua/zapret-lib.lua --lua-init=
 
 Без `--debug` тихо работает в фоне.
 
+### Простая проверка работы:
+```bash
+# Посмотреть, обрабатывает ли nfqws2 трафик
+sudo tcpdump -i any -n port 443 -c 10
+```
+
 ---
 
-## **9️⃣ Как убрать всё (если надоест)**
+## **🔟 Автозапуск при загрузке системы (чтобы не запускать вручную)**
+
+Создаем systemd сервис:
+```bash
+sudo nano /etc/systemd/system/zapret.service
+```
+
+Вставляем:
+```ini
+[Unit]
+Description=Zapret DPI bypass
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/kkorablin/Загрузки/zapret2-v0.9.4.3
+ExecStart=/home/kkorablin/Загрузки/zapret2-v0.9.4.3/nfq2/nfqws2 --qnum=200 --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Включаем и запускаем:
+```bash
+sudo systemctl enable zapret
+sudo systemctl start zapret
+sudo systemctl status zapret
+```
+
+Просмотр логов сервиса:
+```bash
+sudo journalctl -u zapret -f
+```
+
+---
+
+## **1️⃣1️⃣ Как посмотреть доступные стратегии**
+
+```bash
+cat /home/kkorablin/Загрузки/zapret2-v0.9.4.3/lua/zapret-antidpi.lua | grep -A 5 "desync profiles"
+```
+
+---
+
+## **1️⃣2️⃣ Как убрать всё (если надоест)**
 
 Остановить zapret:
 ```bash
 sudo pkill -f nfqws2
+sudo systemctl stop zapret
+sudo systemctl disable zapret
 ```
 
 Удалить правила nftables:
 ```bash
 sudo nft delete table inet zapret
+```
+
+Удалить сервис:
+```bash
+sudo rm /etc/systemd/system/zapret.service
+sudo systemctl daemon-reload
 ```
 
 ---
@@ -178,6 +266,7 @@ sudo nft delete table inet zapret
 | **Команда запуска** | `sudo ./nfq2/nfqws2 --qnum=200 --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5` |
 | **Правила nftables** | В файле `/etc/nftables/zapret.nft` |
 | **Параметр ядра** | `net.netfilter.nf_conntrack_tcp_be_liberal=1` |
+| **Автозапуск** | systemd сервис `/etc/systemd/system/zapret.service` |
 
 ---
 
@@ -186,15 +275,16 @@ sudo nft delete table inet zapret
 - Другие заблокированные сайты тоже могут работать
 
 ## ❓ **Если что-то пойдёт не так**
+
 1. Проверь, запущен ли `nfqws2`: `ps aux | grep nfqws2`
 2. Проверь правила nftables: `sudo nft list ruleset`
-3. Перезапусти с `--debug` и смотри ошибки
-
-
+3. Проверь права доступа к Lua файлам (шаг 6)
+4. Перезапусти с `--debug` и смотри ошибки
+5. Посмотри логи сервиса: `sudo journalctl -u zapret -e`
 
 ---
 
-## 🔥 ИТОГ: РАБОЧАЯ КОМАНДА
+## 🔥 **ИТОГ: РАБОЧАЯ КОМАНДА**
 ```bash
 cd ~/Загрузки/zapret2-v0.9.4.3
 sudo ./nfq2/nfqws2 --qnum=200 --debug --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
@@ -207,4 +297,9 @@ sudo ./nfq2/nfqws2 --qnum=200 --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zap
 
 ---
 
+### 📝 **Примечание:** 
+Стратегии могут меняться со временем. Если перестанет работать — попробуйте другие варианты из файла `zapret-antidpi.lua` или проверьте актуальную документацию на https://github.com/bol-van/zapret2/
 
+---
+
+Теперь статья содержит всё необходимое: от установки до автозапуска и отладки, с объяснением типичных проблем (права доступа) и их решений.
