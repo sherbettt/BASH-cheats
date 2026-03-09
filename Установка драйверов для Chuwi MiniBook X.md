@@ -1,305 +1,94 @@
+# Инструкция: Установка драйверов для Chuwi MiniBook X в Ximper Linux
 
+## 1. Исходная ситуация
 
-## 📗 **ПОЛНАЯ ИНСТРУКЦИЯ: Установка и настройка zapret на Simply Linux (ALT Linux)**
+**Устройство:** Chuwi MiniBook X (ноутбук-трансформер с сенсорным экраном 8.8", 1200x1920)
+**ОС:** Ximper Linux 0.9.3 (на базе ALT Linux / Sisyphus)
+**Ядро:** 6.12.63
 
-### Что мы сделали шаг за шагом
+**Какое оборудование требовало драйверов:**
+- Сенсорный экран (тачскрин)
+- Тачпад
+- Датчик Холла (определение сложенного состояния — планшетный режим)
+- Подсветка клавиатуры
+- Автоповорот экрана
 
----
+## 2. Где нашли драйверы
 
-## **1️⃣ Подготовка системы (установка необходимых пакетов)**
+**Источник:** GitHub-репозиторий сообщества
+```
+https://github.com/petitstrawberry/minibook-support.git
+```
 
+**Почему именно он:**
+- Специализирован под Chuwi MiniBook X
+- Содержит готовые демоны (сервисы) для всей специфической периферии
+- Поддерживает современные ядра (6.x)
+- Используется владельцами этого устройства на разных дистрибутивах
+
+## 3. Что внутри репозитория
+
+Репозиторий содержит три отдельных сервиса (демона):
+
+| Компонент | Назначение |
+|-----------|------------|
+| **`trackpadd`** | Драйвер/демон для тачпада и калибровки сенсорного экрана |
+| **`keyboardd`** | Управление подсветкой клавиатуры |
+| **`tabletmoded`** | Обработка датчика Холла (переключение в режим планшета) |
+
+## 4. Процесс компиляции и установки
+
+### Установка необходимых инструментов:
 ```bash
-su -
-apt-get update
-apt-get install nftables libnftnl lua5.3
+apt-get install git gcc make
 ```
+*Git — чтобы скачать исходники, gcc — компилятор, make — система сборки.*
 
-*Почему:* `nftables` нужен для перенаправления трафика, `lua5.3` — для скриптов zapret.
-
----
-
-## **2️⃣ Настройка nftables (правила перенаправления трафика)**
-
-Создали файл с правилами:
+### Клонирование репозитория:
 ```bash
-nano /etc/nftables/zapret.nft
+mkdir -p projects/git
+cd projects/git
+git clone https://github.com/petitstrawberry/minibook-support.git
+cd minibook-support
 ```
+*Скачиваем исходный код с GitHub.*
 
-Вставили туда:
-```nft
-#!/usr/sbin/nft -f
-
-table inet zapret
-delete table inet zapret
-table inet zapret {
-    chain post {
-        type filter hook postrouting priority 101; policy accept;
-        tcp dport {80, 443} ct original packets 1-12 queue flags bypass to 200
-        udp dport 443 ct original packets 1-12 queue flags bypass to 200
-    }
-    chain pre {
-        type filter hook prerouting priority -101; policy accept;
-        tcp sport {80, 443} ct reply packets 1-12 queue flags bypass to 200
-        udp sport 443 ct reply packets 1-12 queue flags bypass to 200
-    }
-    chain output {
-        type filter hook output priority -401; policy accept;
-        queue flags bypass to 200
-    }
-}
-```
-
-Загрузили правила:
-```bash
-nft -f /etc/nftables/zapret.nft
-```
-
-Проверили:
-```bash
-nft list ruleset
-```
-
-**Важно:** Чтобы правила загружались автоматически при старте системы:
-```bash
-echo "nft -f /etc/nftables/zapret.nft" >> /etc/rc.local
-chmod +x /etc/rc.local
-```
-
----
-
-## **3️⃣ Настройка параметра ядра (важно для TCP)**
-
-```bash
-sysctl net.netfilter.nf_conntrack_tcp_be_liberal=1
-echo "net.netfilter.nf_conntrack_tcp_be_liberal=1" >> /etc/sysctl.conf
-```
-
----
-
-## **4️⃣ Скачивание zapret**
-
-```bash
-cd /home/kkorablin/Загрузки/
-# (архив уже был скачан)
-tar -xzf zapret2-v0.9.4.3.tar.gz
-cd zapret2-v0.9.4.3
-```
-
----
-
-## **5️⃣ Проблема с компиляцией и решение**
-
-Пытались скомпилировать:
+### Компиляция:
 ```bash
 make
 ```
-Но не хватило библиотек (libcap-devel, zlib-devel и др.)
+*Компилятор gcc собирает исполняемые файлы из исходников. Предупреждения (warnings) в процессе — нормально, на работу не влияют.*
 
-**Решение:** использовали **готовые бинарники** из папки `binaries/`:
+**Что происходит при компиляции:**
+1. Сначала компилируется общая библиотека `libcommon.a` (общий код для всех демонов)
+2. Затем компилируются сами демоны: `trackpadd`, `keyboardd`, `tabletmoded`
+3. Создаются исполняемые файлы в папках `trackpadd/bin/`, `keyboardd/bin/`, `tabletmoded/bin/`
+
+### Установка:
+```bash
+make install
+```
+**Что делает установка:**
+- Копирует скомпилированные бинарники в `/usr/bin/`
+- Копирует systemd-юниты (файлы служб) в `/etc/systemd/system/`
+- Автоматически запускает и добавляет в автозагрузку все три сервиса
+
+## 5. Итог: какие драйверы получили
+
+| Устройство | Драйвер/Решение | Статус |
+|------------|-----------------|--------|
+| Сенсорный экран | `trackpadd` | ✅ Работает |
+| Тачпад | `trackpadd` | ✅ Работает |
+| Датчик Холла (планшетный режим) | `tabletmoded` | ✅ Работает |
+| Подсветка клавиатуры | `keyboardd` | ✅ Работает |
+| Калибровка цветов | `gnome-color-manager` (из репозитория) | ✅ Установлен |
+
+## 6. Проверка работы
 
 ```bash
-cp binaries/linux-x86_64/nfqws2 ./nfq2/nfqws2
-cp binaries/linux-x86_64/ip2net ./ip2net/ip2net
-cp binaries/linux-x86_64/mdig ./mdig/mdig
-chmod +x ./nfq2/nfqws2 ./ip2net/ip2net ./mdig/mdig
+systemctl status trackpadd keyboardd tabletmoded
 ```
+Показывает, что все три сервиса активны (`active (running)`).
 
-**Если всё же хотите скомпилировать самостоятельно:**
-```bash
-apt-get install gcc make libcap-devel zlib-devel libnetfilter-queue-devel libpcap-devel
-make
-```
 
----
 
-## **6️⃣ ВАЖНО: Права доступа к Lua файлам**
-
-`nfqws2` после запуска понижает привилегии для безопасности, поэтому ему нужен доступ на чтение к Lua файлам. **Без этого шага zapret не запустится!**
-
-```bash
-# Даем права на чтение и выполнение для всех директорий в пути
-chmod a+x /home/
-chmod a+x /home/kkorablin/
-chmod a+x /home/kkorablin/Загрузки/
-chmod a+x /home/kkorablin/Загрузки/zapret2-v0.9.4.3/
-chmod a+x /home/kkorablin/Загрузки/zapret2-v0.9.4.3/lua/
-chmod a+r /home/kkorablin/Загрузки/zapret2-v0.9.4.3/lua/*.lua
-```
-
----
-
-## **7️⃣ Запуск и тестирование стратегий**
-
-### ❌ Первая попытка (не сработала):
-```bash
-sudo ./nfq2/nfqws2 --qnum=200 --debug --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=fake:blob=fake_default_tls:tcp_md5:tls_mod=rnd,rndsni,dupsid
-```
-
-### ✅ **РАБОЧАЯ стратегия (multisplit):**
-```bash
-sudo ./nfq2/nfqws2 --qnum=200 --debug --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
-```
-
-### 🔧 Вариант с расширенными портами:
-```bash
-sudo ./nfq2/nfqws2 --qnum=200 --debug --filter-tcp=80,443,8443 --filter-l7=tls,http --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
-```
-
-**Примечание про порты:** Если сайты используют нестандартные порты, добавьте их через запятую. Например: `--filter-tcp=80,443,8443,8080 --filter-udp=443,8443`
-
----
-
-## **8️⃣ Как управлять zapret**
-
-### **Запуск** (из папки zapret):
-```bash
-cd /home/kkorablin/Загрузки/zapret2-v0.9.4.3
-sudo ./nfq2/nfqws2 --qnum=200 --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
-```
-
-### **Остановка**:
-```bash
-sudo pkill -f nfqws2
-```
-или `Ctrl+C` если запущено в терминале.
-
-### **Проверка, работает ли**:
-```bash
-ps aux | grep nfqws2
-```
-Если видно `nfqws2` — работает. Если только `grep` — не работает.
-
----
-
-## **9️⃣ Просмотр логов и отладка**
-
-С флагом `--debug` видно всё в реальном времени:
-```bash
-sudo ./nfq2/nfqws2 --qnum=200 --debug --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
-```
-
-Без `--debug` тихо работает в фоне.
-
-### Простая проверка работы:
-```bash
-# Посмотреть, обрабатывает ли nfqws2 трафик
-sudo tcpdump -i any -n port 443 -c 10
-```
-
----
-
-## **🔟 Автозапуск при загрузке системы (чтобы не запускать вручную)**
-
-Создаем systemd сервис:
-```bash
-sudo nano /etc/systemd/system/zapret.service
-```
-
-Вставляем:
-```ini
-[Unit]
-Description=Zapret DPI bypass
-After=network.target
-
-[Service]
-Type=simple
-User=root
-WorkingDirectory=/home/kkorablin/Загрузки/zapret2-v0.9.4.3
-ExecStart=/home/kkorablin/Загрузки/zapret2-v0.9.4.3/nfq2/nfqws2 --qnum=200 --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Включаем и запускаем:
-```bash
-sudo systemctl enable zapret
-sudo systemctl start zapret
-sudo systemctl status zapret
-```
-
-Просмотр логов сервиса:
-```bash
-sudo journalctl -u zapret -f
-```
-
----
-
-## **1️⃣1️⃣ Как посмотреть доступные стратегии**
-
-```bash
-cat /home/kkorablin/Загрузки/zapret2-v0.9.4.3/lua/zapret-antidpi.lua | grep -A 5 "desync profiles"
-```
-
----
-
-## **1️⃣2️⃣ Как убрать всё (если надоест)**
-
-Остановить zapret:
-```bash
-sudo pkill -f nfqws2
-sudo systemctl stop zapret
-sudo systemctl disable zapret
-```
-
-Удалить правила nftables:
-```bash
-sudo nft delete table inet zapret
-```
-
-Удалить сервис:
-```bash
-sudo rm /etc/systemd/system/zapret.service
-sudo systemctl daemon-reload
-```
-
----
-
-## **📌 ИТОГ: РАБОЧАЯ КОНФИГУРАЦИЯ**
-
-| Компонент | Значение |
-|-----------|----------|
-| **Стратегия** | `multisplit:pos=1:seqovl=5` |
-| **Порты** | TCP 80, 443 |
-| **Команда запуска** | `sudo ./nfq2/nfqws2 --qnum=200 --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5` |
-| **Правила nftables** | В файле `/etc/nftables/zapret.nft` |
-| **Параметр ядра** | `net.netfilter.nf_conntrack_tcp_be_liberal=1` |
-| **Автозапуск** | systemd сервис `/etc/systemd/system/zapret.service` |
-
----
-
-## ✅ **Что теперь работает**
-- YouTube открывается без тормозов
-- Другие заблокированные сайты тоже могут работать
-
-## ❓ **Если что-то пойдёт не так**
-
-1. Проверь, запущен ли `nfqws2`: `ps aux | grep nfqws2`
-2. Проверь правила nftables: `sudo nft list ruleset`
-3. Проверь права доступа к Lua файлам (шаг 6)
-4. Перезапусти с `--debug` и смотри ошибки
-5. Посмотри логи сервиса: `sudo journalctl -u zapret -e`
-
----
-
-## 🔥 **ИТОГ: РАБОЧАЯ КОМАНДА**
-```bash
-cd ~/Загрузки/zapret2-v0.9.4.3
-sudo ./nfq2/nfqws2 --qnum=200 --debug --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
-```
-
-Если хотите убрать `--debug` (чтобы не спамило в консоль):
-```bash
-sudo ./nfq2/nfqws2 --qnum=200 --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
-```
-
----
-
-### 📝 **Примечание:** 
-Стратегии могут меняться со временем. Если перестанет работать — попробуйте другие варианты из файла `zapret-antidpi.lua` или проверьте актуальную документацию на https://github.com/bol-van/zapret2/
-
----
-
-Теперь статья содержит всё необходимое: от установки до автозапуска и отладки, с объяснением типичных проблем (права доступа) и их решений.
