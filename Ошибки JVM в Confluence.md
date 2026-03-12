@@ -15,7 +15,7 @@ systemctl status confluence -l --no-pager
 ```
 
 **Обнаруженная ошибка:**
-```
+```cfg
 # A fatal error has been detected by the Java Runtime Environment:
 # SIGSEGV (0xb) at pc=0x0000761215720d9c
 # Problematic frame:
@@ -42,7 +42,7 @@ sudo chown confluence2:confluence2 /opt/atlassian/confluence/bin/setenv.sh
 
 ### Шаг 3: Отключение Synchrony (ключевое решение)
 В файл `/opt/atlassian/confluence/bin/setenv.sh` в секцию с системными свойствами добавлена строка:
-```bash
+```ini
 # Disable Synchrony collaborative editing
 CATALINA_OPTS="-Dsynchrony.enabled=false ${CATALINA_OPTS}"
 ```
@@ -76,7 +76,7 @@ ss -tulpn | grep 8091  # порт Synchrony
 ## Итоговый файл конфигурации
 
 В `setenv.sh` были добавлены следующие параметры:
-```bash
+```ini
 # Исключение проблемного метода ClassGraph
 CATALINA_OPTS="-XX:CompileCommand=exclude,io/github/classgraph/ClasspathElementZip::scanPaths ${CATALINA_OPTS}"
 
