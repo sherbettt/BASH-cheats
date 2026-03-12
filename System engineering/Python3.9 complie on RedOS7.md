@@ -1,4 +1,5 @@
-Установка Python 3.9.17 на RED OS 7 (основанную на RHEL/CentOS 7):
+
+Установка Python 3.9.17 на RED OS 7 (Oracle9) (основанную на RHEL/CentOS 7):
 <br/> читай подсказку [how-can-i-install-python-3-9-on-a-linux-ubuntu-terminal](https://stackoverflow.com/questions/60824700/how-can-i-install-python-3-9-on-a-linux-ubuntu-terminal)
 
 ## 1. Установка зависимостей
@@ -48,10 +49,10 @@ sudo ldconfig
 ldconfig -p | grep libpython3.9
 
 # Проверить, откуда Python грузит библиотеки
-ldd $(which python3.9) | grep libpython
+ldd /usr/local/bin/python3.9 | grep libpython  # Важно: указывайте полный путь!
 
 # Проверить, что Python запускается без ошибок
-python3.9 -c "print('Библиотеки работают!')"
+python3.9 -c 'print("Библиотеки работают!")'  # Используйте одинарные кавычки снаружи
 ```
 
 ## 6. Проверка установки
@@ -64,11 +65,45 @@ which python3.9
 ## 7. Создание альтернативной ссылки (опционально)
 
 ```bash
+# Регистрируем нашу версию Python в системе альтернатив
 sudo alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.9 1
+
+# Проверяем и выбираем версию по умолчанию
 sudo alternatives --config python3
+
+# Смотрим статус
 alternatives --display python3
+
+# Проверяем, какой именно Python теперь используется
+# Важно! В разных дистрибутивах команда 'which' может вести себя по-разному:
+# - В некоторых показывает только первый найденный в PATH
+# - В других (с алиасом 'type -all') показывает все вхождения
+# Вот несколько способов проверки:
+
+# Способ 1: command -v (наиболее надежный)
 command -v python3.9
+
+# Способ 2: type без алиаса
+\type python3.9
+
+# Способ 3: readlink для проверки симлинков
+readlink -f $(command -v python3.9)
+
+# Способ 4: проверить всю цепочку симлинков
+ls -la /usr/bin/python3
+ls -la /etc/alternatives/python3
 ```
+
+### Важно понимать про механизм alternatives:
+
+После настройки alternatives может возникнуть путаница с выводами команд:
+- `command -v python3.9` может показывать `/usr/bin/python3.9`
+- `python3.9 --version` показывает `Python 3.9.17`
+
+**Это нормально!** Так происходит потому что:
+1. `/usr/bin/python3.9` становится симлинком на `/etc/alternatives/python3`
+2. `/etc/alternatives/python3` указывает на `/usr/local/bin/python3.9`
+3. Реально исполняется ваша версия 3.9.17
 
 ## 8. Установка pip для Python 3.9
 
@@ -130,11 +165,14 @@ interpreter_python = /usr/local/bin/python3.9
 ## Способ 2: Установка Python 3.9 как системного по умолчанию
 
 ```bash
-# Создайте символическую ссылку
-sudo alternatives --set python /usr/bin/python3.9
+# Создайте символическую ссылку через alternatives
+sudo alternatives --set python /usr/local/bin/python3.9
 
 # Или обновите альтернативы
 sudo alternatives --config python
+
+# После настройки проверьте
+python --version  # Должно показывать 3.9.17
 ```
 
 ## Способ 3: Настройка для конкретного инвентаря
@@ -143,7 +181,7 @@ sudo alternatives --config python
 
 ```ini
 [all:vars]
-ansible_python_interpreter=/usr/bin/python3.9
+ansible_python_interpreter=/usr/local/bin/python3.9  # Важно: используйте полный путь!
 ```
 
 ## Способ 4: Переустановка Ansible с Python 3.9
@@ -186,6 +224,20 @@ source ~/.bashrc
 После настройки проверьте:
 
 ```bash
-ansible localhost -m ping -e 'ansible_python_interpreter=/usr/bin/python3.9'
+# Явное указание интерпретатора
+ansible localhost -m ping -e 'ansible_python_interpreter=/usr/local/bin/python3.9'
+
+# Или если настроили через alternatives/cfg
+ansible localhost -m ping
+
+# Проверка какой Python использует Ansible
+ansible --version | grep "python version"
 ```
 
+### Важное примечание по путям:
+
+При настройке Ansible обращайте внимание на пути:
+- **`/usr/local/bin/python3.9`** - ваша установленная версия (3.9.17)
+- **`/usr/bin/python3.9`** - может быть системной версией или симлинком на вашу (зависит от настроек alternatives)
+
+Для надежности всегда указывайте полный путь `/usr/local/bin/python3.9` в конфигурациях Ansible.
