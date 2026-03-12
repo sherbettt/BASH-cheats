@@ -67,6 +67,7 @@ which python3.9
 sudo alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.9 1
 sudo alternatives --config python3
 alternatives --display python3
+command -v python3.9
 ```
 
 ## 8. Установка pip для Python 3.9
