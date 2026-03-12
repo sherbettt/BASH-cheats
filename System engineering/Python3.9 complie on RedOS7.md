@@ -149,8 +149,12 @@ pip3.9 является /usr/local/bin/pip3.9
 https://mirror.yandex.ru/redos/7.3/x86_64/os/
 
 ---------------
+<br/>
+<br/>
 
-В Red OS 7 требуется настроить Ansible для использования Python 3.9.17 вместо Python 3.8. 
+
+
+**В Red OS 7 требуется настроить Ansible для использования Python 3.9.17 вместо Python 3.8.** 
 <br/> Вот несколько способов:
 
 ## Способ 1: Настройка через ansible.cfg
