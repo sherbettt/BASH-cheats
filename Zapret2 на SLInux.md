@@ -79,8 +79,10 @@ echo "net.netfilter.nf_conntrack_tcp_be_liberal=1" >> /etc/sysctl.conf
 ## **4️⃣ Скачивание zapret**
 
 ```bash
+# см. https://github.com/bol-van/zapret2/releases
+
 cd /home/kkorablin/Загрузки/
-# (архив уже был скачан)
+wget https://github.com/bol-van/zapret2/releases/download/v0.9.4.5/zapret2-v0.9.4.5.tar.gz
 tar -xzf zapret2-v0.9.4.3.tar.gz
 cd zapret2-v0.9.4.3
 ```
