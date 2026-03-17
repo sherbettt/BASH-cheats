@@ -177,7 +177,7 @@ XKBVARIANT=""
 XKBOPTIONS="grp:caps_toggle"
 BACKSPACE="guess"
 ```
-Сохраните файл (`Ctrl+O`, `Enter`) и выйдите (`Ctrl+X`).
+Сохраните файл (`F2`, `F10`).
 
 #### 3.3. Настройка пользовательской сессии (Budgie)
 Теперь нужно сказать Budgie/GNOME, как переключать раскладку.
