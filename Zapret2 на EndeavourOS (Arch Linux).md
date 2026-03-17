@@ -1,5 +1,8 @@
-## 📗 **ИНСТРУКЦИЯ: Установка и настройка zapret на EndeavourOS (Arch Linux)**
+## 📗 **ПОЛНАЯ ИНСТРУКЦИЯ: Установка и настройка zapret на EndeavourOS (Arch Linux)**
 
+### Что мы сделаем шаг за шагом
+
+---
 
 ## **1️⃣ Подготовка системы (установка необходимых пакетов)**
 
@@ -17,16 +20,20 @@ sudo pacman -S nftables lua tcpdump
 
 ## **2️⃣ Настройка nftables (правила перенаправления трафика)**
 
-Создаем файл с правилами:
+В EndeavourOS используется firewalld, но мы создадим отдельный файл с правилами для zapret и подключим его к основному конфигу.
+
+### **2.1 Создаем файл с правилами для zapret**
+
 ```bash
-sudo mcedit /etc/nftables/zapret.nft
+sudo nano /etc/nftables-zapret.conf
 ```
 
 Вставляем:
 ```nft
 #!/usr/sbin/nft -f
 
-table inet zapret
+# Правила для zapret
+add table inet zapret
 delete table inet zapret
 table inet zapret {
     chain post {
@@ -46,25 +53,29 @@ table inet zapret {
 }
 ```
 
-Загружаем правила:
+### **2.2 Подключаем правила к основному конфигу**
+
 ```bash
-sudo nft -f /etc/nftables/zapret.nft
+echo 'include "/etc/nftables-zapret.conf"' | sudo tee -a /etc/nftables.conf
 ```
 
-Проверяем:
-```bash
-sudo nft list ruleset
-```
+### **2.3 Проверяем и загружаем правила**
 
-**Автозагрузка правил при старте системы (через systemd):**
 ```bash
-# Создаем сервис для загрузки правил
+# Проверяем синтаксис
+sudo nft -c -f /etc/nftables.conf
+
+# Включаем и запускаем сервис nftables
 sudo systemctl enable nftables
 sudo systemctl start nftables
 
-# Добавляем наши правила в автозагрузку nftables
-echo 'include "/etc/nftables/zapret.nft"' | sudo tee -a /etc/nftables/nftables.conf
+# Проверяем, что правила загрузились
+sudo nft list ruleset
 ```
+
+**Должны увидеть таблицу `inet zapret` с цепочками post, pre, output.**
+
+*Примечание:* Статус `inactive (dead)` для nftables — это нормально. Сервис работает по принципу "загрузил правила и завершился". Главное, что правила видны в `nft list ruleset`.
 
 ---
 
@@ -95,7 +106,7 @@ wget https://github.com/bol-van/zapret2/releases/download/v0.9.4.5/zapret2-v0.9.
 # Распаковываем в /usr/local/bin/ (с правами root)
 sudo tar -xzf zapret2-v0.9.4.5.tar.gz -C /usr/local/bin/
 
-# Переименовываем для удобства (если нужно)
+# Переименовываем для удобства
 sudo mv /usr/local/bin/zapret2-v0.9.4.5 /usr/local/bin/zapret2
 
 # Удаляем архив
@@ -224,7 +235,7 @@ sudo tcpdump -i any -n port 443 -c 10
 
 Создаем systemd сервис:
 ```bash
-sudo mcedit /etc/systemd/system/zapret.service
+sudo nano /etc/systemd/system/zapret.service
 ```
 
 Вставляем **самый надежный вариант** с абсолютными путями:
@@ -292,8 +303,9 @@ sudo systemctl disable zapret
 Удалить правила nftables:
 ```bash
 sudo nft delete table inet zapret
-# Или удалить из конфига:
-sudo sed -i '/zapret/d' /etc/nftables/nftables.conf
+# Или удалить include из конфига:
+sudo sed -i '/zapret/d' /etc/nftables.conf
+sudo rm /etc/nftables-zapret.conf
 ```
 
 Удалить сервис:
@@ -307,6 +319,12 @@ sudo systemctl daemon-reload
 sudo rm -rf /usr/local/bin/zapret2
 ```
 
+Удалить параметр ядра:
+```bash
+sudo rm /etc/sysctl.d/99-zapret.conf
+sudo sysctl --system
+```
+
 ---
 
 ## **📌 ИТОГ: РАБОЧАЯ КОНФИГУРАЦИЯ**
@@ -316,8 +334,8 @@ sudo rm -rf /usr/local/bin/zapret2
 | **Стратегия** | `multisplit:pos=1:seqovl=5` |
 | **Порты** | TCP 80, 443 |
 | **Команда запуска** | `sudo /usr/local/bin/zapret2/nfq2/nfqws2 --qnum=200 --lua-init=@/usr/local/bin/zapret2/lua/zapret-lib.lua --lua-init=@/usr/local/bin/zapret2/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5` |
-| **Правила nftables** | В файле `/etc/nftables/zapret.nft` |
-| **Параметр ядра** | `net.netfilter.nf_conntrack_tcp_be_liberal=1` |
+| **Правила nftables** | В файле `/etc/nftables-zapret.conf` (подключен через include в `/etc/nftables.conf`) |
+| **Параметр ядра** | `net.netfilter.nf_conntrack_tcp_be_liberal=1` в `/etc/sysctl.d/99-zapret.conf` |
 | **Автозапуск** | systemd сервис `/etc/systemd/system/zapret.service` |
 | **Рабочая директория** | `/usr/local/bin/zapret2` |
 
@@ -460,25 +478,23 @@ sudo ./nfq2/nfqws2 --qnum=200 --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zap
 
 ---
 
-## 🎯 **Дополнительно для Arch/EndeavourOS**
-
-### **AUR пакет (альтернативный способ установки)**
-
-В EndeavourOS можно установить zapret из AUR:
-```bash
-# С помощью yay (если установлен)
-yay -S zapret
-
-# Или с помощью paru
-paru -S zapret
-```
-
-Но учтите: версия в AUR может отличаться, и настройка всё равно потребуется.
+## 🎯 **Дополнительно для EndeavourOS/Arch Linux**
 
 ### **Проверка версии ядра**
 ```bash
 uname -r
 # Если ядро свежее (>6.0), всё должно работать отлично
+```
+
+### **Firewalld**
+В EndeavourOS может быть активен firewalld. Проверьте:
+```bash
+sudo systemctl status firewalld
+```
+
+Если firewalld включен, убедитесь, что он не блокирует очередь:
+```bash
+sudo firewall-cmd --add-forward-port=queue
 ```
 
 ---
@@ -488,3 +504,4 @@ uname -r
 
 ---
 
+**Инструкция полностью адаптирована для EndeavourOS и Arch Linux с учётом вашей конфигурации!** 🚀
