@@ -80,7 +80,7 @@ echo "net.netfilter.nf_conntrack_tcp_be_liberal=1" >> /etc/sysctl.conf
 
 ```bash
 # Переходим в директорию для загрузок
-cd /home/ваш_пользователь/Загрузки/
+cd /home/$(whoami)/Загрузки/
 
 # Скачиваем архив
 wget https://github.com/bol-van/zapret2/releases/download/v0.9.4.5/zapret2-v0.9.4.5.tar.gz
@@ -142,6 +142,21 @@ sudo chmod a+r /usr/local/bin/zapret2-v0.9.4.5/lua/*.lua
 ---
 
 ## **7️⃣ Запуск и тестирование стратегий**
+
+### Проверки
+```bash
+# ПРОВЕРКА ДО ЗАПУСКА:
+curl -I https://www.youtube.com 2>/dev/null | head -n 1
+# Должно быть медленно или ошибка
+
+# ЗАПУСК С ОТЛАДКОЙ:
+sudo ./nfq2/nfqws2 --qnum=200 --debug ...
+
+# ПРОВЕРКА ПОСЛЕ (в другом терминале):
+curl -I https://www.youtube.com 2>/dev/null | head -n 1
+# Должно быть быстро с HTTP/2 200
+```
+
 
 ### **РАБОЧАЯ стратегия (multisplit) с отладкой:**
 ```bash
