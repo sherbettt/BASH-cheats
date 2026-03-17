@@ -25,7 +25,7 @@ sudo pacman -S nftables lua tcpdump
 ### **2.1 Создаем файл с правилами для zapret**
 
 ```bash
-sudo nano /etc/nftables-zapret.conf
+sudo mcedit /etc/nftables-zapret.conf
 ```
 
 Вставляем:
@@ -235,7 +235,7 @@ sudo tcpdump -i any -n port 443 -c 10
 
 Создаем systemd сервис:
 ```bash
-sudo nano /etc/systemd/system/zapret.service
+sudo mcedit /etc/systemd/system/zapret.service
 ```
 
 Вставляем **самый надежный вариант** с абсолютными путями:
