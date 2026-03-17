@@ -166,7 +166,7 @@ sudo localectl --no-convert set-x11-keymap us,ru pc105 "" grp:caps_toggle
 #### 3.2. Проверка и правка конфигурационного файла
 Откройте файл `/etc/default/keyboard`:
 ```bash
-sudo nano /etc/default/keyboard
+sudo mcedit /etc/default/keyboard
 ```
 Приведите его к такому виду:
 ```
@@ -204,7 +204,7 @@ sudo localectl --no-convert set-x11-keymap us,ru pc105 "" grp:alt_shift_toggle
 #### 4.2. Проверка и правка конфигурационного файла
 Откройте файл `/etc/default/keyboard`:
 ```bash
-sudo nano /etc/default/keyboard
+sudo mcedit /etc/default/keyboard
 ```
 Приведите его к виду:
 ```
