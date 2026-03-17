@@ -9,7 +9,9 @@
 ```bash
 su -
 apt-get update
+epm update
 apt-get install nftables libnftnl lua5.3
+epmi nftables libnftnl lua5.3
 ```
 
 *Почему:* `nftables` нужен для перенаправления трафика, `lua5.3` — для скриптов zapret.
