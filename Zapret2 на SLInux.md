@@ -8,13 +8,11 @@
 
 ```bash
 su -
-apt-get update
 epm update
-apt-get install nftables libnftnl lua5.3
 epmi nftables libnftnl lua5.3
 ```
 
-*Почему:* `nftables` нужен для перенаправления трафика, `lua5.3` — для скриптов zapret.
+*Почему:* `nftables` нужен для перенаправления трафика, `lua5.3` — для скриптов zapret. В Simply Linux используется менеджер пакетов `epm`.
 
 ---
 
@@ -80,7 +78,7 @@ echo "net.netfilter.nf_conntrack_tcp_be_liberal=1" >> /etc/sysctl.conf
 
 ```bash
 # Переходим в директорию для загрузок
-cd /home/$(whoami)/Загрузки/
+cd ~/Загрузки/
 
 # Скачиваем архив
 wget https://github.com/bol-van/zapret2/releases/download/v0.9.4.5/zapret2-v0.9.4.5.tar.gz
@@ -143,25 +141,22 @@ sudo chmod a+r /usr/local/bin/zapret2-v0.9.4.5/lua/*.lua
 
 ## **7️⃣ Запуск и тестирование стратегий**
 
-### Проверки
+### **Проверка ДО запуска:**
 ```bash
-# ПРОВЕРКА ДО ЗАПУСКА:
 curl -I https://www.youtube.com 2>/dev/null | head -n 1
 # Должно быть медленно или ошибка
-
-# ЗАПУСК С ОТЛАДКОЙ:
-sudo ./nfq2/nfqws2 --qnum=200 --debug ...
-
-# ПРОВЕРКА ПОСЛЕ (в другом терминале):
-curl -I https://www.youtube.com 2>/dev/null | head -n 1
-# Должно быть быстро с HTTP/2 200
 ```
-
 
 ### **РАБОЧАЯ стратегия (multisplit) с отладкой:**
 ```bash
 cd /usr/local/bin/zapret2-v0.9.4.5
 sudo ./nfq2/nfqws2 --qnum=200 --debug --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
+```
+
+### **Проверка ПОСЛЕ запуска (в другом терминале):**
+```bash
+curl -I https://www.youtube.com 2>/dev/null | head -n 1
+# Должно быть быстро с HTTP/2 200
 ```
 
 ### **Если работает — запускаем без отладки (тихо):**
@@ -221,19 +216,21 @@ sudo tcpdump -i any -n port 443 -c 10
 sudo mcedit /etc/systemd/system/zapret.service
 ```
 
-Вставляем (обратите внимание на пути `/usr/local/bin/...`):
+Вставляем **самый надежный вариант** с абсолютными путями:
 ```ini
 [Unit]
-Description=Zapret DPI bypass
+Description=Zapret2 DPI bypass
 After=network.target
+Wants=network.target
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/usr/local/bin/zapret2-v0.9.4.5
-ExecStart=/usr/local/bin/zapret2-v0.9.4.5/nfq2/nfqws2 --qnum=200 --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
-Restart=always
-RestartSec=10
+Group=root
+# ВАЖНО: символ @ перед абсолютными путями!
+ExecStart=/usr/local/bin/zapret2-v0.9.4.5/nfq2/nfqws2 --qnum=200 --lua-init=@/usr/local/bin/zapret2-v0.9.4.5/lua/zapret-lib.lua --lua-init=@/usr/local/bin/zapret2-v0.9.4.5/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
+Restart=on-failure
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
@@ -249,6 +246,14 @@ sudo systemctl status zapret
 Просмотр логов сервиса:
 ```bash
 sudo journalctl -u zapret -f
+```
+
+### **Проверка после перезагрузки:**
+```bash
+sudo reboot
+# После входа в систему:
+systemctl status zapret
+curl -I https://www.youtube.com 2>/dev/null | head -n 1
 ```
 
 ---
@@ -294,7 +299,7 @@ sudo rm -rf /usr/local/bin/zapret2-v0.9.4.5
 |-----------|----------|
 | **Стратегия** | `multisplit:pos=1:seqovl=5` |
 | **Порты** | TCP 80, 443 |
-| **Команда запуска** | `sudo /usr/local/bin/zapret2-v0.9.4.5/nfq2/nfqws2 --qnum=200 --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5` |
+| **Команда запуска** | `sudo /usr/local/bin/zapret2-v0.9.4.5/nfq2/nfqws2 --qnum=200 --lua-init=@/usr/local/bin/zapret2-v0.9.4.5/lua/zapret-lib.lua --lua-init=@/usr/local/bin/zapret2-v0.9.4.5/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5` |
 | **Правила nftables** | В файле `/etc/nftables/zapret.nft` |
 | **Параметр ядра** | `net.netfilter.nf_conntrack_tcp_be_liberal=1` |
 | **Автозапуск** | systemd сервис `/etc/systemd/system/zapret.service` |
@@ -352,34 +357,17 @@ sudo /usr/local/bin/zapret2-v0.9.4.5/nfq2/nfqws2 --qnum=200 --lua-init=@lua/zapr
 
 ## 🔧 **РЕШЕНИЕ: Абсолютные пути к Lua файлам**
 
-Самый надежный способ — использовать **абсолютные пути** вместо относительных.
+Самый надежный способ — использовать **абсолютные пути** вместо относительных, и **обязательно с символом @**!
 
-**Исправленный systemd сервис:**
+**Исправленный systemd сервис (уже приведен в разделе 10):**
 
-```bash
-sudo mcedit /etc/systemd/system/zapret.service
-```
-
-Замените содержимое на:
 ```ini
-[Unit]
-Description=Zapret2 DPI bypass
-After=network.target
-
-[Service]
-Type=simple
-User=root
-Group=root
-# ВАЖНО: символ @ перед абсолютными путями!
 ExecStart=/usr/local/bin/zapret2-v0.9.4.5/nfq2/nfqws2 --qnum=200 --lua-init=@/usr/local/bin/zapret2-v0.9.4.5/lua/zapret-lib.lua --lua-init=@/usr/local/bin/zapret2-v0.9.4.5/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
 ```
 
-**Ключевое изменение:** вместо `@lua/zapret-lib.lua` используем `@/usr/local/bin/zapret2-v0.9.4.5/lua/zapret-lib.lua`
+**Ключевые моменты:**
+- **Абсолютный путь** — процесс точно знает, где искать файл
+- **Символ @** — говорит nfqws2: "это путь к файлу, загрузи его", а не выполняй как код
 
 ---
 
@@ -406,6 +394,16 @@ ExecStart=/usr/local/bin/zapret-wrapper.sh
 ```ini
 ExecStart=/bin/bash -c 'cd /usr/local/bin/zapret2-v0.9.4.5 && exec ./nfq2/nfqws2 --qnum=200 --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5'
 ```
+
+---
+
+## 📚 **Памятка по синтаксису --lua-init:**
+
+| Синтаксис | Что означает |
+|-----------|--------------|
+| `--lua-init='print("hello")'` | Выполнить код напрямую |
+| `--lua-init=@script.lua` | Загрузить и выполнить код из файла **относительно текущей директории** |
+| `--lua-init=@/abs/path/script.lua` | Загрузить и выполнить код из файла **по абсолютному пути** (САМЫЙ НАДЁЖНЫЙ) |
 
 ---
 
@@ -457,13 +455,21 @@ sudo journalctl -u zapret -f
    sudo journalctl -u zapret -e
    ```
 
+7. **Проверка системных логов на блокировки:**
+   ```bash
+   sudo dmesg | grep -i denied
+   ```
+
 ---
 
-## 🔥 **ИТОГОВАЯ РАБОЧАЯ КОМАНДА**
+## 🔥 **ИТОГОВАЯ РАБОЧАЯ КОМАНДА (РУЧНОЙ ЗАПУСК)**
 
 ```bash
 cd /usr/local/bin/zapret2-v0.9.4.5
 sudo ./nfq2/nfqws2 --qnum=200 --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
 ```
 
--
+---
+
+## 📝 **Примечание:** 
+Стратегии могут меняться со временем. Если перестанет работать — попробуйте другие варианты из файла `zapret-antidpi.lua` или проверьте актуальную документацию на https://github.com/bol-van/zapret2/
