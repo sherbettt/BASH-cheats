@@ -24,7 +24,7 @@ apt-get install nftables libnftnl lua5.3
 
 Создаем файл с правилами:
 ```bash
-nano /etc/nftables/zapret.nft
+mcedit /etc/nftables/zapret.nft
 ```
 
 Вставляем:
@@ -205,7 +205,7 @@ sudo tcpdump -i any -n port 443 -c 10
 
 Создаем systemd сервис:
 ```bash
-sudo nano /etc/systemd/system/zapret.service
+sudo mcedit /etc/systemd/system/zapret.service
 ```
 
 Вставляем (обратите внимание на пути `/usr/local/bin/...`):
@@ -366,7 +366,7 @@ apt-get install nftables libnftnl lua5.3
 
 Создали файл с правилами:
 ```bash
-nano /etc/nftables/zapret.nft
+mcedit /etc/nftables/zapret.nft
 ```
 
 Вставили туда:
@@ -538,7 +538,7 @@ sudo tcpdump -i any -n port 443 -c 10
 
 Создаем systemd сервис:
 ```bash
-sudo nano /etc/systemd/system/zapret.service
+sudo mcedit /etc/systemd/system/zapret.service
 ```
 
 Вставляем:
