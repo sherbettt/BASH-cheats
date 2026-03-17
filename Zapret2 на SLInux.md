@@ -348,15 +348,15 @@ sudo mcedit /etc/systemd/system/zapret.service
 Замените содержимое на:
 ```ini
 [Unit]
-Description=Zapret DPI bypass
+Description=Zapret2 DPI bypass
 After=network.target
 
 [Service]
 Type=simple
 User=root
 Group=root
-# Абсолютные пути к Lua файлам — гарантированно работают!
-ExecStart=/usr/local/bin/zapret2-v0.9.4.5/nfq2/nfqws2 --qnum=200 --lua-init=/usr/local/bin/zapret2-v0.9.4.5/lua/zapret-lib.lua --lua-init=/usr/local/bin/zapret2-v0.9.4.5/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
+# ВАЖНО: символ @ перед абсолютными путями!
+ExecStart=/usr/local/bin/zapret2-v0.9.4.5/nfq2/nfqws2 --qnum=200 --lua-init=@/usr/local/bin/zapret2-v0.9.4.5/lua/zapret-lib.lua --lua-init=@/usr/local/bin/zapret2-v0.9.4.5/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
 Restart=on-failure
 RestartSec=5
 
