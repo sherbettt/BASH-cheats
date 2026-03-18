@@ -9,6 +9,9 @@ sudo pacman -Syu
 
 # Устанавливаем необходимые пакеты
 sudo pacman -S nftables lua tcpdump curl
+
+# Для компиляции из исходников
+sudo pacman -S gcc make libcap zlib libnetfilter_queue libpcap
 ```
 
 *Почему:*  
@@ -119,7 +122,6 @@ sudo chmod +x nfq2/nfqws2 ip2net/ip2net mdig/mdig
 **Альтернатива: компиляция из исходников (если хотите):**
 
 ```bash
-sudo pacman -S gcc make libcap zlib libnetfilter_queue libpcap
 cd /usr/local/bin/zapret2
 make
 ```
