@@ -92,6 +92,8 @@ systemctl status trackpadd keyboardd tabletmoded
 
 --------------------------------------------
 <br/>
+<br/>
+
 
 
 # Установка драйверов для Chuwi MiniBook X в Endevour OS Linux
@@ -259,6 +261,195 @@ reboot
 
 
 
+# **ПОЛНАЯ ИНСТРУКЦИЯ: УПРАВЛЕНИЕ ЭНЕРГОСБЕРЕЖЕНИЕМ ЭКРАНА**
+## **EndeavourOS / Budgie (настройки через терминал)**
+
+---
+
+## **ЧАСТЬ 1. ТЕОРИЯ: ДВЕ РАЗНЫЕ ФУНКЦИИ**
+
+В системе работают **два независимых механизма**, которые мы путали:
+
+| Функция | Команда | Что делает | По умолчанию |
+|--------|---------|------------|--------------|
+| **Полное отключение** | `sleep-inactive-ac-timeout` | Экран **полностью гаснет** (черный экран) | `3600` (1 час) |
+| **Действие** | `sleep-inactive-ac-type` | Что делать: `suspend` (сон) или `nothing` | `'suspend'` |
+| **Частичное затемнение** | `idle-dim` | Экран **становится тусклее** (dimming) | `true` (включено) |
+| **Уровень затемнения** | `idle-brightness` | На сколько % темнеет (30 = яркость 30%) | `30` |
+
+**Важно:** Это разные настройки! Можно отключить полное отключение, но оставить затемнение — тогда экран будет тускнеть, но не гаснуть.
+
+---
+
+## **ЧАСТЬ 2. ДИАГНОСТИКА: УЗНАТЬ ТЕКУЩИЕ НАСТРОЙКИ**
+
+Выполните эти команды, чтобы понять, что сейчас включено:
+
+```bash
+# 1. Время до ПОЛНОГО отключения экрана (в секундах)
+gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout
+
+# 2. Действие при ПОЛНОМ отключении (suspend = сон, nothing = ничего)
+gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type
+
+# 3. Включено ли ЧАСТИЧНОЕ затемнение (true = да, false = нет)
+gsettings get org.gnome.settings-daemon.plugins.power idle-dim
+
+# 4. Уровень ЧАСТИЧНОГО затемнения (30 = яркость 30%)
+gsettings get org.gnome.settings-daemon.plugins.power idle-brightness
+```
+
+---
+
+## **ЧАСТЬ 3. ЧТО МЫ СДЕЛАЛИ (ПОДРОБНО)**
+
+### **Шаг 1. Узнали время до полного отключения**
+```bash
+gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout
+```
+**Результат:** `3600` (1 час) — экран гас полностью через час бездействия.
+
+### **Шаг 2. Узнали, что система делает при бездействии**
+```bash
+gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type
+```
+**Результат:** `'suspend'` — система пыталась уйти в сон.
+
+### **Шаг 3. Отключили полное отключение экрана**
+```bash
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout 0
+```
+**Зачем:** `0` = "никогда не гасить экран полностью".
+
+### **Шаг 4. Отключили уход в сон**
+```bash
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
+```
+**Зачем:** Чтобы система не пыталась усыпить компьютер.
+
+### **Шаг 5. Проверили затемнение (НОВОЕ)**
+Мы не трогали `idle-dim`, поэтому скорее всего оно осталось `true` (включено).
+
+---
+
+## **ЧАСТЬ 4. ВАРИАНТЫ НАСТРОЕК (ВЫБИРАЙТЕ СВОЙ)**
+
+### **ВАРИАНТ A: Только для просмотра видео (полный комфорт)**
+*Экран всегда яркий, никогда не гаснет, не темнеет*
+
+```bash
+# Отключить ПОЛНОЕ отключение экрана
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout 0
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
+
+# Отключить ЧАСТИЧНОЕ затемнение
+gsettings set org.gnome.settings-daemon.plugins.power idle-dim false
+```
+
+### **ВАРИАНТ B: Экран тускнеет, но не гаснет**
+*Экран становится тусклым (экономия энергии), но не выключается*
+
+```bash
+# Отключить ПОЛНОЕ отключение
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout 0
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
+
+# ЧАСТИЧНОЕ затемнение оставить включенным (true)
+gsettings set org.gnome.settings-daemon.plugins.power idle-dim true
+
+# Настроить уровень затемнения (50 = яркость 50%)
+gsettings set org.gnome.settings-daemon.plugins.power idle-brightness 50
+```
+*Число можно менять: 30 (темно), 50 (средне), 80 (чуть темнее), 100 (без изменений)*
+
+### **ВАРИАНТ C: Энергосбережение (как было, но мягче)**
+*Компьютер засыпает, но позже и с менее резким затемнением*
+
+```bash
+# Увеличить время до ПОЛНОГО отключения (2 часа = 7200 сек)
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout 7200
+
+# Оставить действие "сон"
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'suspend'
+
+# Сделать затемнение менее резким
+gsettings set org.gnome.settings-daemon.plugins.power idle-dim true
+gsettings set org.gnome.settings-daemon.plugins.power idle-brightness 60
+```
+
+### **ВАРИАНТ D: Экономия батареи (для работы от аккумулятора)**
+*Команды для режима "от батареи" (замените `-ac` на `-battery`)*
+
+```bash
+# Пример для батареи: таймаут 10 минут (600 сек)
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-timeout 600
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 'suspend'
+```
+
+---
+
+## **ЧАСТЬ 5. КАК ВЕРНУТЬ ВСЁ ОБРАТНО (ПОЛНЫЙ СБРОС)**
+
+### **Если хотите вернуть заводские настройки EndeavourOS:**
+
+```bash
+# 1. Вернуть ПОЛНОЕ отключение (1 час)
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout 3600
+
+# 2. Вернуть действие "сон"
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'suspend'
+
+# 3. Вернуть ЧАСТИЧНОЕ затемнение (включено)
+gsettings set org.gnome.settings-daemon.plugins.power idle-dim true
+
+# 4. Вернуть уровень затемнения (30%)
+gsettings set org.gnome.settings-daemon.plugins.power idle-brightness 30
+```
+
+### **Проверка после возврата:**
+```bash
+gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout
+gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type
+gsettings get org.gnome.settings-daemon.plugins.power idle-dim
+gsettings get org.gnome.settings-daemon.plugins.power idle-brightness
+```
+**Должны увидеть:** `3600`, `'suspend'`, `true`, `30`
+
+---
+
+## **ЧАСТЬ 6. ЕСЛИ НУЖЕН ПОЛНЫЙ СБРОС ВСЕХ НАСТРОЕК ПИТАНИЯ**
+
+```bash
+# Сбросить ВСЕ настройки питания к значениям по умолчанию
+gsettings reset org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout
+gsettings reset org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type
+gsettings reset org.gnome.settings-daemon.plugins.power idle-dim
+gsettings reset org.gnome.settings-daemon.plugins.power idle-brightness
+```
+
+---
+
+## **ЧАСТЬ 7. ШПАРГАЛКА (КРАТКО)**
+
+| Команда | Что делает | Пример значения |
+|--------|------------|-----------------|
+| `sleep-inactive-ac-timeout` | Время до полного отключения (сек) | `0` = никогда, `3600` = 1 час |
+| `sleep-inactive-ac-type` | Действие при отключении | `'suspend'` = сон, `'nothing'` = ничего |
+| `idle-dim` | Включить затемнение | `true` = да, `false` = нет |
+| `idle-brightness` | Яркость после затемнения (%) | `30` = 30%, `80` = 80% |
+
+---
+
+## **ИТОГ: ЧТО МЫ СДЕЛАЛИ И КАК ЖИТЬ ДАЛЬШЕ**
+
+✅ **Мы сделали:** Отключили полное отключение экрана и уход в сон  
+✅ **Не трогали:** Частичное затемнение (оно может быть включено)  
+✅ **Теперь вы знаете:** Как управлять обеими функциями отдельно
+
+**Рекомендация:** Если при просмотре видео экран всё еще темнеет (частично), выполните:
+```bash
+gsettings set org.gnome.settings-daemon.plugins.power idle-dim false
+```
 
 
 
