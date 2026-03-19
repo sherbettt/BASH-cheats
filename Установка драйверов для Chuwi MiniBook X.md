@@ -429,7 +429,13 @@ gsettings reset org.gnome.settings-daemon.plugins.power idle-brightness
 
 ---
 
-## **ЧАСТЬ 7. ШПАРГАЛКА (КРАТКО)**
+## **ЧАСТЬ 7. ТРЕБУЕТСЯ увеличить продолжительность работы экрана**
+```bash
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout 2400
+gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout 0 #никогда не выключать
+```
+
 
 | Команда | Что делает | Пример значения |
 |--------|------------|-----------------|
