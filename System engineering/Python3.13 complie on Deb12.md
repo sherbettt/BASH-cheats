@@ -28,9 +28,9 @@ sudo apt install -y \
 
 ```bash
 cd /tmp
-wget https://www.python.org/ftp/python/3.13.3/Python-3.13.3.tar.xz
-tar -xf Python-3.13.3.tar.xz
-cd Python-3.13.3
+wget https://www.python.org/ftp/python/3.13.12/Python-3.13.12.tar.xz
+tar -xf Python-3.13.12.tar.xz
+cd Python-3.13.12
 ```
 
 ### Шаг 3: Конфигурация с оптимизациями
