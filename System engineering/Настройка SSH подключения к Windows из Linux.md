@@ -104,6 +104,15 @@ scp "C:\path\to\file" linux_user@linux_ip:/path/
 scp "C:\Users\maxro\Documents\SKUD_1Oct_10Nov (clear time).ods" kiko0625@192.168.87.151:/home/kiko0625/Документы/SKUD
 ```
 
+### **Копирование с Linux на Windows**
+Пример:
+```bash
+kkorablin@runtel-re ~/Загрузки $ scp 02006301-GL-1-50.lic maxro@192.168.97.43:"C:/Users/maxro/Documents/"
+maxro@192.168.97.43's password: 
+02006301-GL-1-50.lic                                                                     100%  104     7.9KB/s   00:00 
+```
+
+
 ## 🚪 **Этап 6: Завершение работы**
 
 ### **Выйти из SSH сессии**
