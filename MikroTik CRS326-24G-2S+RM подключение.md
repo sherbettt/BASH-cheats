@@ -165,24 +165,25 @@ ip -c a s
 
 ## Шаг 4: Запуск WinBox для настройки MikroTik
 
-1. **Установите Wine** (если еще не установлен):
-   ```bash
-   sudo pacman -S wine
-   ```
-   (Для Endeavour OS/Arch Linux)
-
-2. **Перейдите в папку с WinBox:**
+1. **Перейдите в папку с WinBox:**
    ```bash
    cd ~/Programs/WinBox-Mikrotik
+   kkorablin@runtel-re ~/Programs/WinBox-Mikrotik $ ll
+   итого 89M
+   drwxr-xr-x 3 kkorablin kkorablin 4,1k апр  1 13:11 ./
+   drwxr-xr-x 3 kkorablin kkorablin 4,1k апр  1 13:11 ../
+   drwxrwxrwx 3 kkorablin kkorablin 4,1k окт  6 17:25 assets/
+   -rwxr-xr-x 1 kkorablin kkorablin  50M фев 13 10:35 WinBox*
+   -rw-r--r-- 1 kkorablin kkorablin  20M апр  1 13:06 WinBox_Linux.zip
+   -rw-r--r-- 1 kkorablin kkorablin  21M апр  1 13:06 WinBox_Windows.zip
    ```
 
-3. **Запустите WinBox:**
+2. **Запустите WinBox:**
    ```bash
-   wine winbox.exe
+   ./WinBox
    ```
-   (или `wine winbox64.exe`, если скачали 64-битную версию)
 
-4. **В окне WinBox:**
+3. **В окне WinBox:**
    - **Connect To:** `192.168.88.1`
    - **Login:** `admin`
    - **Password:** оставьте пустым (или введите пароль с наклейки на корпусе, если есть)
@@ -199,7 +200,7 @@ ip -c a s
    ```
    http://192.168.88.1
    ```
-3. Введите логин `admin`, пароль оставьте пустым
+3. Введите логин `admin`, введите пароль с наклейки на корпусе, если есть (иначе пароль оставьте пустым)
 
 ---
 
