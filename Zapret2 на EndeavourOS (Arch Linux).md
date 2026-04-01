@@ -1,4 +1,4 @@
-# 📗 **ПОЛНАЯ ИНСТРУКЦИЯ: Установка и настройка zapret на EndeavourOS (Arch Linux)**
+# 📗 **Установка и настройка zapret на EndeavourOS (Arch Linux)**
 
 
 ## **1️⃣ Подготовка системы (установка необходимых пакетов)**
@@ -430,4 +430,187 @@ sudo sysctl --system
 
 ## 📝 **Примечание:** 
 Стратегии могут меняться со временем. Если перестанет работать — попробуйте другие варианты из файла `zapret-antidpi.lua` или проверьте актуальную документацию на https://github.com/bol-van/zapret2/
+
+----------
+<br/>
+
+
+
+
+## 🔄 **ДОПОЛНЕНИЕ К СТАТЬЕ: Обновление zapret до v0.9.4.7**
+
+### **1️⃣ Останавливаем текущий сервис**
+
+```bash
+sudo systemctl stop zapret
+sudo zapret-stop
+```
+
+### **2️⃣ Скачиваем новую версию**
+
+```bash
+# Создаем временную папку
+mkdir /tmp/zapret_new ; cd /tmp/zapret_new
+
+# Скачиваем новую версию
+wget https://github.com/bol-van/zapret2/releases/download/v0.9.4.7/zapret2-v0.9.4.7.tar.gz
+```
+
+
+
+### **3️⃣ Распаковываем и устанавливаем**
+
+```bash
+# Распаковываем
+sudo tar -xzf zapret2-v0.9.4.7.tar.gz -C /tmp/zapret_new/
+
+# Сохраняем старую версию как бэкап
+sudo mv /usr/local/bin/zapret2 /usr/local/bin/zapret2-0.9.4.5
+
+# Устанавливаем новую
+sudo mv /tmp/zapret_new/zapret2-v0.9.4.7 /usr/local/bin/zapret2
+
+# Копируем готовые бинарники (без компиляции)
+cd /usr/local/bin/zapret2
+sudo cp binaries/linux-x86_64/nfqws2 nfq2/
+sudo cp binaries/linux-x86_64/ip2net ip2net/
+sudo cp binaries/linux-x86_64/mdig mdig/
+sudo chmod +x nfq2/nfqws2 ip2net/ip2net mdig/mdig
+
+# Чистим временные файлы
+rm -rf /tmp/zapret_new 
+```
+
+### **4️⃣ Проверяем версию**
+
+```bash
+/usr/local/bin/zapret2/nfq2/nfqws2 --version
+# Должно показать: github version v0.9.4.7 (32951c0...) lua_compat_ver 5
+```
+
+### **5️⃣ Обновляем права доступа**
+
+```bash
+sudo chmod a+x /usr/local/
+sudo chmod a+x /usr/local/bin/
+sudo chmod a+x /usr/local/bin/zapret2/
+sudo chmod a+x /usr/local/bin/zapret2/lua/
+sudo chmod a+r /usr/local/bin/zapret2/lua/*.lua
+```
+
+### **6️⃣ Обновляем systemd сервис (опционально)**
+
+Можно добавить версию в название для наглядности:
+
+```bash
+sudo mcedit /etc/systemd/system/zapret.service
+```
+
+```ini
+[Unit]
+Description=Zapret DPI bypass v0.9.4.7
+After=network.target nftables.service
+Wants=nftables.service
+Before=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/usr/local/bin/zapret2/nfq2/nfqws2 --qnum=200 --lua-init=@/usr/local/bin/zapret2/lua/zapret-lib.lua --lua-init=@/usr/local/bin/zapret2/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
+Restart=on-failure
+RestartSec=5
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### **7️⃣ Перезапускаем сервис**
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl start zapret
+sudo systemctl status zapret
+```
+
+**Ожидаемый вывод:**
+```
+● zapret.service - Zapret DPI bypass v0.9.4.7
+     Loaded: loaded (/etc/systemd/system/zapret.service; disabled; preset: disabled)
+     Active: active (running) since ... 
+```
+
+### **8️⃣ Проверяем работу**
+
+```bash
+# Проверяем версию в логах
+sudo journalctl -u zapret -e | grep -i "version"
+
+# Проверяем YouTube
+curl -I https://www.youtube.com 2>/dev/null | head -n 1
+# Должно быть: HTTP/2 200
+```
+
+### **9️⃣ Что нового в v0.9.4.7**
+
+```bash
+# Посмотреть изменения
+curl -s https://api.github.com/repos/bol-van/zapret2/releases/tags/v0.9.4.7 | grep -A 5 "body"
+```
+
+Основное изменение (по данным официального релиза):
+- **nfqws2:** ошибки применения dupsid, rndsni, padencap в tls_mod более не являются фатальными и не приводят к отказу от других успешно примененных модов. В debug log выдается предупреждение.
+
+### **🔟 Возврат к старой версии (если нужно)**
+
+```bash
+sudo systemctl stop zapret
+sudo rm -rf /usr/local/bin/zapret2
+sudo mv /usr/local/bin/zapret2-0.9.4.5 /usr/local/bin/zapret2
+sudo systemctl start zapret
+```
+
+---
+
+## 📌 **Важные замечания**
+
+| Что изменилось | Описание |
+|----------------|----------|
+| **Версия** | Обновлена с v0.9.4.5 до v0.9.4.7 |
+| **Бинарники** | Используются готовые из `binaries/linux-x86_64/` |
+| **Бэкап** | Старая версия сохранена как `/usr/local/bin/zapret2-0.9.4.5` |
+| **Совместимость** | Все существующие скрипты (`zapret-start/stop/status`) продолжают работать |
+| **Сервис** | systemd сервис обновлен с указанием версии в описании |
+
+---
+
+## ✅ **Итоговая рабочая конфигурация после обновления**
+
+| Компонент | Значение |
+|-----------|----------|
+| **Версия zapret** | v0.9.4.7 |
+| **Стратегия** | `multisplit:pos=1:seqovl=5` |
+| **Порты** | TCP 80, 443 |
+| **Правила nftables** | `/etc/nftables-zapret.conf` (без изменений) |
+| **Параметр ядра** | `net.netfilter.nf_conntrack_tcp_be_liberal=1` |
+| **Сервис zapret** | `zapret.service` (с указанием версии) |
+| **Рабочая директория** | `/usr/local/bin/zapret2` |
+| **Бэкап старой версии** | `/usr/local/bin/zapret2-0.9.4.5` |
+
+---
+
+## 📝 **Примечания по обновлению**
+
+1. **Скрипты управления** (`zapret-start`, `zapret-stop`, `zapret-status`) остаются без изменений и работают с новой версией
+2. **Правила nftables** не требуют обновления
+3. **Параметры ядра** остаются прежними
+4. Если после обновления возникли проблемы — всегда есть бэкап для отката
+
+-----------
+
+
+
+
+
 
