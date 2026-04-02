@@ -53,6 +53,9 @@ telegram-desktop
 ### C. Установка из Flatpak (Flathub)
 
 ```bash
+# Проверить
+https://flathub.org/en/apps/org.telegram.desktop
+
 # Добавление репозитория Flathub (если ещё не добавлен)
 flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
