@@ -114,10 +114,10 @@ sudo systemctl restart iio-sensor-proxy
 ## 📦 Шаг 4. Фиксация ландшафтной ориентации при загрузке
 
 ### Проблема
-После перезагрузки экран возвращается в портретный режим, потому что физическая матрица GPD Pocket 4 — портретная (1600×2560), а GNOME не знает, что её нужно повернуть.
+Физическая матрица GPD Pocket 4 имеет **портретную** ориентацию (1600×2560). Без настройки экран загружается в портретном режиме.
 
-### Что делаем
-Создаём конфигурацию дисплея для GNOME с правильным поворотом (`right`).
+### Решение
+Создаём конфигурацию дисплея с **поворотом `right`** (90°), чтобы получить ландшафтный рабочий стол.
 
 ### Команда
 ```bash
@@ -152,16 +152,15 @@ cat > ~/.config/monitors.xml << 'EOF'
 EOF
 ```
 
-**ВАЖНО! Заблокировать файл от изменений**
+### ВАЖНО! Заблокировать файл от изменений
+GNOME имеет привычку перезаписывать этот файл при подключении внешних мониторов. Чтобы этого избежать:
+
 ```bash
 chmod 444 ~/.config/monitors.xml
 ```
 
-## ⚠️ ВАЖНОЕ ПРИМЕЧАНИЕ ПРО monitors.xml
-
-Если вы подключаете внешний монитор, GNOME может перезаписать `~/.config/monitors.xml` и сбросить ориентацию. Чтобы этого избежать, **обязательно выполните** `chmod 444 ~/.config/monitors.xml` после настройки.
-
-Если ориентация всё равно сбилась — повторите Шаг 4 и снова заблокируйте файл.
+### Результат
+После перезагрузки экран всегда в ландшафте, и подключение внешнего монитора не сбивает ориентацию.
 
 ---
 
@@ -339,6 +338,230 @@ gnome-extensions list --enabled
 ```
 
 ---
+
+# 📄 ПРИЛОЖЕНИЕ: разные варианты `~/.config/monitors.xml`
+
+Ниже приведены **готовые конфигурации** для разных сценариев. Выберите нужный, замените содержимое файла и выполните `chmod 444 ~/.config/monitors.xml`.
+
+---
+
+## Вариант 1. Только встроенный экран, ландшафт (основной)
+
+```bash
+cat > ~/.config/monitors.xml << 'EOF'
+<monitors version="2">
+  <configuration>
+    <logicalmonitor>
+      <x>0</x>
+      <y>0</y>
+      <scale>1</scale>
+      <primary>yes</primary>
+      <transform>
+        <rotation>right</rotation>
+        <flipped>no</flipped>
+      </transform>
+      <monitor>
+        <monitorspec>
+          <connector>eDP-1</connector>
+          <vendor>unknown</vendor>
+          <product>unknown</product>
+          <serial>unknown</serial>
+        </monitorspec>
+        <mode>
+          <width>1600</width>
+          <height>2560</height>
+          <rate>143.999</rate>
+        </mode>
+      </monitor>
+    </logicalmonitor>
+  </configuration>
+</monitors>
+EOF
+chmod 444 ~/.config/monitors.xml
+```
+
+---
+
+## Вариант 2. Встроенный экран + внешний монитор СПРАВА
+
+```bash
+cat > ~/.config/monitors.xml << 'EOF'
+<monitors version="2">
+  <configuration>
+    <logicalmonitor>
+      <x>0</x>
+      <y>0</y>
+      <scale>1</scale>
+      <primary>yes</primary>
+      <transform>
+        <rotation>right</rotation>
+        <flipped>no</flipped>
+      </transform>
+      <monitor>
+        <monitorspec>
+          <connector>eDP-1</connector>
+          <vendor>unknown</vendor>
+          <product>unknown</product>
+          <serial>unknown</serial>
+        </monitorspec>
+        <mode>
+          <width>1600</width>
+          <height>2560</height>
+          <rate>143.999</rate>
+        </mode>
+      </monitor>
+    </logicalmonitor>
+    <logicalmonitor>
+      <x>1600</x>
+      <y>0</y>
+      <scale>1</scale>
+      <monitor>
+        <monitorspec>
+          <connector>DP-11</connector>
+          <vendor>unknown</vendor>
+          <product>unknown</product>
+          <serial>unknown</serial>
+        </monitorspec>
+        <mode>
+          <width>2560</width>
+          <height>1440</height>
+          <rate>60.000</rate>
+        </mode>
+      </monitor>
+    </logicalmonitor>
+  </configuration>
+</monitors>
+EOF
+chmod 444 ~/.config/monitors.xml
+```
+
+---
+
+## Вариант 3. Встроенный экран + внешний монитор СВЕРХУ (как вы просили)
+
+```bash
+cat > ~/.config/monitors.xml << 'EOF'
+<monitors version="2">
+  <configuration>
+    <logicalmonitor>
+      <x>0</x>
+      <y>0</y>
+      <scale>1</scale>
+      <primary>yes</primary>
+      <transform>
+        <rotation>right</rotation>
+        <flipped>no</flipped>
+      </transform>
+      <monitor>
+        <monitorspec>
+          <connector>eDP-1</connector>
+          <vendor>unknown</vendor>
+          <product>unknown</product>
+          <serial>unknown</serial>
+        </monitorspec>
+        <mode>
+          <width>1600</width>
+          <height>2560</height>
+          <rate>143.999</rate>
+        </mode>
+      </monitor>
+    </logicalmonitor>
+    <logicalmonitor>
+      <x>0</x>
+      <y>2560</y>
+      <scale>1</scale>
+      <monitor>
+        <monitorspec>
+          <connector>DP-11</connector>
+          <vendor>unknown</vendor>
+          <product>unknown</product>
+          <serial>unknown</serial>
+        </monitorspec>
+        <mode>
+          <width>2560</width>
+          <height>1440</height>
+          <rate>60.000</rate>
+        </mode>
+      </monitor>
+    </logicalmonitor>
+  </configuration>
+</monitors>
+EOF
+chmod 444 ~/.config/monitors.xml
+```
+
+**Пояснение:** `y="2560"` означает, что внешний монитор начинается там, где заканчивается встроенный (1600×2560 → высота 2560 пикселей). Внешний монитор будет **над** встроенным.
+
+---
+
+## Вариант 4. Только портретный режим (если нужно вернуть "как в железе")
+
+```bash
+cat > ~/.config/monitors.xml << 'EOF'
+<monitors version="2">
+  <configuration>
+    <logicalmonitor>
+      <x>0</x>
+      <y>0</y>
+      <scale>1</scale>
+      <primary>yes</primary>
+      <transform>
+        <rotation>normal</rotation>
+        <flipped>no</flipped>
+      </transform>
+      <monitor>
+        <monitorspec>
+          <connector>eDP-1</connector>
+          <vendor>unknown</vendor>
+          <product>unknown</product>
+          <serial>unknown</serial>
+        </monitorspec>
+        <mode>
+          <width>1600</width>
+          <height>2560</height>
+          <rate>143.999</rate>
+        </mode>
+      </monitor>
+    </logicalmonitor>
+  </configuration>
+</monitors>
+EOF
+chmod 444 ~/.config/monitors.xml
+```
+
+---
+
+## Вариант 5. Сброс к настройкам по умолчанию (удалить файл)
+
+```bash
+rm ~/.config/monitors.xml
+```
+
+После этого GNOME создаст файл заново при следующем изменении настроек дисплея.
+
+---
+
+## ⚠️ Важное замечание про блокировку файла
+
+- `chmod 444` делает файл **только для чтения**. GNOME не сможет его изменить при подключении/отключении мониторов.
+- Если нужно внести изменения — сначала разблокируйте: `chmod 644 ~/.config/monitors.xml`
+- После изменений снова заблокируйте: `chmod 444 ~/.config/monitors.xml`
+
+---
+
+## 🧠 Финальные ответы на ваши вопросы
+
+> теперь у меня всегда будет портретное положение на основном экране?
+
+**Нет.** Если вы используете **Вариант 1, 2 или 3** (с `rotation=right`), у вас всегда будет **ландшафтное** положение.
+
+> а в режиме планшета будет переворачиваться?
+
+**Да.** Расширение `screen-autorotate` будет поворачивать экран при физическом повороте ноутбука, независимо от того, что написано в `monitors.xml`. `monitors.xml` задаёт только **ориентацию при загрузке**.
+
+> что изменилось в варианте "монитор сверху"?
+
+В **Варианте 3** внешний монитор расположен **над** встроенным (`y="2560"`), а не справа. Это удобно, если внешний монитор физически стоит выше ноутбука.
 
 
 
