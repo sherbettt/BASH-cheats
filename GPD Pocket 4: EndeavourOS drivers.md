@@ -114,10 +114,10 @@ sudo systemctl restart iio-sensor-proxy
 ## 📦 Шаг 4. Фиксация ландшафтной ориентации при загрузке
 
 ### Проблема
-После перезагрузки экран возвращается в портретный режим.
+После перезагрузки экран возвращается в портретный режим, потому что физическая матрица GPD Pocket 4 — портретная (1600×2560), а GNOME не знает, что её нужно повернуть.
 
 ### Что делаем
-Создаём конфигурацию дисплея для GNOME.
+Создаём конфигурацию дисплея для GNOME с правильным поворотом (`right`).
 
 ### Команда
 ```bash
@@ -130,7 +130,7 @@ cat > ~/.config/monitors.xml << 'EOF'
       <scale>1</scale>
       <primary>yes</primary>
       <transform>
-        <rotation>normal</rotation>
+        <rotation>right</rotation>
         <flipped>no</flipped>
       </transform>
       <monitor>
@@ -141,9 +141,9 @@ cat > ~/.config/monitors.xml << 'EOF'
           <serial>unknown</serial>
         </monitorspec>
         <mode>
-          <width>2560</width>
-          <height>1440</height>
-          <rate>60.000</rate>
+          <width>1600</width>
+          <height>2560</height>
+          <rate>143.999</rate>
         </mode>
       </monitor>
     </logicalmonitor>
@@ -152,8 +152,16 @@ cat > ~/.config/monitors.xml << 'EOF'
 EOF
 ```
 
-### Результат
-После перезагрузки экран всегда в ландшафте.
+**ВАЖНО! Заблокировать файл от изменений**
+```bash
+chmod 444 ~/.config/monitors.xml
+```
+
+## ⚠️ ВАЖНОЕ ПРИМЕЧАНИЕ ПРО monitors.xml
+
+Если вы подключаете внешний монитор, GNOME может перезаписать `~/.config/monitors.xml` и сбросить ориентацию. Чтобы этого избежать, **обязательно выполните** `chmod 444 ~/.config/monitors.xml` после настройки.
+
+Если ориентация всё равно сбилась — повторите Шаг 4 и снова заблокируйте файл.
 
 ---
 
