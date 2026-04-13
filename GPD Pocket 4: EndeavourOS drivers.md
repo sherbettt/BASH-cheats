@@ -113,12 +113,151 @@ sudo systemctl restart iio-sensor-proxy
 ## 📦 Шаг 4. Фиксация ландшафтной ориентации при загрузке
 
 ### Проблема
-После перезагрузки экран возвращается в портретный режим.
+Физическая матрица GPD Pocket 4 имеет **портретную** ориентацию (1600×2560). Без настройки экран загружается в портретном режиме.
 
-### Что делаем
-Создаём конфигурацию дисплея для GNOME.
+### Решение
+Создаём конфигурацию дисплея с **поворотом `right`** (90°), чтобы получить ландшафтный рабочий стол.
 
-### Команда
+### Базовая команда (ландшафт)
+```bash
+cat > ~/.config/monitors.xml << 'EOF'
+<monitors version="2">
+  <configuration>
+    <logicalmonitor>
+      <x>0</x>
+      <y>0</y>
+      <scale>1</scale>
+      <primary>yes</primary>
+      <transform>
+        <rotation>right</rotation>
+        <flipped>no</flipped>
+      </transform>
+      <monitor>
+        <monitorspec>
+          <connector>eDP-1</connector>
+          <vendor>unknown</vendor>
+          <product>unknown</product>
+          <serial>unknown</serial>
+        </monitorspec>
+        <mode>
+          <width>1600</width>
+          <height>2560</height>
+          <rate>143.999</rate>
+        </mode>
+      </monitor>
+    </logicalmonitor>
+  </configuration>
+</monitors>
+EOF
+```
+
+### Другие варианты конфигурации `~/.config/monitors.xml`
+
+**Вариант 1. Только встроенный экран, ландшафт (основной)** — уже описан выше.
+
+**Вариант 2. Встроенный экран + внешний монитор СПРАВА**
+```bash
+cat > ~/.config/monitors.xml << 'EOF'
+<monitors version="2">
+  <configuration>
+    <logicalmonitor>
+      <x>0</x>
+      <y>0</y>
+      <scale>1</scale>
+      <primary>yes</primary>
+      <transform>
+        <rotation>right</rotation>
+        <flipped>no</flipped>
+      </transform>
+      <monitor>
+        <monitorspec>
+          <connector>eDP-1</connector>
+          <vendor>unknown</vendor>
+          <product>unknown</product>
+          <serial>unknown</serial>
+        </monitorspec>
+        <mode>
+          <width>1600</width>
+          <height>2560</height>
+          <rate>143.999</rate>
+        </mode>
+      </monitor>
+    </logicalmonitor>
+    <logicalmonitor>
+      <x>1600</x>
+      <y>0</y>
+      <scale>1</scale>
+      <monitor>
+        <monitorspec>
+          <connector>DP-11</connector>
+          <vendor>unknown</vendor>
+          <product>unknown</product>
+          <serial>unknown</serial>
+        </monitorspec>
+        <mode>
+          <width>2560</width>
+          <height>1440</height>
+          <rate>60.000</rate>
+        </mode>
+      </monitor>
+    </logicalmonitor>
+  </configuration>
+</monitors>
+EOF
+```
+
+**Вариант 3. Встроенный экран + внешний монитор СВЕРХУ**
+```bash
+cat > ~/.config/monitors.xml << 'EOF'
+<monitors version="2">
+  <configuration>
+    <logicalmonitor>
+      <x>0</x>
+      <y>0</y>
+      <scale>1</scale>
+      <primary>yes</primary>
+      <transform>
+        <rotation>right</rotation>
+        <flipped>no</flipped>
+      </transform>
+      <monitor>
+        <monitorspec>
+          <connector>eDP-1</connector>
+          <vendor>unknown</vendor>
+          <product>unknown</product>
+          <serial>unknown</serial>
+        </monitorspec>
+        <mode>
+          <width>1600</width>
+          <height>2560</height>
+          <rate>143.999</rate>
+        </mode>
+      </monitor>
+    </logicalmonitor>
+    <logicalmonitor>
+      <x>0</x>
+      <y>2560</y>
+      <scale>1</scale>
+      <monitor>
+        <monitorspec>
+          <connector>DP-11</connector>
+          <vendor>unknown</vendor>
+          <product>unknown</product>
+          <serial>unknown</serial>
+        </monitorspec>
+        <mode>
+          <width>2560</width>
+          <height>1440</height>
+          <rate>60.000</rate>
+        </mode>
+      </monitor>
+    </logicalmonitor>
+  </configuration>
+</monitors>
+EOF
+```
+
+**Вариант 4. Только портретный режим (физическая ориентация матрицы)**
 ```bash
 cat > ~/.config/monitors.xml << 'EOF'
 <monitors version="2">
@@ -140,9 +279,9 @@ cat > ~/.config/monitors.xml << 'EOF'
           <serial>unknown</serial>
         </monitorspec>
         <mode>
-          <width>2560</width>
-          <height>1440</height>
-          <rate>60.000</rate>
+          <width>1600</width>
+          <height>2560</height>
+          <rate>143.999</rate>
         </mode>
       </monitor>
     </logicalmonitor>
@@ -151,8 +290,21 @@ cat > ~/.config/monitors.xml << 'EOF'
 EOF
 ```
 
+**Вариант 5. Сброс к настройкам GNOME по умолчанию**
+```bash
+rm ~/.config/monitors.xml
+# После перезагрузки GNOME создаст файл заново
+```
+
+### ВАЖНО! Заблокировать файл от изменений
+GNOME имеет привычку перезаписывать этот файл при подключении внешних мониторов. Чтобы этого избежать:
+
+```bash
+chmod 444 ~/.config/monitors.xml
+```
+
 ### Результат
-После перезагрузки экран всегда в ландшафте.
+После перезагрузки экран всегда в ландшафте, и подключение внешнего монитора не сбивает ориентацию.
 
 ---
 
@@ -299,35 +451,92 @@ sudo pacman -R onboard hunspell
 
 ---
 
-## ✅ Итог: что мы имеем сейчас
+## 🎨 Настройка стилуса и мультитач-жестов
 
-- [x] Экранная клавиатура **появляется сама** в полях ввода
-- [x] Клавиатуру можно **вызвать жестом** снизу вверх
-- [x] Ориентация при загрузке — **ландшафтная**
-- [x] Автоповорот **работает** (расширение `screen-autorotate` + `iio-sensor-proxy`)
-- [x] Конфликт с Onboard **устранён**
-- [x] Система **готова к планшетному режиму**
+Ваш GPD Pocket 4 поддерживает не только касания пальцем, но и ввод с помощью **активного стилуса**. Чтобы настроить его и добавить удобные мультитач-жесты для трекпада, выполните следующие шаги.
 
----
+### 🖊️ Настройка стилуса (поддержка давления и кнопок)
 
-## 📎 Полезные команды для диагностики (на будущее)
+Установите драйверы для устройств ввода Wacom, так как стилус в GPD, скорее всего, основан на их технологии.
 
-```bash
-# Проверить работу датчика
-monitor-sensor
+1.  **Установите пакет `xf86-input-wacom`:**
+    ```bash
+    sudo pacman -S xf86-input-wacom
+    ```
 
-# Статус службы датчика
-systemctl status iio-sensor-proxy
+2.  **Проверьте, что стилус распознан.** Подключите стилус и выполните команду:
+    ```bash
+    xsetwacom --list devices
+    ```
+    Вы должны увидеть ваше устройство, например, `Wacom HID 52F0 Pen stylus`.
 
-# Логи автоповорота
-journalctl -b | grep -i "rotate"
+3.  **Настройте параметры стилуса.** Вы можете настроить его, используя переменные окружения GNOME или команды `xsetwacom`. Вот самые полезные примеры:
+    *   **Назначить действие на кнопку на стилусе:**
+        ```bash
+        # Например, кнопка будет эмулировать правый клик мыши
+        xsetwacom --set "Wacom HID 52F0 Pen stylus" Button 2 "button +3"
+        ```
+    *   **Настроить чувствительность к нажатию:** Это позволит сделать линии толще или тоньше в зависимости от силы нажатия.
+        ```bash
+        # Значение может быть от 0 до 100
+        xsetwacom --set "Wacom HID 52F0 Pen stylus" PressureThreshold 10
+        ```
+    *   **Сделать настройки постоянными:** Чтобы настройки не сбрасывались после перезагрузки, добавьте команды `xsetwacom` в автозагрузку. Создайте файл `~/.config/autostart/wacom-setup.desktop`:
+        ```bash
+        cat > ~/.config/autostart/wacom-setup.desktop << EOF
+        [Desktop Entry]
+        Type=Application
+        Name=Wacom Stylus Setup
+        Exec=/usr/bin/xsetwacom --set "Wacom HID 52F0 Pen stylus" Button 2 "button +3"
+        Hidden=false
+        NoDisplay=false
+        X-GNOME-Autostart-enabled=true
+        EOF
+        ```
 
-# Включена ли клавиатура
-gsettings get org.gnome.desktop.a11y.applications screen-keyboard-enabled
+### 🖱️ Настройка мультитач-жестов для трекпада
 
-# Список включённых расширений GNOME
-gnome-extensions list --enabled
-```
+По умолчанию в GNOME под Wayland доступно только ограниченное число жестов. Чтобы получить полный контроль, можно использовать утилиту `libinput-gestures` .
+
+1.  **Установите `libinput-gestures`:**
+    ```bash
+    paru -S libinput-gestures
+    ```
+
+2.  **Добавьте своего пользователя в группу `input`, чтобы программа могла читать события от трекпада:**
+    ```bash
+    sudo gpasswd -a $USER input
+    ```
+
+3.  **Перезагрузитесь**, чтобы изменения вступили в силу.
+
+4.  **Создайте и настройте конфигурационный файл `~/.config/libinput-gestures.conf`.** Вот пример для начала:
+    ```bash
+    touch ~/.config/libinput-gestures.conf
+    echo "# Навигация по рабочим столам (3 пальца)
+    gesture swipe left 3 _internal ws_left
+    gesture swipe right 3 _internal ws_right
+    gesture swipe up 3 _internal ws_up
+    gesture swipe down 3 _internal ws_down
+
+    # Переключение между приложениями (4 пальца)
+    gesture swipe left 4 xdotool key alt+Right
+    gesture swipe right 4 xdotool key alt+Left
+
+    # Масштабирование (щипок)
+    gesture pinch in 2 xdotool key ctrl+minus
+    gesture pinch out 2 xdotool key ctrl+plus
+    " >> ~/.config/libinput-gestures.conf
+    ```
+    *   **Примечание:** Для эмуляции нажатий клавиш в Wayland может потребоваться установить `ydotool` или использовать `_internal` команды, где это возможно.
+
+5.  **Запустите `libinput-gestures` и добавьте в автозагрузку:**
+    ```bash
+    libinput-gestures-setup autostart
+    libinput-gestures-setup start
+    ```
+
+Теперь ваш GPD Pocket 4 будет реагировать на удобные мультитач-жесты, а работа со стилусом станет максимально комфортной.
 
 ---
 
@@ -493,14 +702,40 @@ sudo systemctl enable --now tlp
 
 ---
 
-## 🧪 Финальная проверка всех драйверов
+## ✅ Итог: что мы имеем сейчас
+
+- [x] Экранная клавиатура **появляется сама** в полях ввода
+- [x] Клавиатуру можно **вызвать жестом** снизу вверх
+- [x] Ориентация при загрузке — **ландшафтная** (с возможностью выбора разных вариантов)
+- [x] Автоповорот **работает** (расширение `screen-autorotate` + `iio-sensor-proxy`)
+- [x] Конфликт с Onboard **устранён**
+- [x] Поддержка **стилуса** (давление, кнопки)
+- [x] **Мультитач-жесты** для трекпада
+- [x] Система **готова к планшетному режиму**
+- [x] Дополнительные драйверы (вентилятор, LTE, ROCm, TLP) — по желанию
+
+---
+
+## 📎 Полезные команды для диагностики (на будущее)
 
 ```bash
+# Проверить работу датчика
+monitor-sensor
+
+# Статус службы датчика
+systemctl status iio-sensor-proxy
+
+# Логи автоповорота
+journalctl -b | grep -i "rotate"
+
+# Включена ли клавиатура
+gsettings get org.gnome.desktop.a11y.applications screen-keyboard-enabled
+
+# Список включённых расширений GNOME
+gnome-extensions list --enabled
+
 # Проверка вентилятора
 cat /sys/devices/platform/gpd_fan/hwmon/hwmon*/fan1_input 2>/dev/null && echo "✅ Fan driver OK" || echo "⚠️ Fan driver not found"
-
-# Проверка акселерометра
-systemctl is-active iio-sensor-proxy && echo "✅ iio-sensor-proxy OK" || echo "⚠️ iio-sensor-proxy not running"
 
 # Проверка ROCm (если установлен)
 command -v rocminfo &>/dev/null && echo "✅ ROCm OK" || echo "⚠️ ROCm not installed"
@@ -510,7 +745,6 @@ systemctl is-active tlp &>/dev/null && echo "✅ TLP OK" || echo "⚠️ TLP not
 ```
 
 ---
-
 
 
 
