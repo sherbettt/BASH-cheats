@@ -391,7 +391,7 @@ gnome-extensions list --enabled | grep rotate
 
 ### Установка менеджера расширений (для удобного управления)
 ```bash
-yay -S extension-manager
+paru -S extension-manager
 ```
 После установки запустите **Extension Manager**, найдите расширение `Screen Autorotate` и при необходимости настройте его.
 
