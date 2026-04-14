@@ -210,6 +210,10 @@ extra/python-pipx      1.11.1-1               0,92 MiB
 
 ```bash
 pipx install vkbasalt-cli
+
+#альтернативно скачать, если требуется определённая версия
+pip download vkbasalt-cli==3.1.1.post2 --dest /tmp/packages
+pip download vkbasalt-cli==3.1.1.post2 --dest /tmp/packages --no-deps
 ```
 
 **Что происходит:**
