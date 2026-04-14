@@ -5,7 +5,7 @@
 <br/>
 
 
-# 1. Прописать репозитории
+# 1. Установка из репозитория
 Переходим на оф. ресурс https://repo.powerdns.com/ и смотрим примеры установок. В нашем случае - stable установка.
 
  ***PowerDNS Authoritative Server - version 5.0.X (stable)***
@@ -33,11 +33,20 @@ sudo apt update
 
 ### Затем установка (уже из официального репозитория)
 ```bash
+# поиск зависимостей
+nala search pdns-server pdns-backend-pgsql pdns-recursor
+
 # Установка PostgreSQL (если ещё нет)
-sudo apt install postgresql postgresql-contrib
+nala install postgresql postgresql-contrib
+#apt install postgresql postgresql-contrib
 
 # Установка PowerDNS 5.0.x из официального репозитория
-sudo apt install pdns-server pdns-backend-pgsql pdns-recursor
+nala install pdns-server pdns-backend-pgsql pdns-recursor
+#apt install pdns-server pdns-backend-pgsql pdns-recursor
+
+# Проверка статуса сервисов
+sudo systemctl status pdns
+sudo systemctl status pdns-recursor
 ```
 
 ## Репозиторий для pdns-recursor
@@ -76,31 +85,20 @@ sudo apt-get install pdns-server
 
 
 
-## 2. Установка зависимостей
+## 2. Настройка
 
 ```bash
-# поиск зависимостей
-nala search pdns-server pdns-backend-pgsql pdns-recursor
-```
-```bash
-# 1. Установка PostgreSQL 17 (Debian 13 может иметь 16 или 17)
-sudo apt update
-sudo apt install postgresql postgresql-contrib
-
-# 2. Установка PowerDNS
-sudo apt install pdns-server pdns-backend-pgsql pdns-recursor
-
-# 3. Создание БД и пользователя
+# 1. Создание БД и пользователя
 sudo -u postgres psql <<EOF
 CREATE USER pdns WITH PASSWORD 'ваш_пароль_БД';
 CREATE DATABASE pdns_db WITH OWNER pdns;
 \q
 EOF
 
-# 4. Импорт схемы
+# 2. Импорт схемы
 sudo -u postgres psql -d pdns_db -f /usr/share/doc/pdns-backend-pgsql/schema.pgsql.sql
 
-# 5. Настройка /etc/powerdns/pdns.conf
+# 3. Настройка /etc/powerdns/pdns.conf
 sudo nano /etc/powerdns/pdns.conf
 ```
 
