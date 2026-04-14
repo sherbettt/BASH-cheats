@@ -34,17 +34,13 @@ sudo apt-get install pdns-server
 ```bash
 # поиск зависимостей
 root@pwdns1 ~
-13:56:48 # nala search pdns-recursor
-pdns-recursor 5.2.8-0+deb13u1 [Debian/trixie main]
-└── PowerDNS Recursor
-
-root@pwdns1 ~
-14:00:41 # nala search pdns-backend-pgsql
+14:03:25 # nala search pdns-server pdns-backend-pgsql pdns-recursor 
 pdns-backend-pgsql 4.9.7-1 [Debian/trixie main]
 └── PostgreSQL backend for PowerDNS
 
-root@pwdns1 ~
-14:00:51 # nala search pdns-server
+pdns-recursor 5.2.8-0+deb13u1 [Debian/trixie main]
+└── PowerDNS Recursor
+
 pdns-server 4.9.7-1 [Debian/trixie main]
 └── extremely powerful and versatile nameserver
 ```
