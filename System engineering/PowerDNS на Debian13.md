@@ -33,16 +33,7 @@ sudo apt-get install pdns-server
 
 ```bash
 # поиск зависимостей
-root@pwdns1 ~
-14:03:25 # nala search pdns-server pdns-backend-pgsql pdns-recursor 
-pdns-backend-pgsql 4.9.7-1 [Debian/trixie main]
-└── PostgreSQL backend for PowerDNS
-
-pdns-recursor 5.2.8-0+deb13u1 [Debian/trixie main]
-└── PowerDNS Recursor
-
-pdns-server 4.9.7-1 [Debian/trixie main]
-└── extremely powerful and versatile nameserver
+nala search pdns-server pdns-backend-pgsql pdns-recursor
 ```
 ```bash
 # 1. Установка PostgreSQL 17 (Debian 13 может иметь 16 или 17)
