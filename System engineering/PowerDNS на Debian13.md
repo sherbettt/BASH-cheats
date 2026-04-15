@@ -140,7 +140,7 @@ sudo -u postgres psql -d pdns_db -f /usr/share/doc/pdns-backend-pgsql/schema.pgs
 ### 2.5 Настройка PowerDNS Authoritative Server (на обеих машинах)
 
 ```bash
-sudo nano /etc/powerdns/pdns.conf
+sudo mcedit /etc/powerdns/pdns.conf
 ```
 
 **Содержимое `/etc/powerdns/pdns.conf` на pwdns1:**
@@ -290,7 +290,7 @@ host    pdns_db         pdns            192.168.97.57/32        md5
 **Настройка postgresql.conf на pwdns1:**
 
 ```bash
-sudo nano /etc/postgresql/17/main/postgresql.conf
+sudo mcedit /etc/postgresql/17/main/postgresql.conf
 ```
 
 **Добавьте или раскомментируйте:**
@@ -354,7 +354,7 @@ host    pdns_db         pdns            192.168.97.67/32        md5
 **Настройка postgresql.conf на pwdns2:**
 
 ```bash
-sudo nano /etc/postgresql/17/main/postgresql.conf
+sudo mcedit /etc/postgresql/17/main/postgresql.conf
 ```
 
 **Добавьте или раскомментируйте:**
