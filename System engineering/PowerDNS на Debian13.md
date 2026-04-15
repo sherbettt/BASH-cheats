@@ -124,7 +124,7 @@ sudo -u postgres psql -d pdns_db -f /usr/share/doc/pdns-backend-pgsql/schema.pgs
 ### 2.5 Настройка PowerDNS Authoritative Server
 
 ```bash
-sudo nano /etc/powerdns/pdns.conf
+sudo mcedit /etc/powerdns/pdns.conf
 ```
 
 **Важно:** Убедитесь, что в файле нет дублирующихся параметров (особенно `launch`, `local-port`, `webserver-*`). Рекомендуемая минимальная конфигурация:
@@ -161,7 +161,7 @@ cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1
 Для версии 5.x используется формат YAML:
 
 ```bash
-sudo nano /etc/powerdns/recursor.conf
+sudo mcedit /etc/powerdns/recursor.conf
 ```
 
 Пример конфигурации:
