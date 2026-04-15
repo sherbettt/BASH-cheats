@@ -116,11 +116,12 @@ sudo apt install pdns-server pdns-backend-pgsql pdns-recursor
 sudo -u postgres psql <<EOF
 CREATE USER pdns WITH PASSWORD '8X8runPwdnS';
 CREATE DATABASE pdns_db WITH OWNER pdns;
+GRANT ALL PRIVILEGES ON DATABASE pdns_db TO pdns;
 \q
 EOF
 ```
 
-**На pwdns2 БД уже есть (клон), поэтому создавать не нужно. Это потребовалось бы, если устанавливали с нуля на pwdns2**
+**На pwdns2 БД уже есть (клон), поэтому создавать не нужно.**
 
 ### 2.4 Импорт схемы PowerDNS (только на pwdns1)
 
@@ -206,7 +207,10 @@ sudo systemctl disable pdns-recursor
 
 ### 2.7 Настройка прав доступа в PostgreSQL (только на pwdns1)
 
-**Проблема:** После импорта схемы пользователь `pdns` не имеет прав на чтение таблиц.
+**Проблема:** После импорта схемы пользователь `pdns` не имеет прав на чтение таблиц, что вызывает ошибку:
+```
+ERROR: permission denied for table domains
+```
 
 **Решение:** Назначьте права пользователю `pdns` на все таблицы:
 
@@ -255,126 +259,80 @@ EOF
 └─────────────────────────────────┴───────────────────────────────────────────┘
 ```
 
-#### Настройка на pwdns1 (192.168.97.57):
+#### Настройка конфигурационных файлов:
 
-**Файл `/etc/postgresql/17/main/pg_hba.conf` на pwdns1:**
+**На pwdns1 (192.168.97.57):**
 
+Файл `/etc/postgresql/17/main/pg_hba.conf`:
 ```conf
 # PostgreSQL Client Authentication Configuration File
 # ===================================================
-
 # TYPE  DATABASE        USER            ADDRESS                 METHOD
-
 # Локальные подключения через Unix socket (только для postgres)
 local   all             postgres                                peer
-
 # Локальные подключения всех пользователей через Unix socket
 local   all             all                                     peer
-
 # Локальные IPv4 подключения (с этого же сервера)
 host    all             all             127.0.0.1/32            scram-sha-256
-
 # Локальные IPv6 подключения (с этого же сервера)
 host    all             all             ::1/128                 scram-sha-256
-
 # РЕПЛИКАЦИЯ: пользователь replicator может подключаться с pwdns2 для репликации
 host    replication     replicator      192.168.97.67/32        md5
-
 # ДОСТУП К БД: пользователь pdns может подключаться с pwdns2 (для работы PowerDNS)
 host    pdns_db         pdns            192.168.97.67/32        md5
-
 # ДОСТУП К БД: пользователь pdns может подключаться с pwdns1 (локально)
 host    pdns_db         pdns            192.168.97.57/32        md5
+# Для pg_basebackup (подключается к БД postgres)
+host    postgres        replicator      192.168.97.67/32        md5
+
 ```
 
-**Настройка postgresql.conf на pwdns1:**
-
-```bash
-sudo mcedit /etc/postgresql/17/main/postgresql.conf
-```
-
-**Добавьте или раскомментируйте:**
-
+Файл `/etc/postgresql/17/main/postgresql.conf` (раскомментировать или добавить):
 ```ini
-# Слушаем все сетевые интерфейсы
 listen_addresses = '*'
-
-# Настройки репликации (WAL)
 wal_level = replica
 max_wal_senders = 10
 wal_keep_size = 64MB
 hot_standby = on
-
-# Имя сервера для идентификации в репликации
 cluster_name = 'pwdns1'
 ```
 
-**Создание пользователя для репликации на pwdns1:**
+**На pwdns2 (192.168.97.67):**
 
-```bash
-sudo -u postgres psql <<EOF
-CREATE USER replicator WITH REPLICATION ENCRYPTED PASSWORD 'replica_pass';
-GRANT ALL PRIVILEGES ON DATABASE pdns_db TO replicator;
-\q
-EOF
-```
-
-#### Настройка на pwdns2 (192.168.97.67):
-
-**Файл `/etc/postgresql/17/main/pg_hba.conf` на pwdns2:**
-
+Файл `/etc/postgresql/17/main/pg_hba.conf`:
 ```conf
 # PostgreSQL Client Authentication Configuration File
 # ===================================================
-
 # TYPE  DATABASE        USER            ADDRESS                 METHOD
-
 # Локальные подключения через Unix socket (только для postgres)
 local   all             postgres                                peer
-
 # Локальные подключения всех пользователей через Unix socket
 local   all             all                                     peer
-
 # Локальные IPv4 подключения (с этого же сервера)
 host    all             all             127.0.0.1/32            scram-sha-256
-
 # Локальные IPv6 подключения (с этого же сервера)
 host    all             all             ::1/128                 scram-sha-256
-
 # РЕПЛИКАЦИЯ: пользователь replicator может подключаться с pwdns1 для репликации
 host    replication     replicator      192.168.97.57/32        md5
-
 # ДОСТУП К БД: пользователь pdns может подключаться с pwdns1 (для работы PowerDNS)
 host    pdns_db         pdns            192.168.97.57/32        md5
-
 # ДОСТУП К БД: пользователь pdns может подключаться с pwdns2 (локально)
 host    pdns_db         pdns            192.168.97.67/32        md5
 ```
 
-**Настройка postgresql.conf на pwdns2:**
-
-```bash
-sudo mcedit /etc/postgresql/17/main/postgresql.conf
-```
-
-**Добавьте или раскомментируйте:**
-
+Файл `/etc/postgresql/17/main/postgresql.conf`:
 ```ini
-# Слушаем все сетевые интерфейсы
 listen_addresses = '*'
-
-# Настройки репликации (WAL)
 wal_level = replica
 max_wal_senders = 10
 wal_keep_size = 64MB
 hot_standby = on
-
-# Имя сервера для идентификации в репликации
 cluster_name = 'pwdns2'
 ```
 
-**Создание пользователя для репликации на pwdns2:**
+#### Создание пользователя для репликации:
 
+**На обеих машинах:**
 ```bash
 sudo -u postgres psql <<EOF
 CREATE USER replicator WITH REPLICATION ENCRYPTED PASSWORD 'replica_pass';
@@ -383,35 +341,32 @@ GRANT ALL PRIVILEGES ON DATABASE pdns_db TO replicator;
 EOF
 ```
 
-#### Запуск репликации (настройка Master-Master):
+#### Запуск репликации (Master-Master):
 
-**Остановите PostgreSQL на обеих машинах:**
+**Важно:** Порядок действий критичен!
 
+**1. Остановите PostgreSQL на обеих машинах:**
 ```bash
 sudo systemctl stop postgresql
 ```
 
-**На pwdns2 очистите данные и скопируйте их с pwdns1:**
-
+**2. Настройте pwdns2 как реплику pwdns1:**
 ```bash
 # На pwdns2:
 sudo rm -rf /var/lib/postgresql/17/main/*
-sudo -u postgres pg_basebackup -h 192.168.97.57 -D /var/lib/postgresql/17/main -U replicator -P -R
+PGPASSWORD=replica_pass sudo -u postgres pg_basebackup -h 192.168.97.57 -D /var/lib/postgresql/17/main -U replicator -P -R
 ```
 
-**На pwdns1 очистите данные и скопируйте их с pwdns2:**
-
+**3. Настройте pwdns1 как реплику pwdns2:**
 ```bash
 # На pwdns1:
 sudo rm -rf /var/lib/postgresql/17/main/*
-sudo -u postgres pg_basebackup -h 192.168.97.67 -D /var/lib/postgresql/17/main -U replicator -P -R
+PGPASSWORD=replica_pass sudo -u postgres pg_basebackup -h 192.168.97.67 -D /var/lib/postgresql/17/main -U replicator -P -R
 ```
 
-**Запустите PostgreSQL на обеих машинах:**
-
+**4. Запустите PostgreSQL на обеих машинах:**
 ```bash
 sudo systemctl start postgresql
-sudo systemctl status postgresql
 ```
 
 #### Проверка репликации:
@@ -419,14 +374,14 @@ sudo systemctl status postgresql
 **На pwdns1:**
 ```bash
 sudo -u postgres psql -c "SELECT client_addr, state FROM pg_stat_replication;"
+# Ожидаемый вывод: 192.168.97.67 | streaming
 ```
 
 **На pwdns2:**
 ```bash
 sudo -u postgres psql -c "SELECT client_addr, state FROM pg_stat_replication;"
+# Ожидаемый вывод: 192.168.97.57 | streaming
 ```
-
-Ожидаемый вывод: обе машины должны видеть друг друга в состоянии `streaming`.
 
 ### 2.9 Запуск и проверка статуса PowerDNS
 
@@ -454,7 +409,6 @@ dig @127.0.0.1 version.bind chaos txt
 ### 2.10 Финальная проверка кластера
 
 **Создайте тестовую зону на pwdns1:**
-
 ```bash
 sudo pdnsutil create-zone cluster.test ns1.cluster.test
 sudo pdnsutil add-record cluster.test test A 192.168.97.57
@@ -473,7 +427,6 @@ dig @192.168.97.67 test.cluster.test +short
 ```
 
 **Создайте запись на pwdns2 и проверьте на pwdns1:**
-
 ```bash
 # На pwdns2:
 sudo pdnsutil add-record cluster.test test2 A 192.168.97.67
@@ -492,8 +445,10 @@ dig @192.168.97.57 test2.cluster.test +short
 | **`permission denied for table domains`** | **Выполните настройку прав из раздела 2.7** |
 | **pdns не запускается, порт 53 занят** | **Отключите recursor**: `sudo systemctl disable --now pdns-recursor` |
 | API не отвечает (`curl: (7) Connection refused`) | Проверьте, что `api=yes`, `webserver=yes`, нет дублей параметров |
-| **Репликация не работает** | **Проверьте `pg_hba.conf` и `postgresql.conf` на обеих машинах** |
-| **pg_basebackup: could not connect to server** | **Проверьте, что PostgreSQL запущен на источнике и открыт порт 5432** |
+| **PostgreSQL слушает только 127.0.0.1:5432** | **Раскомментируйте `listen_addresses = '*'` в postgresql.conf и перезапустите** |
+| **pg_basebackup: no pg_hba.conf entry** | **Добавьте в pg_hba.conf строку `host replication replicator IP/32 md5`** |
+| **pg_basebackup: password authentication failed** | **Сбросьте пароль: `ALTER USER replicator WITH PASSWORD 'replica_pass';`** |
+| **pg_basebackup: connection to server failed** | **Проверьте, что PostgreSQL запущен: `pg_lsclusters` и порт: `ss -tulpn \| grep 5432`** |
 
 ---
 
