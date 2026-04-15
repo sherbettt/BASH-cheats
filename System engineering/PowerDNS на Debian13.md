@@ -5,6 +5,17 @@
 <br/>
 
 
+## 0. Создаём контейнеры
+pwdns1:
+- IPv4/CIDR: 192.168.97.57/23
+- Gateway(IPv4) 192.168.87.1
+
+pwdns2 (клон контейнера pwdns1):
+- IPv4/CIDR: 192.168.97.67/23
+- Gateway(IPv4) 192.168.87.1
+---------
+<br/>
+
 
 
 ## 1. Прописать репозитории
@@ -124,7 +135,7 @@ sudo -u postgres psql -d pdns_db -f /usr/share/doc/pdns-backend-pgsql/schema.pgs
 ### 2.5 Настройка PowerDNS Authoritative Server
 
 ```bash
-sudo mcedit /etc/powerdns/pdns.conf
+sudo nano /etc/powerdns/pdns.conf
 ```
 
 **Важно:** Убедитесь, что в файле нет дублирующихся параметров. Рекомендуемая минимальная конфигурация:
@@ -165,7 +176,7 @@ openssl rand -base64 32
 Для версии 5.x используется формат YAML:
 
 ```bash
-sudo mcedit /etc/powerdns/recursor.conf
+sudo nano /etc/powerdns/recursor.conf
 ```
 
 Пример конфигурации:
@@ -238,7 +249,7 @@ PGPASSWORD=ваш_пароль_БД psql -U pdns -h 127.0.0.1 -d pdns_db -c "SEL
 
 ```bash
 # 1. Разрешить подключения с IP второй машины
-sudo mcedit /etc/postgresql/17/main/pg_hba.conf
+sudo nano /etc/postgresql/17/main/pg_hba.conf
 
 # Добавьте строку (замените IP_ВТОРОЙ_МАШИНЫ на реальный IP):
 host    all             all             IP_ВТОРОЙ_МАШИНЫ/32        md5
@@ -251,7 +262,7 @@ host    all             all             192.168.97.58/32            md5
 
 ```bash
 # 2. Разрешить PostgreSQL слушать все сетевые интерфейсы
-sudo mcedit /etc/postgresql/17/main/postgresql.conf
+sudo nano /etc/postgresql/17/main/postgresql.conf
 
 # Найдите и раскомментируйте/измените строку:
 listen_addresses = '*'   # или '0.0.0.0, ::'
@@ -370,11 +381,6 @@ dig @127.0.0.1 test.test.local +short
 ```
 
 ---
-
-
-
-
-
 
 
 
