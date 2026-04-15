@@ -5,8 +5,6 @@
 <br/>
 
 
-
-
 ## 0. Создаём контейнеры
 pwdns1:
 - IPv4/CIDR: 192.168.97.57/23
@@ -20,6 +18,7 @@ pwdns2 (клон контейнера pwdns1):
 
 ---------
 <br/>
+
 
 ## 1. Прописать репозитории
 
@@ -87,7 +86,9 @@ sudo apt-get install pdns-server
 ```
 </details>
 
----
+---------
+<br/>
+
 
 ## 2. Установка зависимостей (выполняется на ОБЕИХ машинах)
 
@@ -114,12 +115,13 @@ sudo apt install pdns-server pdns-backend-pgsql pdns-recursor
 
 ```bash
 sudo -u postgres psql <<EOF
-CREATE USER pdns WITH PASSWORD '8X8runPwdnS';
+CREATE USER pdns WITH PASSWORD 'DP_Pass';
 CREATE DATABASE pdns_db WITH OWNER pdns;
 GRANT ALL PRIVILEGES ON DATABASE pdns_db TO pdns;
 \q
 EOF
 ```
+<!-- 8X8runPwdnS -->
 
 **На pwdns2 БД уже есть (клон), поэтому создавать не нужно.**
 
@@ -160,7 +162,7 @@ cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1
 launch=gpgsql
 gpgsql-host=localhost
 gpgsql-user=pdns
-gpgsql-password=8X8runPwdnS
+gpgsql-password=DB_Pass
 gpgsql-dbname=pdns_db
 
 # Сетевые настройки
@@ -169,7 +171,7 @@ local-port=53
 
 # Настройки API и веб-интерфейса
 api=yes
-api-key=xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL
+api-key=API_KEY_LONG
 webserver=yes
 webserver-address=0.0.0.0
 webserver-port=8081
@@ -178,6 +180,8 @@ webserver-allow-from=0.0.0.0/0
 # Кластерные настройки (AXFR для второй машины)
 allow-axfr-ips=192.168.97.67
 ```
+<!-- gpgsql-password=8X8runPwdnS -->
+<!-- api-key=xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL -->
 
 **Содержимое `/etc/powerdns/pdns.conf` на pwdns2:**
 
@@ -186,7 +190,7 @@ allow-axfr-ips=192.168.97.67
 launch=gpgsql
 gpgsql-host=localhost
 gpgsql-user=pdns
-gpgsql-password=8X8runPwdnS
+gpgsql-password=DB_Pass  # аналогично/одинаково на первом сервере
 gpgsql-dbname=pdns_db
 
 # Сетевые настройки
@@ -195,7 +199,7 @@ local-port=53
 
 # Настройки API и веб-интерфейса
 api=yes
-api-key=xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL
+api-key=API_KEY_LONG  # аналогично/одинаково на первом сервере
 webserver=yes
 webserver-address=0.0.0.0
 webserver-port=8081
@@ -204,6 +208,9 @@ webserver-allow-from=0.0.0.0/0
 # Кластерные настройки (AXFR для первой машины)
 allow-axfr-ips=192.168.97.57
 ```
+<!-- gpgsql-password=8X8runPwdnS -->
+<!-- api-key=xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL -->
+
 
 ### 2.6 Настройка PowerDNS Recursor (опционально)
 
@@ -241,10 +248,9 @@ EOF
 
 **На pwdns2 права уже настроены (клон).**
 
+---------
+<br/>
 
-**Вы абсолютно правы!** Я полностью переписал раздел 2.8, добавив **весь** реальный протокол диагностики: проверку пароля, сброс пароля, тестовое подключение, устранение ошибки `no pg_hba.conf entry`, повторную попытку `pg_basebackup` и проверку репликации. Ничего не удалил — только дополнил.
-
----
 
 ## 2.8 Настройка Master-Master репликации PostgreSQL (ПОЛНЫЙ ПРОТОКОЛ)
 
@@ -532,7 +538,9 @@ sudo -u postgres psql -c "SELECT client_addr, state FROM pg_stat_replication;"
 ```
 Ожидаемый вывод: обе машины снова видят друг друга в состоянии `streaming`.
 
----
+---------
+<br/>
+
 
 ## 2.9 Запуск и проверка статуса PowerDNS
 
@@ -548,14 +556,18 @@ sudo systemctl status pdns
 #### Проверка API на обеих машинах:
 
 ```bash
-curl -H "X-API-Key: xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL" http://127.0.0.1:8081/api/v1/servers/localhost/zones
+curl -H "X-API-Key: API_KEY_LONG" http://127.0.0.1:8081/api/v1/servers/localhost/zones
 ```
+<!-- "X-API-Key: xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL" -->
 
 #### Проверка DNS на обеих машинах:
 
 ```bash
 dig @127.0.0.1 version.bind chaos txt
 ```
+---------
+<br/>
+
 
 ### 2.10 Финальная проверка кластера
 
@@ -602,7 +614,9 @@ dig @192.168.97.57 test2.cluster.test +short
 | **pg_basebackup: connection to server failed** | **Проверьте, что PostgreSQL запущен: `pg_lsclusters` и порт: `ss -tulpn \| grep 5432`** |
 | **Репликация не появляется сразу после настройки** | **Подождите 10-30 секунд, репликация устанавливается не мгновенно** |
 
----
+---------
+<br/>
+
 
 ## Итог: схема Master-Master кластера
 
@@ -634,9 +648,8 @@ dig @192.168.97.57 test2.cluster.test +short
 - ✅ Балансировка нагрузки — DNS-запросы можно распределять между серверами
 - ✅ Отказоустойчивость — нет единой точки отказа (single point of failure)
 
-
----
-
+---------
+<br/>
 
 
 ## 2.12 Установка PowerDNS-Admin на оба сервера
@@ -860,11 +873,12 @@ nano configs/production.py
 
 **Содержимое `configs/production.py` на pwdns1:**
 
+***`SECRET_KEY`*** должны быь уникальным для разных серверов.
 ```python
 import os
 
 # Секретный ключ (сгенерируйте свой)
-SECRET_KEY = 'C1vD9kraoNdZP3CL9QTc1kpiVZ8rflm4fuuhLwAi'
+SECRET_KEY = 'SECRET_KEY1'
 
 # Используем SQLite для простоты
 SQLA_DB_TYPE = 'sqlite'
@@ -879,6 +893,7 @@ PDNS_VERSION = '5.0'
 BIND_ADDRESS = '0.0.0.0'
 PORT = 9191
 ```
+<!-- SECRET_KEY = 'C1vD9kraoNdZP3CL9QTc1kpiVZ8rflm4fuuhLwAi' -->
 
 **На pwdns2 (аналогично, но с другим SECRET_KEY):**
 
@@ -894,7 +909,7 @@ nano configs/production.py
 import os
 
 # Секретный ключ (другой, чем на pwdns1)
-SECRET_KEY = 'RC1DtMvzJCSK2pLmX6lOF/Wskz/Ur/rfdLnRYOqX'
+SECRET_KEY = 'SECRET_KEY2'
 
 # Используем SQLite для простоты
 SQLA_DB_TYPE = 'sqlite'
@@ -909,6 +924,8 @@ PDNS_VERSION = '5.0'
 BIND_ADDRESS = '0.0.0.0'
 PORT = 9191
 ```
+<!-- SECRET_KEY = 'RC1DtMvzJCSK2pLmX6lOF/Wskz/Ur/rfdLnRYOqX' -->
+
 
 ### 2.12.7 Создание директории для БД и инициализация
 
@@ -1091,7 +1108,7 @@ EOF
 3. Проверьте, что подключение к API отображается зелёным индикатором
 4. Если нет — проверьте в файле `configs/production.py`:
    - `PDNS_API_URL = 'http://127.0.0.1:8081'`
-   - `PDNS_API_KEY = 'xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL'`
+   - `PDNS_API_KEY = 'API_KEY_LONG'`
 
 ---
 
