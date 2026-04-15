@@ -6,7 +6,6 @@
 
 
 
-
 ## 1. Прописать репозитории
 
 Переходим на оф. ресурс https://repo.powerdns.com/ и смотрим примеры установок. В нашем случае — stable установка.
@@ -124,23 +123,26 @@ sudo -u postgres psql -d pdns_db -f /usr/share/doc/pdns-backend-pgsql/schema.pgs
 ### 2.5 Настройка PowerDNS Authoritative Server
 
 ```bash
-sudo mcedit /etc/powerdns/pdns.conf
+sudo nano /etc/powerdns/pdns.conf
 ```
 
-**Важно:** Убедитесь, что в файле нет дублирующихся параметров (особенно `launch`, `local-port`, `webserver-*`). Рекомендуемая минимальная конфигурация:
+**Важно:** Убедитесь, что в файле нет дублирующихся параметров. Рекомендуемая минимальная конфигурация:
 
 ```ini
+# Бэкенд PostgreSQL
 launch=gpgsql
-gpgsql-host=localhost
+gpgsql-host=localhost          # Для Unix socket
 gpgsql-user=pdns
 gpgsql-password=ваш_пароль_БД
 gpgsql-dbname=pdns_db
 
+# Сетевые настройки
 local-address=0.0.0.0
 local-port=53
 
+# Настройки API и веб-интерфейса
 api=yes
-api-key=ваш_секретный_api_ключ
+api-key=ваш_секретный_api_ключ   # Сгенерируйте надёжный ключ!
 webserver=yes
 webserver-address=0.0.0.0
 webserver-port=8081
@@ -152,34 +154,30 @@ webserver-allow-from=0.0.0.0/0
 # Рекомендуемый способ
 openssl rand -base64 32
 
-# Или так
-cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1
+# Пример вывода: xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL
 ```
 
-### 2.6 Настройка PowerDNS Recursor
+### 2.6 Настройка PowerDNS Recursor (опционально)
+
+⚠️ **Для кластера Authoritative Server рекурсор не требуется.** Если вы всё же хотите его использовать, учтите конфликт порта 53 (см. раздел 2.8).
 
 Для версии 5.x используется формат YAML:
 
 ```bash
-sudo mcedit /etc/powerdns/recursor.conf
+sudo nano /etc/powerdns/recursor.conf
 ```
 
 Пример конфигурации:
 
 ```yaml
-# PowerDNS Recursor configuration (YAML format)
-# ============================================
-
-# Входящие соединения
+# Секция входящих соединений
 incoming:
   listen:           # Адреса для прослушивания
     - 0.0.0.0       # Все IPv4 интерфейсы
-    # - ::          # Раскомментировать для IPv6
   allow_from:       # Разрешённые подсети
     - 0.0.0.0/0     # Все IPv4 (для production укажите конкретные)
-    # - ::/0        # Раскомментировать для IPv6
 
-# Рекурсия для внешних запросов
+# Перенаправление рекурсивных запросов
 forward_zones_recurse:
   .: 1.1.1.1;8.8.8.8   # Использовать Cloudflare и Google DNS
 
@@ -193,55 +191,116 @@ recursor:
   include_dir: /etc/powerdns/recursor.d  # Дополнительные конфиги
 ```
 
-### 2.7 Запуск и проверка статуса
+### 2.7 Настройка прав доступа в PostgreSQL
 
-**Важно:** PowerDNS Authoritative Server и Recursor не могут одновременно использовать порт 53 на одном IP-адресе. Выберите один из вариантов:
-
-**Вариант А (рекомендуется для кластера):** Используйте только Authoritative Server на порту 53, отключив Recursor:
-```bash
-sudo systemctl stop pdns-recursor
-sudo systemctl disable pdns-recursor
+**Проблема:** После импорта схемы пользователь `pdns` не имеет прав на чтение таблиц, что вызывает ошибку:
+```
+ERROR: permission denied for table domains
 ```
 
-**Вариант Б:** Authoritative на порту 5300, Recursor на 53 (измените `local-port=5300` в `pdns.conf`).
-
-Запуск сервисов:
+**Решение:** Назначьте права пользователю `pdns` на все таблицы:
 
 ```bash
-# Перезапуск Authoritative Server
+sudo -u postgres psql -d pdns_db <<EOF
+-- Дать права на схему public
+GRANT ALL ON SCHEMA public TO pdns;
+
+-- Дать права на все таблицы
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO pdns;
+
+-- Дать права на последовательности
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO pdns;
+
+-- Сделать pdns владельцем всех таблиц
+ALTER TABLE domains OWNER TO pdns;
+ALTER TABLE records OWNER TO pdns;
+ALTER TABLE comments OWNER TO pdns;
+ALTER TABLE domainmetadata OWNER TO pdns;
+ALTER TABLE cryptokeys OWNER TO pdns;
+ALTER TABLE tsigkeys OWNER TO pdns;
+ALTER TABLE supermasters OWNER TO pdns;
+\q
+EOF
+```
+
+**Проверка подключения:**
+```bash
+# Должно вернуть 1
+PGPASSWORD=ваш_пароль_БД psql -U pdns -h 127.0.0.1 -d pdns_db -c "SELECT 1"
+```
+
+### 2.8 Запуск и проверка статуса
+
+#### Запуск PowerDNS:
+
+```bash
 sudo systemctl restart pdns
-
-# Проверка статуса
 sudo systemctl status pdns
-
-# Проверка работы DNS
-dig @localhost version.bind chaos txt
-
-# Проверка API (замените ключ на ваш)
-curl -H "X-API-Key: ваш_секретный_api_ключ" http://127.0.0.1:8081/api/v1/servers/localhost/zones
-
-# Проверка рекурсора (если оставили включённым и на другом порту)
-dig @localhost -p 53 google.com +short
 ```
 
-### 2.8 Часто возникающие проблемы и их решение
+Ожидаемый вывод: `Active: active (running)`
+
+#### Проверка API:
+
+```bash
+# Должен вернуть пустой JSON массив []
+curl -H "X-API-Key: ваш_секретный_api_ключ" http://127.0.0.1:8081/api/v1/servers/localhost/zones
+```
+
+#### Проверка DNS:
+
+```bash
+# Запрос версии сервера
+dig @127.0.0.1 version.bind chaos txt
+
+# Ожидаемый ответ:
+# version.bind. 5 CH TXT "PowerDNS Authoritative Server 5.0.3 (...)"
+```
+
+### 2.9 Часто возникающие проблемы и их решение
 
 | Проблема | Решение |
 |----------|---------|
 | `Connection failed` для security.debian.org | Игнорируйте, это не влияет на установку PowerDNS |
 | `cannot access '/usr/share/doc/pdns-backend-pgsql/schema.pgsql.sql'` | Установите `pdns-backend-pgsql`: `sudo apt install pdns-backend-pgsql` |
-| Конфликт порта 53 между pdns и pdns-recursor | Выберите вариант А или Б из раздела 2.7 |
-| API не отвечает | Проверьте, что `api=yes` и `webserver=yes`, а также нет дублей параметров в `pdns.conf` |
+| **`permission denied for table domains`** | **Выполните настройку прав из раздела 2.7** |
+| **pdns не запускается, порт 53 занят** | **Отключите recursor или измените порт authoritative** (см. ниже) |
+| API не отвечает (`curl: (7) Connection refused`) | Проверьте, что `api=yes`, `webserver=yes`, нет дублей параметров |
+| pdns-recursor не запускается с ошибкой YAML | Версия из Debian (5.2.8) не поддерживает YAML-формат. Отключите recursor |
+
+#### Конфликт порта 53 между pdns и pdns-recursor
+
+PowerDNS Authoritative Server и Recursor **не могут одновременно использовать порт 53** на одном IP-адресе.
+
+**Для кластера Authoritative Server рекурсор не нужен**, поэтому рекомендуется отключить его:
+
+```bash
+sudo systemctl stop pdns-recursor
+sudo systemctl disable pdns-recursor
+```
+
+Если рекурсор всё же нужен, измените порт authoritative:
+
+```ini
+# В /etc/powerdns/pdns.conf
+local-port=5300
+```
 
 ---
 
-## Что дальше?
+## Что дальше? Настройка кластера из двух машин
 
 После успешной установки на первой машине:
 
-1. **Настройка репликации PostgreSQL** между серверами (master-master)
-2. **Установка PowerDNS-Admin** для веб-управления зонами
-3. **Настройка кластерных параметров** (`allow-axfr-ips`, `webserver-allow-from` с IP второго сервера)
+1. **Повторите все шаги 1-2 на второй машине**
+2. **Настройте репликацию PostgreSQL master-master** между серверами
+3. **В конфиг `pdns.conf` на обеих машинах** добавьте IP второй машины:
+   ```ini
+   allow-axfr-ips=IP_второго_сервера
+   webserver-allow-from=127.0.0.1, IP_второго_сервера
+   ```
+4. **Установите PowerDNS-Admin** для веб-управления зонами
+
 
 ---
 
