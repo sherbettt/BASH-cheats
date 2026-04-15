@@ -167,21 +167,30 @@ sudo mcedit /etc/powerdns/recursor.conf
 Пример конфигурации:
 
 ```yaml
+# PowerDNS Recursor configuration (YAML format)
+# ============================================
+
+# Входящие соединения
 incoming:
-  listen:
-    - 0.0.0.0
-  allow_from:
-    - 0.0.0.0/0
+  listen:           # Адреса для прослушивания
+    - 0.0.0.0       # Все IPv4 интерфейсы
+    # - ::          # Раскомментировать для IPv6
+  allow_from:       # Разрешённые подсети
+    - 0.0.0.0/0     # Все IPv4 (для production укажите конкретные)
+    # - ::/0        # Раскомментировать для IPv6
 
+# Рекурсия для внешних запросов
 forward_zones_recurse:
-  .: 1.1.1.1;8.8.8.8
+  .: 1.1.1.1;8.8.8.8   # Использовать Cloudflare и Google DNS
 
+# Настройки DNSSEC
 dnssec:
-  validation: process
+  validation: process   # Включить проверку DNSSEC
 
+# Пути и директории
 recursor:
-  hint_file: /usr/share/dns/root.hints
-  include_dir: /etc/powerdns/recursor.d
+  hint_file: /usr/share/dns/root.hints   # Корневые DNS-серверы
+  include_dir: /etc/powerdns/recursor.d  # Дополнительные конфиги
 ```
 
 ### 2.7 Запуск и проверка статуса
