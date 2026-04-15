@@ -5,6 +5,8 @@
 <br/>
 
 
+
+
 ## 0. Создаём контейнеры
 pwdns1:
 - IPv4/CIDR: 192.168.97.57/23
@@ -13,10 +15,11 @@ pwdns1:
 pwdns2 (клон контейнера pwdns1):
 - IPv4/CIDR: 192.168.97.67/23
 - Gateway(IPv4) 192.168.87.1
+
+**Важно:** pwdns2 создан как клон pwdns1, поэтому на нём уже есть установленные пакеты PowerDNS и PostgreSQL с копией базы данных. Это основа для построения Master-Master репликации.
+
 ---------
 <br/>
-
-
 
 ## 1. Прописать репозитории
 
@@ -86,7 +89,7 @@ sudo apt-get install pdns-server
 
 ---
 
-## 2. Установка зависимостей
+## 2. Установка зависимостей (выполняется на ОБЕИХ машинах)
 
 ```bash
 # Поиск доступных пакетов
@@ -107,19 +110,19 @@ sudo systemctl enable --now postgresql
 sudo apt install pdns-server pdns-backend-pgsql pdns-recursor
 ```
 
-### 2.3 Создание базы данных и пользователя
+### 2.3 Создание базы данных и пользователя (только на pwdns1, на pwdns2 пропустить)
 
 ```bash
 sudo -u postgres psql <<EOF
-CREATE USER pdns WITH PASSWORD 'ваш_пароль_БД';
+CREATE USER pdns WITH PASSWORD '8X8runPwdnS';
 CREATE DATABASE pdns_db WITH OWNER pdns;
 \q
 EOF
 ```
 
-### 2.4 Импорт схемы PowerDNS
+**На pwdns2 БД уже есть (клон), поэтому создавать не нужно.**
 
-**Важно:** Файл схемы находится по пути символической ссылки. Убедитесь, что пакет `pdns-backend-pgsql` установлен:
+### 2.4 Импорт схемы PowerDNS (только на pwdns1)
 
 ```bash
 # Проверка установки бэкенда
@@ -132,20 +135,22 @@ ls -la /usr/share/doc/pdns-backend-pgsql/schema.pgsql.sql
 sudo -u postgres psql -d pdns_db -f /usr/share/doc/pdns-backend-pgsql/schema.pgsql.sql
 ```
 
-### 2.5 Настройка PowerDNS Authoritative Server
+**На pwdns2 схема уже импортирована (клон), поэтому повторять не нужно.**
+
+### 2.5 Настройка PowerDNS Authoritative Server (на обеих машинах)
 
 ```bash
 sudo nano /etc/powerdns/pdns.conf
 ```
 
-**Важно:** Убедитесь, что в файле нет дублирующихся параметров. Рекомендуемая минимальная конфигурация:
+**Содержимое `/etc/powerdns/pdns.conf` на pwdns1:**
 
 ```ini
-# Бэкенд PostgreSQL
+# Бэкенд PostgreSQL (локальная БД)
 launch=gpgsql
-gpgsql-host=localhost          # Для Unix socket
+gpgsql-host=localhost
 gpgsql-user=pdns
-gpgsql-password=ваш_пароль_БД
+gpgsql-password=8X8runPwdnS
 gpgsql-dbname=pdns_db
 
 # Сетевые настройки
@@ -154,76 +159,62 @@ local-port=53
 
 # Настройки API и веб-интерфейса
 api=yes
-api-key=ваш_секретный_api_ключ   # Сгенерируйте надёжный ключ!
+api-key=xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL
 webserver=yes
 webserver-address=0.0.0.0
 webserver-port=8081
 webserver-allow-from=0.0.0.0/0
+
+# Кластерные настройки (AXFR для второй машины)
+allow-axfr-ips=192.168.97.67
 ```
 
-**Как сгенерировать надёжный API-ключ:**
-```bash
-# Рекомендуемый способ
-openssl rand -base64 32
+**Содержимое `/etc/powerdns/pdns.conf` на pwdns2:**
 
-# Пример вывода: xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL
+```ini
+# Бэкенд PostgreSQL (локальная БД)
+launch=gpgsql
+gpgsql-host=localhost
+gpgsql-user=pdns
+gpgsql-password=8X8runPwdnS
+gpgsql-dbname=pdns_db
+
+# Сетевые настройки
+local-address=0.0.0.0
+local-port=53
+
+# Настройки API и веб-интерфейса
+api=yes
+api-key=xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL
+webserver=yes
+webserver-address=0.0.0.0
+webserver-port=8081
+webserver-allow-from=0.0.0.0/0
+
+# Кластерные настройки (AXFR для первой машины)
+allow-axfr-ips=192.168.97.57
 ```
 
 ### 2.6 Настройка PowerDNS Recursor (опционально)
 
-⚠️ **Для кластера Authoritative Server рекурсор не требуется.** Если вы всё же хотите его использовать, учтите конфликт порта 53 (см. раздел 2.9).
-
-Для версии 5.x используется формат YAML:
+⚠️ **Для кластера Authoritative Server рекурсор не требуется.** Отключаем на обеих машинах:
 
 ```bash
-sudo nano /etc/powerdns/recursor.conf
+sudo systemctl stop pdns-recursor
+sudo systemctl disable pdns-recursor
 ```
 
-Пример конфигурации:
+### 2.7 Настройка прав доступа в PostgreSQL (только на pwdns1)
 
-```yaml
-# Секция входящих соединений
-incoming:
-  listen:           # Адреса для прослушивания
-    - 0.0.0.0       # Все IPv4 интерфейсы
-  allow_from:       # Разрешённые подсети
-    - 0.0.0.0/0     # Все IPv4 (для production укажите конкретные)
-
-# Перенаправление рекурсивных запросов
-forward_zones_recurse:
-  .: 1.1.1.1;8.8.8.8   # Использовать Cloudflare и Google DNS
-
-# Настройки DNSSEC
-dnssec:
-  validation: process   # Включить проверку DNSSEC
-
-# Пути и директории
-recursor:
-  hint_file: /usr/share/dns/root.hints   # Корневые DNS-серверы
-  include_dir: /etc/powerdns/recursor.d  # Дополнительные конфиги
-```
-
-### 2.7 Настройка прав доступа в PostgreSQL
-
-**Проблема:** После импорта схемы пользователь `pdns` не имеет прав на чтение таблиц, что вызывает ошибку:
-```
-ERROR: permission denied for table domains
-```
+**Проблема:** После импорта схемы пользователь `pdns` не имеет прав на чтение таблиц.
 
 **Решение:** Назначьте права пользователю `pdns` на все таблицы:
 
 ```bash
 sudo -u postgres psql -d pdns_db <<EOF
--- Дать права на схему public
 GRANT ALL ON SCHEMA public TO pdns;
-
--- Дать права на все таблицы
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO pdns;
-
--- Дать права на последовательности
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO pdns;
-
--- Сделать pdns владельцем всех таблиц
 ALTER TABLE domains OWNER TO pdns;
 ALTER TABLE records OWNER TO pdns;
 ALTER TABLE comments OWNER TO pdns;
@@ -235,57 +226,211 @@ ALTER TABLE supermasters OWNER TO pdns;
 EOF
 ```
 
-**Проверка подключения:**
+**На pwdns2 права уже настроены (клон).**
+
+### 2.8 Настройка Master-Master репликации PostgreSQL
+
+**Для чего:** Чтобы обе машины имели свои копии базы данных и синхронизировали изменения между собой. Это обеспечивает отказоустойчивость — при падении любой машины вторая продолжает работать.
+
+#### Архитектура Master-Master кластера:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         Master-Master кластер                               │
+├─────────────────────────────────┬───────────────────────────────────────────┤
+│           pwdns1                │              pwdns2                       │
+│        192.168.97.57            │          192.168.97.67                    │
+├─────────────────────────────────┼───────────────────────────────────────────┤
+│ ┌─────────────────────────────┐ │ ┌─────────────────────────────────────┐   │
+│ │     PostgreSQL (Master)     │ │ │        PostgreSQL (Master)          │   │
+│ │         БД: pdns_db         │◄┼─┼────────►      БД: pdns_db            │   │
+│ │   Пользователь: pdns        │ │ │        Пользователь: pdns            │   │
+│ │   Репликация: replicator    │ │ │        Репликация: replicator        │   │
+│ └─────────────────────────────┘ │ └─────────────────────────────────────┘   │
+│ ┌─────────────────────────────┐ │ ┌─────────────────────────────────────┐   │
+│ │       PowerDNS              │ │ │           PowerDNS                  │   │
+│ │   (pdns-server)             │ │ │       (pdns-server)                 │   │
+│ │   localhost:53              │ │ │       localhost:53                  │   │
+│ └─────────────────────────────┘ │ └─────────────────────────────────────┘   │
+└─────────────────────────────────┴───────────────────────────────────────────┘
+```
+
+#### Настройка на pwdns1 (192.168.97.57):
+
+**Файл `/etc/postgresql/17/main/pg_hba.conf` на pwdns1:**
+
+```conf
+# PostgreSQL Client Authentication Configuration File
+# ===================================================
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# Локальные подключения через Unix socket (только для postgres)
+local   all             postgres                                peer
+
+# Локальные подключения всех пользователей через Unix socket
+local   all             all                                     peer
+
+# Локальные IPv4 подключения (с этого же сервера)
+host    all             all             127.0.0.1/32            scram-sha-256
+
+# Локальные IPv6 подключения (с этого же сервера)
+host    all             all             ::1/128                 scram-sha-256
+
+# РЕПЛИКАЦИЯ: пользователь replicator может подключаться с pwdns2 для репликации
+host    replication     replicator      192.168.97.67/32        md5
+
+# ДОСТУП К БД: пользователь pdns может подключаться с pwdns2 (для работы PowerDNS)
+host    pdns_db         pdns            192.168.97.67/32        md5
+
+# ДОСТУП К БД: пользователь pdns может подключаться с pwdns1 (локально)
+host    pdns_db         pdns            192.168.97.57/32        md5
+```
+
+**Настройка postgresql.conf на pwdns1:**
+
 ```bash
-# Должно вернуть 1
-PGPASSWORD=ваш_пароль_БД psql -U pdns -h 127.0.0.1 -d pdns_db -c "SELECT 1"
-```
-
-### 2.8 Настройка PostgreSQL для удалённых подключений (для кластера)
-
-**Для чего это нужно:** Если вы планируете строить кластер из двух машин, второй сервер PowerDNS должен иметь доступ к базе данных PostgreSQL. Настройка удалённого доступа позволяет второй машине подключаться к PostgreSQL первой машины.
-
-**Настройка на первой машине (где установлена БД):**
-
-```bash
-# 1. Разрешить подключения с IP второй машины
-sudo nano /etc/postgresql/17/main/pg_hba.conf
-
-# Добавьте строку (замените IP_ВТОРОЙ_МАШИНЫ на реальный IP):
-host    all             all             IP_ВТОРОЙ_МАШИНЫ/32        md5
-```
-
-**Пример:** Если вторая машина имеет IP `192.168.97.58`, добавьте:
-```
-host    all             all             192.168.97.58/32            md5
-```
-
-```bash
-# 2. Разрешить PostgreSQL слушать все сетевые интерфейсы
 sudo nano /etc/postgresql/17/main/postgresql.conf
-
-# Найдите и раскомментируйте/измените строку:
-listen_addresses = '*'   # или '0.0.0.0, ::'
 ```
+
+**Добавьте или раскомментируйте:**
+
+```ini
+# Слушаем все сетевые интерфейсы
+listen_addresses = '*'
+
+# Настройки репликации (WAL)
+wal_level = replica
+max_wal_senders = 10
+wal_keep_size = 64MB
+hot_standby = on
+
+# Имя сервера для идентификации в репликации
+cluster_name = 'pwdns1'
+```
+
+**Создание пользователя для репликации на pwdns1:**
 
 ```bash
-# 3. Перезапустите PostgreSQL для применения изменений
-sudo systemctl restart postgresql
-
-# 4. Проверьте, что порт 5432 слушается на всех интерфейсах
-ss -tulpn | grep 5432
-# Ожидаемый вывод: tcp LISTEN 0 256 0.0.0.0:5432 0.0.0.0:*
+sudo -u postgres psql <<EOF
+CREATE USER replicator WITH REPLICATION ENCRYPTED PASSWORD 'replica_pass';
+GRANT ALL PRIVILEGES ON DATABASE pdns_db TO replicator;
+\q
+EOF
 ```
 
-**Проверка удалённого подключения со второй машины:**
+#### Настройка на pwdns2 (192.168.97.67):
+
+**Файл `/etc/postgresql/17/main/pg_hba.conf` на pwdns2:**
+
+```conf
+# PostgreSQL Client Authentication Configuration File
+# ===================================================
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# Локальные подключения через Unix socket (только для postgres)
+local   all             postgres                                peer
+
+# Локальные подключения всех пользователей через Unix socket
+local   all             all                                     peer
+
+# Локальные IPv4 подключения (с этого же сервера)
+host    all             all             127.0.0.1/32            scram-sha-256
+
+# Локальные IPv6 подключения (с этого же сервера)
+host    all             all             ::1/128                 scram-sha-256
+
+# РЕПЛИКАЦИЯ: пользователь replicator может подключаться с pwdns1 для репликации
+host    replication     replicator      192.168.97.57/32        md5
+
+# ДОСТУП К БД: пользователь pdns может подключаться с pwdns1 (для работы PowerDNS)
+host    pdns_db         pdns            192.168.97.57/32        md5
+
+# ДОСТУП К БД: пользователь pdns может подключаться с pwdns2 (локально)
+host    pdns_db         pdns            192.168.97.67/32        md5
+```
+
+**Настройка postgresql.conf на pwdns2:**
+
 ```bash
-# На второй машине выполните:
-PGPASSWORD=ваш_пароль_БД psql -h IP_ПЕРВОЙ_МАШИНЫ -U pdns -d pdns_db -c "SELECT 1"
+sudo nano /etc/postgresql/17/main/postgresql.conf
 ```
 
-### 2.9 Запуск и проверка статуса
+**Добавьте или раскомментируйте:**
 
-#### Запуск PowerDNS:
+```ini
+# Слушаем все сетевые интерфейсы
+listen_addresses = '*'
+
+# Настройки репликации (WAL)
+wal_level = replica
+max_wal_senders = 10
+wal_keep_size = 64MB
+hot_standby = on
+
+# Имя сервера для идентификации в репликации
+cluster_name = 'pwdns2'
+```
+
+**Создание пользователя для репликации на pwdns2:**
+
+```bash
+sudo -u postgres psql <<EOF
+CREATE USER replicator WITH REPLICATION ENCRYPTED PASSWORD 'replica_pass';
+GRANT ALL PRIVILEGES ON DATABASE pdns_db TO replicator;
+\q
+EOF
+```
+
+#### Запуск репликации (настройка Master-Master):
+
+**Остановите PostgreSQL на обеих машинах:**
+
+```bash
+sudo systemctl stop postgresql
+```
+
+**На pwdns2 очистите данные и скопируйте их с pwdns1:**
+
+```bash
+# На pwdns2:
+sudo rm -rf /var/lib/postgresql/17/main/*
+sudo -u postgres pg_basebackup -h 192.168.97.57 -D /var/lib/postgresql/17/main -U replicator -P -R
+```
+
+**На pwdns1 очистите данные и скопируйте их с pwdns2:**
+
+```bash
+# На pwdns1:
+sudo rm -rf /var/lib/postgresql/17/main/*
+sudo -u postgres pg_basebackup -h 192.168.97.67 -D /var/lib/postgresql/17/main -U replicator -P -R
+```
+
+**Запустите PostgreSQL на обеих машинах:**
+
+```bash
+sudo systemctl start postgresql
+sudo systemctl status postgresql
+```
+
+#### Проверка репликации:
+
+**На pwdns1:**
+```bash
+sudo -u postgres psql -c "SELECT client_addr, state FROM pg_stat_replication;"
+```
+
+**На pwdns2:**
+```bash
+sudo -u postgres psql -c "SELECT client_addr, state FROM pg_stat_replication;"
+```
+
+Ожидаемый вывод: обе машины должны видеть друг друга в состоянии `streaming`.
+
+### 2.9 Запуск и проверка статуса PowerDNS
+
+#### Запуск PowerDNS на обеих машинах:
 
 ```bash
 sudo systemctl restart pdns
@@ -294,94 +439,93 @@ sudo systemctl status pdns
 
 Ожидаемый вывод: `Active: active (running)`
 
-#### Проверка API:
+#### Проверка API на обеих машинах:
 
 ```bash
-# Должен вернуть пустой JSON массив []
-curl -H "X-API-Key: ваш_секретный_api_ключ" http://127.0.0.1:8081/api/v1/servers/localhost/zones
+curl -H "X-API-Key: xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL" http://127.0.0.1:8081/api/v1/servers/localhost/zones
 ```
 
-#### Проверка DNS:
+#### Проверка DNS на обеих машинах:
 
 ```bash
-# Запрос версии сервера
 dig @127.0.0.1 version.bind chaos txt
-
-# Ожидаемый ответ:
-# version.bind. 5 CH TXT "PowerDNS Authoritative Server 5.0.3 (...)"
 ```
 
-### 2.10 Часто возникающие проблемы и их решение
+### 2.10 Финальная проверка кластера
+
+**Создайте тестовую зону на pwdns1:**
+
+```bash
+sudo pdnsutil create-zone cluster.test ns1.cluster.test
+sudo pdnsutil add-record cluster.test test A 192.168.97.57
+```
+
+**Проверьте на pwdns1:**
+```bash
+dig @192.168.97.57 test.cluster.test +short
+# Ожидаемый вывод: 192.168.97.57
+```
+
+**Проверьте на pwdns2 (зона должна появиться через репликацию):**
+```bash
+dig @192.168.97.67 test.cluster.test +short
+# Ожидаемый вывод: 192.168.97.57
+```
+
+**Создайте запись на pwdns2 и проверьте на pwdns1:**
+
+```bash
+# На pwdns2:
+sudo pdnsutil add-record cluster.test test2 A 192.168.97.67
+
+# На pwdns1:
+dig @192.168.97.57 test2.cluster.test +short
+# Ожидаемый вывод: 192.168.97.67
+```
+
+### 2.11 Часто возникающие проблемы и их решение
 
 | Проблема | Решение |
 |----------|---------|
 | `Connection failed` для security.debian.org | Игнорируйте, это не влияет на установку PowerDNS |
 | `cannot access '/usr/share/doc/pdns-backend-pgsql/schema.pgsql.sql'` | Установите `pdns-backend-pgsql`: `sudo apt install pdns-backend-pgsql` |
 | **`permission denied for table domains`** | **Выполните настройку прав из раздела 2.7** |
-| **pdns не запускается, порт 53 занят** | **Отключите recursor или измените порт authoritative** (см. ниже) |
+| **pdns не запускается, порт 53 занят** | **Отключите recursor**: `sudo systemctl disable --now pdns-recursor` |
 | API не отвечает (`curl: (7) Connection refused`) | Проверьте, что `api=yes`, `webserver=yes`, нет дублей параметров |
-| pdns-recursor не запускается с ошибкой YAML | Версия из Debian (5.2.8) не поддерживает YAML-формат. Отключите recursor |
-| **Вторая машина не может подключиться к PostgreSQL** | **Настройте `pg_hba.conf` и `postgresql.conf` по инструкции в разделе 2.8** |
-
-#### Конфликт порта 53 между pdns и pdns-recursor
-
-PowerDNS Authoritative Server и Recursor **не могут одновременно использовать порт 53** на одном IP-адресе.
-
-**Для кластера Authoritative Server рекурсор не нужен**, поэтому рекомендуется отключить его:
-
-```bash
-sudo systemctl stop pdns-recursor
-sudo systemctl disable pdns-recursor
-```
-
-Если рекурсор всё же нужен, измените порт authoritative:
-
-```ini
-# В /etc/powerdns/pdns.conf
-local-port=5300
-```
+| **Репликация не работает** | **Проверьте `pg_hba.conf` и `postgresql.conf` на обеих машинах** |
+| **pg_basebackup: could not connect to server** | **Проверьте, что PostgreSQL запущен на источнике и открыт порт 5432** |
 
 ---
 
-## Что дальше? Настройка кластера из двух машин
+## Итог: схема Master-Master кластера
 
-После успешной установки на первой машине:
-
-1. **Повторите все шаги 1-2 на второй машине**
-2. **Настройте удалённый доступ к PostgreSQL** (раздел 2.8) — чтобы вторая машина могла подключаться к БД первой
-3. **На второй машине в `pdns.conf` укажите IP первой машины:**
-   ```ini
-   gpgsql-host=IP_ПЕРВОЙ_МАШИНЫ   # Вместо localhost
-   ```
-4. **Настройте репликацию PostgreSQL master-master** (опционально, для отказоустойчивости)
-5. **В конфиг `pdns.conf` на обеих машинах** добавьте IP другой машины:
-   ```ini
-   allow-axfr-ips=IP_ДРУГОЙ_МАШИНЫ
-   webserver-allow-from=127.0.0.1, IP_ДРУГОЙ_МАШИНЫ
-   ```
-
----
-
-## Итог: проверка работоспособности
-
-```bash
-# Статус сервиса
-sudo systemctl status pdns
-
-# Проверка API
-curl -H "X-API-Key: ваш_api_ключ" http://127.0.0.1:8081/api/v1/servers/localhost/zones
-
-# Проверка DNS
-dig @127.0.0.1 version.bind chaos txt
-
-# Создание тестовой зоны (через API или pdnsutil)
-sudo pdnsutil create-zone test.local ns1.test.local
-sudo pdnsutil add-record test.local test A 192.168.1.100
-dig @127.0.0.1 test.test.local +short
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         Master-Master кластер                               │
+├─────────────────────────────────┬───────────────────────────────────────────┤
+│           pwdns1                │              pwdns2                       │
+│        192.168.97.57            │          192.168.97.67                    │
+├─────────────────────────────────┼───────────────────────────────────────────┤
+│ ┌─────────────────────────────┐ │ ┌─────────────────────────────────────┐   │
+│ │     PostgreSQL (Master)     │ │ │        PostgreSQL (Master)          │   │
+│ │         БД: pdns_db         │◄┼─┼────────►      БД: pdns_db            │   │
+│ │   Пользователь: pdns        │ │ │        Пользователь: pdns            │   │
+│ │   Репликация: replicator    │ │ │        Репликация: replicator        │   │
+│ └─────────────────────────────┘ │ └─────────────────────────────────────┘   │
+│ ┌─────────────────────────────┐ │ ┌─────────────────────────────────────┐   │
+│ │       PowerDNS              │ │ │           PowerDNS                  │   │
+│ │   (pdns-server)             │ │ │       (pdns-server)                 │   │
+│ │   - API на 8081             │ │ │       - API на 8081                 │   │
+│ │   - allow-axfr-ips: 67     │ │ │       - allow-axfr-ips: 57          │   │
+│ └─────────────────────────────┘ │ └─────────────────────────────────────┘   │
+└─────────────────────────────────┴───────────────────────────────────────────┘
 ```
 
----
-
+**Преимущества Master-Master кластера:**
+- ✅ Высокая доступность — при падении одной машины вторая продолжает работу
+- ✅ Автономность — каждая машина имеет полную копию данных
+- ✅ Балансировка нагрузки — DNS-запросы можно распределять между серверами
+- ✅ Отказоустойчивость — нет единой точки отказа (single point of failure)
 
 
 
