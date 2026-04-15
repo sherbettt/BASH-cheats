@@ -124,7 +124,7 @@ sudo -u postgres psql -d pdns_db -f /usr/share/doc/pdns-backend-pgsql/schema.pgs
 ### 2.5 Настройка PowerDNS Authoritative Server
 
 ```bash
-sudo nano /etc/powerdns/pdns.conf
+sudo mcedit /etc/powerdns/pdns.conf
 ```
 
 **Важно:** Убедитесь, что в файле нет дублирующихся параметров. Рекомендуемая минимальная конфигурация:
@@ -165,7 +165,7 @@ openssl rand -base64 32
 Для версии 5.x используется формат YAML:
 
 ```bash
-sudo nano /etc/powerdns/recursor.conf
+sudo mcedit /etc/powerdns/recursor.conf
 ```
 
 Пример конфигурации:
@@ -238,7 +238,7 @@ PGPASSWORD=ваш_пароль_БД psql -U pdns -h 127.0.0.1 -d pdns_db -c "SEL
 
 ```bash
 # 1. Разрешить подключения с IP второй машины
-sudo nano /etc/postgresql/17/main/pg_hba.conf
+sudo mcedit /etc/postgresql/17/main/pg_hba.conf
 
 # Добавьте строку (замените IP_ВТОРОЙ_МАШИНЫ на реальный IP):
 host    all             all             IP_ВТОРОЙ_МАШИНЫ/32        md5
@@ -251,7 +251,7 @@ host    all             all             192.168.97.58/32            md5
 
 ```bash
 # 2. Разрешить PostgreSQL слушать все сетевые интерфейсы
-sudo nano /etc/postgresql/17/main/postgresql.conf
+sudo mcedit /etc/postgresql/17/main/postgresql.conf
 
 # Найдите и раскомментируйте/измените строку:
 listen_addresses = '*'   # или '0.0.0.0, ::'
