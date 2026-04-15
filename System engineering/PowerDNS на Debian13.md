@@ -635,3 +635,553 @@ dig @192.168.97.57 test2.cluster.test +short
 - ✅ Отказоустойчивость — нет единой точки отказа (single point of failure)
 
 
+---
+
+
+
+## 2.12 Установка PowerDNS-Admin на оба сервера
+
+### 2.12.1 Установка системных зависимостей
+
+**На pwdns1 и pwdns2:**
+
+```bash
+# Обновление списка пакетов
+sudo apt update
+
+# Установка Python и инструментов разработки
+sudo apt install -y python3-dev python3-venv python3-pip git build-essential
+
+# Установка Node.js 20.x и Yarn
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+sudo npm install -g yarn
+
+# Установка системных библиотек для PostgreSQL и LDAP
+sudo apt install -y libpq-dev libldap2-dev libsasl2-dev libssl-dev
+sudo apt install -y libxml2-dev libxslt1-dev libxmlsec1-dev libffi-dev
+
+# Проверка версий
+python3 --version
+node --version
+yarn --version
+```
+
+### 2.12.2 Клонирование репозитория и создание venv
+
+**На pwdns1 и pwdns2:**
+
+```bash
+# Переход в директорию /opt
+cd /opt
+
+# Клонирование репозитория PowerDNS-Admin
+sudo git clone https://github.com/PowerDNS-Admin/PowerDNS-Admin.git
+
+# Переименование директории
+sudo mv PowerDNS-Admin powerdns-admin
+
+# Переход в директорию
+cd powerdns-admin
+
+# Создание виртуального окружения Python
+sudo python3 -m venv venv
+
+# Установка прав
+sudo chown -R $USER:$USER /opt/powerdns-admin
+```
+
+### 2.12.3 Установка Python-пакетов
+
+**На pwdns1 и pwdns2:**
+
+```bash
+# Активация виртуального окружения
+source venv/bin/activate
+
+# Обновление pip
+pip install --upgrade pip
+
+# Установка основных пакетов
+pip install Flask==2.2.5
+pip install Werkzeug==2.3.0
+pip install Flask-Login==0.6.2
+pip install Flask-SQLAlchemy==2.5.1
+pip install Flask-Migrate==2.5.3
+pip install Flask-Mail==0.9.1
+pip install Flask-Assets==2.0
+pip install Flask-SeaSurf==1.1.1
+pip install Flask-Session==0.4.0
+pip install Flask-SSLify==0.1.5
+pip install Jinja2==3.1.3
+pip install PyYAML==6.0.1
+pip install SQLAlchemy==1.4.51
+pip install bcrypt==4.1.2
+pip install cryptography==42.0.2
+
+# Установка пакетов для PostgreSQL
+pip install psycopg2-binary==2.9.9
+
+# Установка дополнительных модулей
+pip install pyotp==2.9.0
+pip install qrcode==8.2
+pip install Pillow==12.2.0
+pip install python-ldap==3.4.5
+pip install zxcvbn==4.5.0
+pip install pytimeparse==1.1.8
+pip install python-dateutil
+pip install email-validator
+pip install bravado
+pip install flask-babel
+pip install flask-cors
+pip install humanize
+pip install gunicorn==20.1.0
+pip install setuptools==65.5.0
+
+# Проверка установленных пакетов
+pip list | grep -E "Flask|psycopg|gunicorn"
+```
+
+### 2.12.4 Решение проблем с совместимостью Python 3.13
+
+**На pwdns1 и pwdns2:**
+
+```bash
+# Проблема 1: Отсутствие модуля pkg_resources
+# Создаём заглушку
+cat > venv/lib/python3.13/site-packages/pkg_resources.py <<'EOF'
+"""Fake pkg_resources module for compatibility."""
+import sys
+import os
+
+def get_distribution(dist_name):
+    class FakeDist:
+        version = "0.0.0"
+        project_name = dist_name
+    return FakeDist()
+
+def require(requirements):
+    pass
+
+def iter_entry_points(group, name=None):
+    return []
+
+def load_entry_point(dist, group, name):
+    return None
+
+def resource_string(package_or_requirement, resource_name):
+    return b""
+
+def resource_filename(package_or_requirement, resource_name):
+    return ""
+
+def resource_stream(package_or_requirement, resource_name):
+    import io
+    return io.BytesIO()
+
+def get_provider(module_or_requirement):
+    return None
+
+def declare_namespace(package):
+    pass
+
+def fixup_namespace_packages(path_item, parent=None):
+    pass
+
+def register_finder(importer, finder):
+    pass
+
+def find_on_path(module):
+    return None
+
+def get_default_cache():
+    return os.path.join(os.path.dirname(__file__), '.cache')
+
+class Distribution:
+    pass
+
+class WorkingSet:
+    def __init__(self):
+        self.by_key = {}
+    def add_entry(self, entry):
+        pass
+
+__all__ = [
+    'get_distribution', 'require', 'iter_entry_points', 
+    'load_entry_point', 'resource_string', 'resource_filename',
+    'resource_stream', 'get_provider', 'declare_namespace',
+    'fixup_namespace_packages', 'register_finder', 'find_on_path',
+    'get_default_cache', 'Distribution', 'WorkingSet'
+]
+EOF
+
+# Проблема 2: Отсутствие модуля imghdr (удалён в Python 3.13)
+cat > venv/lib/python3.13/site-packages/imghdr.py <<'EOF'
+"""Fake imghdr module for Python 3.13 compatibility."""
+def what(file, h=None):
+    return None
+EOF
+
+# Проверка
+python -c "import pkg_resources; print('pkg_resources OK')"
+python -c "import imghdr; print('imghdr OK')"
+```
+
+### 2.12.5 Сборка статических файлов
+
+**На pwdns1 и pwdns2:**
+
+```bash
+# Установка зависимостей через Yarn
+cd /opt/powerdns-admin
+yarn install --pure-lockfile
+
+# Сборка статических ассетов через Flask
+export FLASK_APP=powerdnsadmin/__init__.py
+export FLASK_CONF=/opt/powerdns-admin/configs/production.py
+flask assets build
+
+# Проверка создания файлов
+ls -la powerdnsadmin/static/generated/
+```
+
+### 2.12.6 Настройка конфигурации
+
+**На pwdns1:**
+
+```bash
+# Копирование примера конфигурации
+cd /opt/powerdns-admin
+cp configs/production.py.sample configs/production.py
+
+# Редактирование конфигурации
+nano configs/production.py
+```
+
+**Содержимое `configs/production.py` на pwdns1:**
+
+```python
+import os
+
+# Секретный ключ (сгенерируйте свой)
+SECRET_KEY = 'C1vD9kraoNdZP3CL9QTc1kpiVZ8rflm4fuuhLwAi'
+
+# Используем SQLite для простоты
+SQLA_DB_TYPE = 'sqlite'
+SQLA_DB_NAME = '/var/lib/powerdns-admin/pdnsadmin.db'
+
+# Подключение к PowerDNS API (локальный)
+PDNS_API_URL = 'http://127.0.0.1:8081'
+PDNS_API_KEY = 'xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL'
+PDNS_VERSION = '5.0'
+
+# Настройки веб-сервера
+BIND_ADDRESS = '0.0.0.0'
+PORT = 9191
+```
+
+**На pwdns2 (аналогично, но с другим SECRET_KEY):**
+
+```bash
+cd /opt/powerdns-admin
+cp configs/production.py.sample configs/production.py
+nano configs/production.py
+```
+
+**Содержимое `configs/production.py` на pwdns2:**
+
+```python
+import os
+
+# Секретный ключ (другой, чем на pwdns1)
+SECRET_KEY = 'RC1DtMvzJCSK2pLmX6lOF/Wskz/Ur/rfdLnRYOqX'
+
+# Используем SQLite для простоты
+SQLA_DB_TYPE = 'sqlite'
+SQLA_DB_NAME = '/var/lib/powerdns-admin/pdnsadmin.db'
+
+# Подключение к PowerDNS API (локальный)
+PDNS_API_URL = 'http://127.0.0.1:8081'
+PDNS_API_KEY = 'xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL'
+PDNS_VERSION = '5.0'
+
+# Настройки веб-сервера
+BIND_ADDRESS = '0.0.0.0'
+PORT = 9191
+```
+
+### 2.12.7 Создание директории для БД и инициализация
+
+**На pwdns1 и pwdns2:**
+
+```bash
+# Создание директории для БД
+sudo mkdir -p /var/lib/powerdns-admin
+sudo chown -R www-data:www-data /var/lib/powerdns-admin
+
+# Инициализация базы данных
+cd /opt/powerdns-admin
+source venv/bin/activate
+flask db upgrade
+deactivate
+
+# Проверка создания БД
+ls -la /var/lib/powerdns-admin/
+```
+
+**Ожидаемый вывод:**
+```
+total 16
+drwxr-xr-x  2 www-data www-data 4096 Apr 15 13:26 .
+drwxr-xr-x 31 root     root     4096 Apr 15 13:26 ..
+-rw-r--r--  1 www-data www-data 8192 Apr 15 13:26 pdnsadmin.db
+```
+
+### 2.12.8 Создание systemd сервиса
+
+**На pwdns1 и pwdns2:**
+
+```bash
+# Создание файла сервиса
+sudo tee /etc/systemd/system/powerdns-admin.service <<'EOF'
+[Unit]
+Description=PowerDNS-Admin Web Interface
+After=network.target pdns.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/powerdns-admin
+Environment="FLASK_CONF=/opt/powerdns-admin/configs/production.py"
+Environment="FLASK_APP=powerdnsadmin/__init__.py"
+ExecStart=/opt/powerdns-admin/venv/bin/gunicorn --bind 0.0.0.0:9191 'powerdnsadmin:create_app()'
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Перезагрузка systemd
+sudo systemctl daemon-reload
+
+# Включение автозапуска
+sudo systemctl enable powerdns-admin
+
+# Запуск сервиса
+sudo systemctl start powerdns-admin
+
+# Проверка статуса
+sudo systemctl status powerdns-admin
+```
+
+### 2.12.9 Проверка работы сервиса
+
+**На pwdns1 и pwdns2:**
+
+```bash
+# Проверка, что порт слушается
+ss -tulpn | grep 9191
+
+# Ожидаемый вывод:
+# tcp   LISTEN 0      2048         0.0.0.0:9191      0.0.0.0:*    users:(("gunicorn",pid=...,fd=...))
+
+# Проверка через curl
+curl -v http://127.0.0.1:9191
+
+# Ожидаемый вывод (редирект на /login):
+# < HTTP/1.1 302 FOUND
+# < Location: /login
+```
+
+### 2.12.10 Диагностика и устранение проблем
+
+#### Проблема: Empty reply from server (пустой ответ)
+
+**Симптомы:**
+```bash
+curl -v http://127.0.0.1:9191
+# * Connected to 127.0.0.1 (127.0.0.1) port 9191
+# * Empty reply from server
+# curl: (52) Empty reply from server
+```
+
+**Логи:**
+```bash
+sudo journalctl -u powerdns-admin -f --since "1 minute ago"
+# sqlite3.OperationalError: attempt to write a readonly database
+```
+
+**Решение:**
+```bash
+# Остановка сервиса
+sudo systemctl stop powerdns-admin
+
+# Удаление кэша
+sudo rm -rf /opt/powerdns-admin/powerdnsadmin/static/.webassets-cache
+
+# Исправление прав
+sudo chown -R www-data:www-data /opt/powerdns-admin
+sudo chown -R www-data:www-data /var/lib/powerdns-admin
+sudo chmod 755 /opt/powerdns-admin
+sudo chmod 755 /var/lib/powerdns-admin
+sudo chmod 644 /var/lib/powerdns-admin/pdnsadmin.db
+sudo chmod -R 755 /opt/powerdns-admin/powerdnsadmin/static
+
+# Пересоздание БД
+sudo rm -f /var/lib/powerdns-admin/pdnsadmin.db
+cd /opt/powerdns-admin
+source venv/bin/activate
+flask db upgrade
+deactivate
+
+# Пересборка статики
+cd /opt/powerdns-admin
+source venv/bin/activate
+export FLASK_APP=powerdnsadmin/__init__.py
+export FLASK_CONF=/opt/powerdns-admin/configs/production.py
+flask assets build
+deactivate
+
+# Запуск сервиса
+sudo systemctl start powerdns-admin
+sudo systemctl status powerdns-admin
+```
+
+#### Проблема: Ошибка "No module named 'pkg_resources'"
+
+**Решение:**
+```bash
+cd /opt/powerdns-admin
+source venv/bin/activate
+pip install setuptools==65.5.0
+deactivate
+```
+
+#### Проблема: Ошибка "No module named 'imghdr'"
+
+**Решение:**
+```bash
+cat > /opt/powerdns-admin/venv/lib/python3.13/site-packages/imghdr.py <<'EOF'
+def what(file, h=None):
+    return None
+EOF
+```
+
+### 2.12.11 Создание первого пользователя
+
+**В браузере:**
+
+1. Откройте `http://IP_сервера:9191`
+2. Нажмите **"Create an account"**
+3. Заполните поля:
+   - **Username:** `admin`
+   - **Email:** `admin@local.host`
+   - **Password:** `YouR_Copmlex_PASS`  <!-- pEhBYZFjDGEa -->
+4. Нажмите **"Register"**
+5. Первый созданный пользователь автоматически получает права администратора
+
+### 2.12.12 Проверка подключения к PowerDNS API
+
+**В веб-интерфейсе:**
+
+1. Войдите как `admin`
+2. Перейдите в **"Admin"** → **"Settings"**
+3. Проверьте, что подключение к API отображается зелёным индикатором
+4. Если нет — проверьте в файле `configs/production.py`:
+   - `PDNS_API_URL = 'http://127.0.0.1:8081'`
+   - `PDNS_API_KEY = 'xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL'`
+
+---
+
+## 3. Финальная проверка кластера
+
+### 3.1 Создание тестовой зоны через веб-интерфейс pwdns1
+
+1. Войдите в `http://192.168.97.57:9191`
+2. Нажмите **"Zones"** → **"Add Zone"**
+3. Параметры зоны:
+   - **Domain Name:** `cluster.test`
+   - **Type:** `Native`
+   - **Nameservers:** `ns1.cluster.test`
+4. Нажмите **"Add Zone"**
+
+### 3.2 Добавление A-записи
+
+1. Нажмите на зону `cluster.test`
+2. Нажмите **"Add Record"**
+3. Параметры записи:
+   - **Name:** `test`
+   - **Type:** `A`
+   - **Content:** `192.168.97.57`
+   - **TTL:** `3600`
+4. Нажмите **"Add Record"**
+
+### 3.3 Проверка через dig
+
+**На pwdns1:**
+```bash
+dig @192.168.97.57 test.cluster.test +short
+# Ожидаемый вывод: 192.168.97.57
+```
+
+**На pwdns2:**
+```bash
+dig @192.168.97.67 test.cluster.test +short
+# Ожидаемый вывод: 192.168.97.57
+```
+
+### 3.4 Проверка репликации (создание записи на pwdns2)
+
+**Через веб-интерфейс pwdns2:**
+1. Войдите в `http://192.168.97.67:9191`
+2. Откройте зону `cluster.test`
+3. Нажмите **"Add Record"**
+4. Параметры:
+   - **Name:** `test2`
+   - **Type:** `A`
+   - **Content:** `192.168.97.67`
+5. Нажмите **"Add Record"**
+
+**Проверка на pwdns1:**
+```bash
+dig @192.168.97.57 test2.cluster.test +short
+# Ожидаемый вывод: 192.168.97.67
+```
+
+---
+
+## Итоговая схема развёрнутого кластера
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         PowerDNS Master-Master кластер                       │
+├─────────────────────────────────┬───────────────────────────────────────────┤
+│           pwdns1                │              pwdns2                       │
+│        192.168.97.57            │          192.168.97.67                    │
+├─────────────────────────────────┼───────────────────────────────────────────┤
+│ ┌─────────────────────────────┐ │ ┌─────────────────────────────────────┐   │
+│ │     PostgreSQL 17 (master)  │ │ │     PostgreSQL 17 (master)          │   │
+│ │         БД: pdns_db         │◄┼─┼────────►      БД: pdns_db            │   │
+│ │   Репликация: replicator    │ │ │   Репликация: replicator            │   │
+│ └─────────────────────────────┘ │ └─────────────────────────────────────┘   │
+│ ┌─────────────────────────────┐ │ ┌─────────────────────────────────────┐   │
+│ │   PowerDNS Authoritative    │ │ │   PowerDNS Authoritative            │   │
+│ │   (порт 53, UDP/TCP)        │ │ │   (порт 53, UDP/TCP)                │   │
+│ │   API (порт 8081)           │ │ │   API (порт 8081)                   │   │
+│ └─────────────────────────────┘ │ └─────────────────────────────────────┘   │
+│ ┌─────────────────────────────┐ │ ┌─────────────────────────────────────┐   │
+│ │     PowerDNS-Admin          │ │ │     PowerDNS-Admin                  │   │
+│ │     (порт 9191)             │ │ │     (порт 9191)                      │   │
+│ │   SQLite: pdnsadmin.db      │ │ │   SQLite: pdnsadmin.db               │   │
+│ └─────────────────────────────┘ │ └─────────────────────────────────────┘   │
+└─────────────────────────────────┴───────────────────────────────────────────┘
+```
+
+
+
+
+
+
+
