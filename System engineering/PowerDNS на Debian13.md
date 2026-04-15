@@ -146,6 +146,15 @@ sudo mcedit /etc/powerdns/pdns.conf
 
 **Содержимое `/etc/powerdns/pdns.conf` на pwdns1:**
 
+Как сгенерировать ключ
+```
+# Рекомендуемый способ
+openssl rand -base64 32
+
+# Или так
+cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1
+```
+
 ```ini
 # Бэкенд PostgreSQL (локальная БД)
 launch=gpgsql
