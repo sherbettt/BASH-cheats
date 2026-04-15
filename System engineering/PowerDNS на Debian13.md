@@ -6,6 +6,7 @@
 
 
 
+
 ## 1. Прописать репозитории
 
 Переходим на оф. ресурс https://repo.powerdns.com/ и смотрим примеры установок. В нашем случае — stable установка.
@@ -123,7 +124,7 @@ sudo -u postgres psql -d pdns_db -f /usr/share/doc/pdns-backend-pgsql/schema.pgs
 ### 2.5 Настройка PowerDNS Authoritative Server
 
 ```bash
-sudo mcedit /etc/powerdns/pdns.conf
+sudo nano /etc/powerdns/pdns.conf
 ```
 
 **Важно:** Убедитесь, что в файле нет дублирующихся параметров. Рекомендуемая минимальная конфигурация:
@@ -154,17 +155,17 @@ webserver-allow-from=0.0.0.0/0
 # Рекомендуемый способ
 openssl rand -base64 32
 
-# Пример вывода: ohvN5wlMRyN2zR1XgO8qfDg7ObIARACvYJMjG4N0VAk
+# Пример вывода: xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL
 ```
 
 ### 2.6 Настройка PowerDNS Recursor (опционально)
 
-⚠️ **Для кластера Authoritative Server рекурсор не требуется.** Если вы всё же хотите его использовать, учтите конфликт порта 53 (см. раздел 2.8).
+⚠️ **Для кластера Authoritative Server рекурсор не требуется.** Если вы всё же хотите его использовать, учтите конфликт порта 53 (см. раздел 2.9).
 
 Для версии 5.x используется формат YAML:
 
 ```bash
-sudo mcedit /etc/powerdns/recursor.conf
+sudo nano /etc/powerdns/recursor.conf
 ```
 
 Пример конфигурации:
@@ -229,7 +230,49 @@ EOF
 PGPASSWORD=ваш_пароль_БД psql -U pdns -h 127.0.0.1 -d pdns_db -c "SELECT 1"
 ```
 
-### 2.8 Запуск и проверка статуса
+### 2.8 Настройка PostgreSQL для удалённых подключений (для кластера)
+
+**Для чего это нужно:** Если вы планируете строить кластер из двух машин, второй сервер PowerDNS должен иметь доступ к базе данных PostgreSQL. Настройка удалённого доступа позволяет второй машине подключаться к PostgreSQL первой машины.
+
+**Настройка на первой машине (где установлена БД):**
+
+```bash
+# 1. Разрешить подключения с IP второй машины
+sudo nano /etc/postgresql/17/main/pg_hba.conf
+
+# Добавьте строку (замените IP_ВТОРОЙ_МАШИНЫ на реальный IP):
+host    all             all             IP_ВТОРОЙ_МАШИНЫ/32        md5
+```
+
+**Пример:** Если вторая машина имеет IP `192.168.97.58`, добавьте:
+```
+host    all             all             192.168.97.58/32            md5
+```
+
+```bash
+# 2. Разрешить PostgreSQL слушать все сетевые интерфейсы
+sudo nano /etc/postgresql/17/main/postgresql.conf
+
+# Найдите и раскомментируйте/измените строку:
+listen_addresses = '*'   # или '0.0.0.0, ::'
+```
+
+```bash
+# 3. Перезапустите PostgreSQL для применения изменений
+sudo systemctl restart postgresql
+
+# 4. Проверьте, что порт 5432 слушается на всех интерфейсах
+ss -tulpn | grep 5432
+# Ожидаемый вывод: tcp LISTEN 0 256 0.0.0.0:5432 0.0.0.0:*
+```
+
+**Проверка удалённого подключения со второй машины:**
+```bash
+# На второй машине выполните:
+PGPASSWORD=ваш_пароль_БД psql -h IP_ПЕРВОЙ_МАШИНЫ -U pdns -d pdns_db -c "SELECT 1"
+```
+
+### 2.9 Запуск и проверка статуса
 
 #### Запуск PowerDNS:
 
@@ -257,7 +300,7 @@ dig @127.0.0.1 version.bind chaos txt
 # version.bind. 5 CH TXT "PowerDNS Authoritative Server 5.0.3 (...)"
 ```
 
-### 2.9 Часто возникающие проблемы и их решение
+### 2.10 Часто возникающие проблемы и их решение
 
 | Проблема | Решение |
 |----------|---------|
@@ -267,6 +310,7 @@ dig @127.0.0.1 version.bind chaos txt
 | **pdns не запускается, порт 53 занят** | **Отключите recursor или измените порт authoritative** (см. ниже) |
 | API не отвечает (`curl: (7) Connection refused`) | Проверьте, что `api=yes`, `webserver=yes`, нет дублей параметров |
 | pdns-recursor не запускается с ошибкой YAML | Версия из Debian (5.2.8) не поддерживает YAML-формат. Отключите recursor |
+| **Вторая машина не может подключиться к PostgreSQL** | **Настройте `pg_hba.conf` и `postgresql.conf` по инструкции в разделе 2.8** |
 
 #### Конфликт порта 53 между pdns и pdns-recursor
 
@@ -293,16 +337,40 @@ local-port=5300
 После успешной установки на первой машине:
 
 1. **Повторите все шаги 1-2 на второй машине**
-2. **Настройте репликацию PostgreSQL master-master** между серверами
-3. **В конфиг `pdns.conf` на обеих машинах** добавьте IP второй машины:
+2. **Настройте удалённый доступ к PostgreSQL** (раздел 2.8) — чтобы вторая машина могла подключаться к БД первой
+3. **На второй машине в `pdns.conf` укажите IP первой машины:**
    ```ini
-   allow-axfr-ips=IP_второго_сервера
-   webserver-allow-from=127.0.0.1, IP_второго_сервера
+   gpgsql-host=IP_ПЕРВОЙ_МАШИНЫ   # Вместо localhost
    ```
-4. **Установите PowerDNS-Admin** для веб-управления зонами
-
+4. **Настройте репликацию PostgreSQL master-master** (опционально, для отказоустойчивости)
+5. **В конфиг `pdns.conf` на обеих машинах** добавьте IP другой машины:
+   ```ini
+   allow-axfr-ips=IP_ДРУГОЙ_МАШИНЫ
+   webserver-allow-from=127.0.0.1, IP_ДРУГОЙ_МАШИНЫ
+   ```
 
 ---
+
+## Итог: проверка работоспособности
+
+```bash
+# Статус сервиса
+sudo systemctl status pdns
+
+# Проверка API
+curl -H "X-API-Key: ваш_api_ключ" http://127.0.0.1:8081/api/v1/servers/localhost/zones
+
+# Проверка DNS
+dig @127.0.0.1 version.bind chaos txt
+
+# Создание тестовой зоны (через API или pdnsutil)
+sudo pdnsutil create-zone test.local ns1.test.local
+sudo pdnsutil add-record test.local test A 192.168.1.100
+dig @127.0.0.1 test.test.local +short
+```
+
+---
+
 
 
 
