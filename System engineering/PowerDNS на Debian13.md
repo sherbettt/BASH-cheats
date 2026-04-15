@@ -154,7 +154,7 @@ webserver-allow-from=0.0.0.0/0
 # Рекомендуемый способ
 openssl rand -base64 32
 
-# Пример вывода: xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL
+# Пример вывода: ohvN5wlMRyN2zR1XgO8qfDg7ObIARACvYJMjG4N0VAk
 ```
 
 ### 2.6 Настройка PowerDNS Recursor (опционально)
