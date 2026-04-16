@@ -1622,7 +1622,6 @@ sudo -u postgres psql -d pdns_admin_db -c "SELECT id, username, email, role_id, 
 ---
 
 ### Пример: полный скрипт для создания администратора (одной командой)
-
 ```bash
 # 1. Генерируем хэш для пароля
 cd /opt/powerdns-admin
@@ -1643,6 +1642,34 @@ EOF
 # 4. Проверяем
 sudo -u postgres psql -d pdns_admin_db -c "SELECT id, username, email, role_id FROM \"user\";"
 ```
+
+### Пример: полный скрипт для создания администратора с заданным паролем
+```bash
+cd /opt/powerdns-admin
+source venv/bin/activate
+
+# Задаём параметры
+USERNAME="kkorablin"
+PASSWORD="PASS123"
+EMAIL="k@runtel.ru"
+ROLE_ID=1  # 1=Administrator, 2=Operator, 3=User
+
+# Генерируем хэш
+HASH=$(python3 -c "import bcrypt; print(bcrypt.hashpw(b'$PASSWORD', bcrypt.gensalt()).decode('utf-8'))")
+HASH_ESCAPED=$(echo "$HASH" | sed 's/\$/\\$/g')
+
+# Добавляем пользователя
+sudo -u postgres psql -d pdns_admin_db <<EOF
+INSERT INTO "user" (username, password, email, confirmed, role_id)
+VALUES ('$USERNAME', '$HASH_ESCAPED', '$EMAIL', 1, $ROLE_ID);
+EOF
+
+deactivate
+
+# Проверяем
+sudo -u postgres psql -d pdns_admin_db -c "SELECT id, username, email, role_id FROM \"user\";"
+```
+
 
 ---
 
