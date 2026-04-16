@@ -1110,66 +1110,231 @@ EOF
    - `PDNS_API_URL = 'http://127.0.0.1:8081'`
    - `PDNS_API_KEY = 'API_KEY_LONG'`
 
+--------
+<br/>
+
+
+## 2.13 Миграция PowerDNS-Admin с SQLite на общий PostgreSQL
+
+**Для чего:** Изначально PowerDNS-Admin использует SQLite на каждом сервере отдельно. Это приводит к тому, что пользователи, созданные на pwdns1, не видны на pwdns2, и наоборот. Миграция на общую PostgreSQL БД позволяет иметь единые учётные записи и настройки на обоих серверах.
+
+### 2.13.1 Создание базы данных PostgreSQL для PowerDNS-Admin (на pwdns1)
+
+```bash
+# На pwdns1 создаём БД и пользователя для админки
+sudo -u postgres psql <<EOF
+CREATE USER pdns_admin WITH PASSWORD 'pEhBYZFjDGEa';
+CREATE DATABASE pdns_admin_db WITH OWNER pdns_admin;
+GRANT ALL PRIVILEGES ON DATABASE pdns_admin_db TO pdns_admin;
+\q
+EOF
+
+# Проверяем создание
+sudo -u postgres psql -d pdns_admin_db -c "\l"
+```
+
+### 2.13.2 Остановка сервисов на обеих машинах
+
+```bash
+# На pwdns1 и pwdns2:
+sudo systemctl stop powerdns-admin
+```
+
+### 2.13.3 Изменение конфигурации на pwdns1
+
+```bash
+# Создаём директорию instance (если ещё не создана)
+sudo mkdir -p /opt/powerdns-admin/instance
+
+# Редактируем конфиг
+sudo mcedit /opt/powerdns-admin/instance/config.py
+```
+
+**Содержимое `/opt/powerdns-admin/instance/config.py` на pwdns1:**
+
+```python
+import os
+
+SECRET_KEY = 'C1vD9kraoNdZP3CL9QTc1kpiVZ8rflm4fuuhLwAi'
+
+# PostgreSQL (локальная БД)
+SQLA_DB_TYPE = 'postgresql'
+SQLA_DB_HOST = '127.0.0.1'
+SQLA_DB_PORT = '5432'
+SQLA_DB_USER = 'pdns_admin'
+SQLA_DB_PASSWORD = 'pEhBYZFjDGEa'
+SQLA_DB_NAME = 'pdns_admin_db'
+
+# PowerDNS API
+PDNS_API_URL = 'http://127.0.0.1:8081'
+PDNS_API_KEY = 'xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL'
+PDNS_VERSION = '5.0'
+
+# Веб-сервер
+BIND_ADDRESS = '0.0.0.0'
+PORT = 9191
+
+# Отключаем CAPTCHA (решение проблемы с регистрацией)
+CAPTCHA_ENABLE = False
+LOGIN_CAPTCHA_ENABLE = False
+REGISTER_CAPTCHA_ENABLE = False
+
+# Регистрация
+SIGNUP_ENABLED = True
+EMAIL_CONFIRMATION = False
+```
+
+### 2.13.4 Изменение конфигурации на pwdns2
+
+```bash
+# Создаём директорию instance
+sudo mkdir -p /opt/powerdns-admin/instance
+
+# Редактируем конфиг
+sudo mcedit /opt/powerdns-admin/instance/config.py
+```
+
+**Содержимое `/opt/powerdns-admin/instance/config.py` на pwdns2:**
+
+```python
+import os
+
+SECRET_KEY = 'RC1DtMvzJCSK2pLmX6lOF/Wskz/Ur/rfdLnRYOqX'  # Другой ключ
+
+# PostgreSQL (подключаемся к БД на pwdns1)
+SQLA_DB_TYPE = 'postgresql'
+SQLA_DB_HOST = '192.168.97.57'  # IP адрес pwdns1
+SQLA_DB_PORT = '5432'
+SQLA_DB_USER = 'pdns_admin'
+SQLA_DB_PASSWORD = 'pEhBYZFjDGEa'
+SQLA_DB_NAME = 'pdns_admin_db'
+
+# PowerDNS API (локальный на pwdns2)
+PDNS_API_URL = 'http://127.0.0.1:8081'
+PDNS_API_KEY = 'xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL'
+PDNS_VERSION = '5.0'
+
+# Веб-сервер
+BIND_ADDRESS = '0.0.0.0'
+PORT = 9191
+
+# Отключаем CAPTCHA
+CAPTCHA_ENABLE = False
+LOGIN_CAPTCHA_ENABLE = False
+REGISTER_CAPTCHA_ENABLE = False
+
+# Регистрация
+SIGNUP_ENABLED = True
+EMAIL_CONFIRMATION = False
+```
+
+### 2.13.5 Увеличение длины поля password (решение проблемы с хэшем)
+
+**Проблема:** Хэш пароля в PostgreSQL может быть длиннее 64 символов, что вызывает ошибку `value too long for type character varying(64)`.
+
+**Решение:** Увеличиваем длину поля password до 255 символов:
+
+```bash
+# На pwdns1 (БД ещё пустая, но увеличим для будущих пользователей)
+sudo -u postgres psql -d pdns_admin_db -c "ALTER TABLE \"user\" ALTER COLUMN password TYPE VARCHAR(255);"
+```
+
+### 2.13.6 Инициализация базы данных
+
+**На pwdns1 (создание таблиц):**
+
+```bash
+cd /opt/powerdns-admin
+source venv/bin/activate
+export FLASK_APP=powerdnsadmin/__init__.py
+export FLASK_CONF=/opt/powerdns-admin/instance/config.py
+flask db upgrade
+deactivate
+```
+
+**На pwdns2 (связывание с существующей БД):**
+
+```bash
+cd /opt/powerdns-admin
+source venv/bin/activate
+export FLASK_APP=powerdnsadmin/__init__.py
+export FLASK_CONF=/opt/powerdns-admin/instance/config.py
+flask db upgrade
+deactivate
+```
+
+### 2.13.7 Настройка PostgreSQL для удалённого доступа (на pwdns1)
+
+Чтобы pwdns2 мог подключаться к БД на pwdns1:
+
+```bash
+# На pwdns1 добавляем разрешение в pg_hba.conf
+sudo mcedit /etc/postgresql/17/main/pg_hba.conf
+```
+
+**Добавьте строку:**
+```conf
+# Разрешаем подключения для PowerDNS-Admin с pwdns2
+host    pdns_admin_db     pdns_admin     192.168.97.67/32        md5
+```
+
+```bash
+# Перезапускаем PostgreSQL
+sudo pg_ctlcluster 17 main restart
+```
+
+### 2.13.8 Проверка подключения с pwdns2
+
+```bash
+# На pwdns2:
+PGPASSWORD=pEhBYZFjDGEa psql -h 192.168.97.57 -U pdns_admin -d pdns_admin_db -c "SELECT 1"
+```
+
+**Ожидаемый вывод:**
+```
+ ?column? 
+----------
+        1
+(1 row)
+```
+
+### 2.13.9 Запуск сервисов и создание пользователя
+
+```bash
+# На обеих машинах:
+sudo systemctl restart powerdns-admin
+sudo systemctl status powerdns-admin
+```
+
+**Создание пользователя admin (через веб-интерфейс):**
+
+1. Откройте `http://192.168.97.57:9191`
+2. Нажмите **"Create an account"**
+3. Заполните поля:
+   - **Username:** `admin`
+   - **Email:** `admin@local.host`
+   - **Password:** `pEhBYZFjDGEa`
+4. Нажмите **"Register"**
+
+**Важно:** Пользователь создаётся через веб-форму, а не через командную строку, из-за особенностей хэширования паролей в PowerDNS-Admin.
+
+### 2.13.10 Решение возможных проблем при регистрации
+
+| Проблема | Решение |
+|----------|---------|
+| `Invalid CAPTCHA answer` | Добавить в `config.py`: `CAPTCHA_ENABLE = False`, `LOGIN_CAPTCHA_ENABLE = False`, `REGISTER_CAPTCHA_ENABLE = False` |
+| `Invalid salt` | Увеличить длину поля password: `ALTER TABLE "user" ALTER COLUMN password TYPE VARCHAR(255);` |
+| `'NoneType' object has no attribute 'id'` | Создать пользователя через веб-форму, а не через SQL |
+
+### 2.13.11 Финальная проверка
+
+1. Войдите на `http://192.168.97.57:9191` с паролем `pEhBYZFjDGEa`
+2. Войдите на `http://192.168.97.67:9191` с тем же паролем
+3. Создайте зону на любом сервере — она должна появиться на обоих
+
 ---
 
-## 3. Финальная проверка кластера
-
-### 3.1 Создание тестовой зоны через веб-интерфейс pwdns1
-
-1. Войдите в `http://192.168.97.57:9191`
-2. Нажмите **"Zones"** → **"Add Zone"**
-3. Параметры зоны:
-   - **Domain Name:** `cluster.test`
-   - **Type:** `Native`
-   - **Nameservers:** `ns1.cluster.test`
-4. Нажмите **"Add Zone"**
-
-### 3.2 Добавление A-записи
-
-1. Нажмите на зону `cluster.test`
-2. Нажмите **"Add Record"**
-3. Параметры записи:
-   - **Name:** `test`
-   - **Type:** `A`
-   - **Content:** `192.168.97.57`
-   - **TTL:** `3600`
-4. Нажмите **"Add Record"**
-
-### 3.3 Проверка через dig
-
-**На pwdns1:**
-```bash
-dig @192.168.97.57 test.cluster.test +short
-# Ожидаемый вывод: 192.168.97.57
-```
-
-**На pwdns2:**
-```bash
-dig @192.168.97.67 test.cluster.test +short
-# Ожидаемый вывод: 192.168.97.57
-```
-
-### 3.4 Проверка репликации (создание записи на pwdns2)
-
-**Через веб-интерфейс pwdns2:**
-1. Войдите в `http://192.168.97.67:9191`
-2. Откройте зону `cluster.test`
-3. Нажмите **"Add Record"**
-4. Параметры:
-   - **Name:** `test2`
-   - **Type:** `A`
-   - **Content:** `192.168.97.67`
-5. Нажмите **"Add Record"**
-
-**Проверка на pwdns1:**
-```bash
-dig @192.168.97.57 test2.cluster.test +short
-# Ожидаемый вывод: 192.168.97.67
-```
-
----
-
-## Итоговая схема развёрнутого кластера
+## Итоговая схема после миграции
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -1190,11 +1355,19 @@ dig @192.168.97.57 test2.cluster.test +short
 │ └─────────────────────────────┘ │ └─────────────────────────────────────┘   │
 │ ┌─────────────────────────────┐ │ ┌─────────────────────────────────────┐   │
 │ │     PowerDNS-Admin          │ │ │     PowerDNS-Admin                  │   │
-│ │     (порт 9191)             │ │ │     (порт 9191)                      │   │
-│ │   SQLite: pdnsadmin.db      │ │ │   SQLite: pdnsadmin.db               │   │
+│ │     (порт 9191)             │ │ │     (порт 9191)                     │   │
+│ │   PostgreSQL: pdns_admin_db │◄┼─┼─────── общая БД на pwdns1           │   │
 │ └─────────────────────────────┘ │ └─────────────────────────────────────┘   │
 └─────────────────────────────────┴───────────────────────────────────────────┘
 ```
+
+**Преимущества миграции на общую PostgreSQL БД:**
+- ✅ Единые учётные записи на обоих серверах
+- ✅ Общие настройки PowerDNS-Admin
+- ✅ Централизованное управление пользователями
+- ✅ Готовность к интеграции с Keycloak SSO
+
+
 ----------------------------------------------------------------
 <br/>
 <br/>
