@@ -1672,6 +1672,53 @@ sudo -u postgres psql -d pdns_admin_db -c "SELECT id, username, email, role_id F
 ```
 
 
+### Проверка пароля через python
+```bash
+cd /opt/powerdns-admin
+source venv/bin/activate
+
+python3 <<'EOF'
+import bcrypt
+from powerdnsadmin import create_app
+from powerdnsadmin.models import db
+from sqlalchemy import text
+
+app = create_app()
+with app.app_context():
+    # Получаем хэш из БД
+    result = db.session.execute(text("SELECT password FROM \"user\" WHERE username = 'kkorablin'"))
+    row = result.fetchone()
+    if row:
+        stored_hash = row[0]
+        print(f"Хэш в БД: {stored_hash}")
+        print(f"Длина хэша: {len(stored_hash)}")
+        
+        # Проверяем пароль
+        password = 'rtg32Koraru'
+        is_valid = bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8'))
+        print(f"Пароль '{password}' верный: {is_valid}")
+        
+        if not is_valid:
+            # Генерируем новый правильный хэш
+            new_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+            print(f"Правильный хэш должен быть: {new_hash.decode('utf-8')}")
+            
+            # Обновляем
+            new_hash_escaped = new_hash.decode('utf-8').replace('$', r'\$')
+            db.session.execute(text(f"""
+                UPDATE "user" 
+                SET password = '{new_hash_escaped}'
+                WHERE username = 'kkorablin'
+            """))
+            db.session.commit()
+            print("✅ Пароль обновлён")
+    else:
+        print("Пользователь не найден")
+EOF
+
+deactivate
+```
+
 ---
 
 ### Важное замечание
