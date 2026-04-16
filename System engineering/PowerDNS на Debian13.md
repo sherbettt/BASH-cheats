@@ -1670,6 +1670,32 @@ deactivate
 # Проверяем
 sudo -u postgres psql -d pdns_admin_db -c "SELECT id, username, email, role_id FROM \"user\";"
 ```
+или (без экранирования)
+```bash
+cd /opt/powerdns-admin
+source venv/bin/activate
+
+# Задаём параметры
+USERNAME="kkorablin"
+PASSWORD="PASS123"
+EMAIL="k@runtel.ru"
+ROLE_ID=1
+
+# Генерируем хэш
+HASH=$(python3 -c "import bcrypt; print(bcrypt.hashpw(b'$PASSWORD', bcrypt.gensalt()).decode('utf-8'))")
+echo "Хэш: $HASH"
+
+# Вставляем БЕЗ экранирования!
+sudo -u postgres psql -d pdns_admin_db <<EOF
+INSERT INTO "user" (username, password, email, confirmed, role_id)
+VALUES ('$USERNAME', '$HASH', '$EMAIL', 1, $ROLE_ID);
+EOF
+
+deactivate
+
+# Проверяем
+sudo -u postgres psql -d pdns_admin_db -c "SELECT id, username, email, role_id FROM \"user\";"
+```
 
 
 ### Проверка пароля через python
