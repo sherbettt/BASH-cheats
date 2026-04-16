@@ -1157,7 +1157,7 @@ import os
 
 SECRET_KEY = 'C1vD9kraoNdZP3CL9QTc1kpiVZ8rflm4fuuhLwAi'
 
-# PostgreSQL (локальная БД)
+# PostgreSQL
 SQLA_DB_TYPE = 'postgresql'
 SQLA_DB_HOST = '127.0.0.1'
 SQLA_DB_PORT = '5432'
@@ -1174,14 +1174,35 @@ PDNS_VERSION = '5.0'
 BIND_ADDRESS = '0.0.0.0'
 PORT = 9191
 
-# Отключаем CAPTCHA (решение проблемы с регистрацией)
-CAPTCHA_ENABLE = False
-LOGIN_CAPTCHA_ENABLE = False
-REGISTER_CAPTCHA_ENABLE = False
+# ДОБАВЬТЕ ЭТИ НАСТРОЙКИ:
+# Отключаем email верификацию (для теста)
+MAIL_SERVER = 'localhost'
+MAIL_PORT = 25
+MAIL_USE_TLS = False
+MAIL_USE_SSL = False
+MAIL_DEFAULT_SENDER = 'noreply@local.host'
+
+# Настройки сессий
+SESSION_TYPE = 'filesystem'
+PERMANENT_SESSION_LIFETIME = 86400  # 24 часа
+
+# Безопасность
+WTF_CSRF_ENABLED = True
+WTF_CSRF_TIME_LIMIT = 3600
 
 # Регистрация
 SIGNUP_ENABLED = True
-EMAIL_CONFIRMATION = False
+EMAIL_CONFIRMATION = False  # Отключаем подтверждение email
+
+# Отключаем CAPTCHA
+CAPTCHA_ENABLE = False
+LOGIN_CAPTCHA_ENABLE = False
+REGISTER_CAPTCHA_ENABLE = False
+SIGNUP_ENABLED = True
+
+# для настройки NGINX
+#PREFERRED_URL_SCHEME = 'https'
+
 ```
 
 ### 2.13.4 Изменение конфигурации на pwdns2
@@ -1199,7 +1220,7 @@ sudo mcedit /opt/powerdns-admin/instance/config.py
 ```python
 import os
 
-SECRET_KEY = 'RC1DtMvzJCSK2pLmX6lOF/Wskz/Ur/rfdLnRYOqX'  # Другой ключ
+SECRET_KEY = 'RC1DtMvzJCSK2pLmX6lOF/Wskz/Ur/rfdLnRYOqX'  # другой ключ
 
 # PostgreSQL (подключаемся к БД на pwdns1)
 SQLA_DB_TYPE = 'postgresql'
@@ -1218,14 +1239,26 @@ PDNS_VERSION = '5.0'
 BIND_ADDRESS = '0.0.0.0'
 PORT = 9191
 
-# Отключаем CAPTCHA
+# Настройки
+MAIL_SERVER = 'localhost'
+MAIL_PORT = 25
+MAIL_USE_TLS = False
+MAIL_USE_SSL = False
+MAIL_DEFAULT_SENDER = 'noreply@local.host'
+
+SESSION_TYPE = 'filesystem'
+PERMANENT_SESSION_LIFETIME = 86400
+
+WTF_CSRF_ENABLED = True
+WTF_CSRF_TIME_LIMIT = 3600
+
+SIGNUP_ENABLED = True
+EMAIL_CONFIRMATION = False
+
 CAPTCHA_ENABLE = False
 LOGIN_CAPTCHA_ENABLE = False
 REGISTER_CAPTCHA_ENABLE = False
 
-# Регистрация
-SIGNUP_ENABLED = True
-EMAIL_CONFIRMATION = False
 ```
 
 ### 2.13.5 Увеличение длины поля password (решение проблемы с хэшем)
