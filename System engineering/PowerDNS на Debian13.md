@@ -1719,6 +1719,58 @@ EOF
 deactivate
 ```
 
+
+### Создание пользователя чрез pyton
+```
+ # Удаляем пользователя
+sudo -u postgres psql -d pdns_admin_db -c "DELETE FROM \"user\" WHERE username = 'kkorablin';"
+
+# Генерируем хэш и вставляем через Python (без ручного экранирования)
+cd /opt/powerdns-admin
+source venv/bin/activate
+
+python3 <<'EOF'
+import bcrypt
+from powerdnsadmin import create_app
+from powerdnsadmin.models import db, User
+
+app = create_app()
+with app.app_context():
+    # Генерируем хэш
+    password = 'PASS123'
+    hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    print(f"Хэш: {hashed}")
+    
+    # Создаём пользователя через ORM (правильный способ)
+    new_user = User(
+        username='kkorablin',
+        password=hashed,
+        email='k@runtel.ru',
+        confirmed=1,
+        role_id=1
+    )
+    db.session.add(new_user)
+    db.session.commit()
+    print("✅ Пользователь создан через ORM")
+    
+    # Проверяем
+    user = db.session.query(User).filter_by(username='kkorablin').first()
+    is_valid = bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8'))
+    print(f"Пароль верный: {is_valid}")
+EOF
+
+deactivate
+DELETE 1
+Хэш: $2b$12$1sLqDMN/WsNm/RdWdCsaQ.l/9maLqzqEYLjyJAI4ULVKax8J9bYE2
+✅ Пользователь создан через ORM
+Пароль верный: True
+root@pwdns1 /opt/powerdns-admin
+12:14:07 # # Проверяем через curl (логин)
+curl -X POST http://127.0.0.1:8081/api/v1/servers/localhost/zones -H "X-API-Key: xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL"
+Bad Requestroot@pwdns1 /opt/powerdns-admin
+12:14:12 # 
+```
+
 ---
 
 ### Важное замечание
