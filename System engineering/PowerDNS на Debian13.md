@@ -1648,15 +1648,16 @@ sudo -u postgres psql -d pdns_admin_db -c "SELECT id, username, email, role_id F
 cd /opt/powerdns-admin
 source venv/bin/activate
 
+# Генерируем хэш
+HASH=$(python3 -c "import bcrypt; print(bcrypt.hashpw(b'$PASSWORD', bcrypt.gensalt()).decode('utf-8'))")
+HASH_ESCAPED=$(echo "$HASH" | sed 's/\$/\\$/g')
+echo "Хэш: $HASH"
+
 # Задаём параметры
 USERNAME="kkorablin"
 PASSWORD="PASS123"
 EMAIL="k@runtel.ru"
 ROLE_ID=1  # 1=Administrator, 2=Operator, 3=User
-
-# Генерируем хэш
-HASH=$(python3 -c "import bcrypt; print(bcrypt.hashpw(b'$PASSWORD', bcrypt.gensalt()).decode('utf-8'))")
-HASH_ESCAPED=$(echo "$HASH" | sed 's/\$/\\$/g')
 
 # Добавляем пользователя
 sudo -u postgres psql -d pdns_admin_db <<EOF
