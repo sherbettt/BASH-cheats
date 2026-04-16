@@ -1508,18 +1508,21 @@ pwdns2 (192.168.97.67)
 <br/>
 
 
+Вы правы! Исправляю. Вот полная инструкция по добавлению пользователя в администраторы напрямую через SQL.
+
+---
+
 ## Добавление пользователя через SQL с генерацией bcrypt хэша
 
 ### Что такое bcrypt хэш?
 
-PowerDNS-Admin **не хранит пароли в открытом виде**. Вместо этого он хранит **хэш** — это результат работы специального алгоритма (bcrypt), который превращает пароль в уникальную строку фиксированной длины. Хэш невозможно превратить обратно в пароль, но при каждой попытке входа система может проверить, соответствует ли введённый пароль сохранённому хэшу.
+PowerDNS-Admin не хранит пароли в открытом виде. Вместо этого он хранит **хэш** — результат работы алгоритма bcrypt, который превращает пароль в уникальную строку фиксированной длины. Хэш невозможно превратить обратно в пароль, но при каждой попытке входа система может проверить, соответствует ли введённый пароль сохранённому хэшу.
 
 **Пример хэша для пароля `pEhBYZFjDGEa`:**
 ```
 $2b$12$8X8runPwdnS8X8runPwdnSOYKjYk6fB6fYk6fB6fYk6fB6fYk6fB6f
 ```
 
-Где:
 | Часть | Значение |
 |-------|----------|
 | `$2b$` | Версия bcrypt |
@@ -1567,9 +1570,9 @@ $2b$12$8X8runPwdnS8X8runPwdnSOYKjYk6fB6fYk6fB6fYk6fB6fYk6fB6f
 
 | Роль | ID | Описание |
 |------|----|----------|
-| Administrator | 1 | Полный доступ |
-| Operator | 2 | Управление зонами |
-| User | 3 | Только свои зоны |
+| **Administrator** | 1 | Полный доступ |
+| **Operator** | 2 | Управление зонами |
+| **User** | 3 | Только свои зоны |
 
 ```bash
 sudo -u postgres psql -d pdns_admin_db -c "SELECT id, name FROM role;"
@@ -1577,7 +1580,7 @@ sudo -u postgres psql -d pdns_admin_db -c "SELECT id, name FROM role;"
 
 ---
 
-### Шаг 3: Добавить пользователя через SQL
+### Шаг 3: Добавить пользователя с ролью Administrator (ПРЯМОЙ SQL)
 
 ```bash
 sudo -u postgres psql -d pdns_admin_db <<EOF
@@ -1588,11 +1591,11 @@ INSERT INTO "user" (
     confirmed,
     role_id
 ) VALUES (
-    'newuser',                                    -- имя пользователя
+    'newadmin',                                    -- имя пользователя
     '\$2b\$12\$8X8runPwdnS8X8runPwdnSOYKjYk6fB6fYk6fB6fYk6fB6fYk6fB6f',  -- сгенерированный хэш
-    'newuser@local.host',                         -- email
-    1,                                            -- confirmed (1 = да, 0 = нет)
-    3                                             -- role_id (3 = User)
+    'newadmin@local.host',                         -- email
+    1,                                             -- confirmed (1 = да, 0 = нет)
+    1                                              -- role_id = 1 (Administrator!)
 );
 EOF
 ```
@@ -1607,9 +1610,18 @@ EOF
 sudo -u postgres psql -d pdns_admin_db -c "SELECT id, username, email, role_id, confirmed FROM \"user\";"
 ```
 
+**Ожидаемый вывод:**
+```
+ id | username |      email       | role_id | confirmed 
+----+----------+------------------+---------+-----------
+  5 | admin    | admin@local.host |       1 |         1
+  6 | ipetrov  | i@runtel.ru      |       1 |         1
+  7 | newadmin | newadmin@local.host |     1 |         1
+```
+
 ---
 
-### Пример: создать пользователя с ролью Administrator
+### Пример: полный скрипт для создания администратора (одной командой)
 
 ```bash
 # 1. Генерируем хэш для пароля
@@ -1622,7 +1634,7 @@ deactivate
 # 2. Экранируем $ для SQL
 HASH_ESCAPED=$(echo "$HASH" | sed 's/\$/\\$/g')
 
-# 3. Добавляем пользователя
+# 3. Добавляем пользователя с ролью Administrator
 sudo -u postgres psql -d pdns_admin_db <<EOF
 INSERT INTO "user" (username, password, email, confirmed, role_id)
 VALUES ('admin_new', '$HASH_ESCAPED', 'admin_new@local.host', 1, 1);
@@ -1636,12 +1648,12 @@ sudo -u postgres psql -d pdns_admin_db -c "SELECT id, username, email, role_id F
 
 ### Важное замечание
 
-**В PowerDNS-Admin пароли хэшируются с помощью bcrypt, НЕ через werkzeug.generate_password_hash!**
+В PowerDNS-Admin пароли хэшируются с помощью **bcrypt**, НЕ через `werkzeug.generate_password_hash`!
 
 | Метод | Результат | Совместимость с PDNS-Admin |
 |-------|-----------|---------------------------|
-| `bcrypt.hashpw()` | `$2b$12$...` (60 символов) | ✅ Да |
-| `werkzeug.generate_password_hash()` | `pbkdf2:sha256:600000$...` (102 символа) | ❌ Нет |
+| `bcrypt.hashpw()` | `$2b$12$...` (60 символов) | ✅ **Да** |
+| `werkzeug.generate_password_hash()` | `pbkdf2:sha256:600000$...` (102 символа) | ❌ **Нет** |
 
 Поэтому при добавлении пользователя через SQL **обязательно** используйте bcrypt хэш, сгенерированный как показано выше.
 
