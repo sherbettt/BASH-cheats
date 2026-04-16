@@ -1403,10 +1403,246 @@ sudo systemctl status powerdns-admin
 
 ----------------------------------------------------------------
 <br/>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----------------------------------------------------------------
+<br/>
 <br/>
 
 
 
+# К каким базам данных подключены все три сервиса.
 
+## 1. PowerDNS Authoritative Server (pdns)
+
+```bash
+# На pwdns1:
+grep -E "gpgsql-host|gpgsql-dbname" /etc/powerdns/pdns.conf
+
+# На pwdns2:
+grep -E "gpgsql-host|gpgsql-dbname" /etc/powerdns/pdns.conf
+```
+
+**Ожидаемый вывод:** Оба должны указывать на `localhost` и `pdns_db` (каждый свою локальную БД).
+
+## 2. PowerDNS-Admin (веб-интерфейс)
+
+```bash
+# На pwdns1:
+grep -E "SQLA_DB_HOST|SQLA_DB_NAME|SQLA_DB_TYPE" /opt/powerdns-admin/instance/config.py
+
+# На pwdns2:
+grep -E "SQLA_DB_HOST|SQLA_DB_NAME|SQLA_DB_TYPE" /opt/powerdns-admin/instance/config.py
+```
+
+**Ожидаемый вывод:**
+- **pwdns1:** `SQLA_DB_HOST = '127.0.0.1'` (своя локальная БД для админки)
+- **pwdns2:** `SQLA_DB_HOST = '192.168.97.57'` (общая БД на pwdns1)
+
+## 3. PostgreSQL (база данных)
+
+```bash
+# На pwdns1 проверяем, какие БД существуют
+sudo -u postgres psql -c "\l"
+
+# На pwdns1 проверяем, какие таблицы в БД pdns_admin_db
+sudo -u postgres psql -d pdns_admin_db -c "\dt"
+
+# На pwdns1 проверяем, какие пользователи в БД админки
+sudo -u postgres psql -d pdns_admin_db -c "SELECT id, username, email FROM \"user\";"
+
+# На pwdns2 проверяем подключение к БД на pwdns1
+PGPASSWORD=pEhBYZFjDGEa psql -h 192.168.97.57 -U pdns_admin -d pdns_admin_db -c "SELECT id, username, email FROM \"user\";"
+```
+
+## 4. Проверка репликации PostgreSQL (для DNS-зон)
+
+```bash
+# На pwdns1:
+sudo -u postgres psql -c "SELECT client_addr, state, sync_state FROM pg_stat_replication;"
+
+# На pwdns2:
+sudo -u postgres psql -c "SELECT pg_is_in_recovery();"
+# Должно вернуть 't' (true) — значит сервер в режиме реплики
+```
+
+## 5. Проверка, что PowerDNS-Admin видит одинаковых пользователей
+
+```bash
+# На pwdns1 через curl (API)
+curl -s -H "X-API-Key: xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL" http://127.0.0.1:8081/api/v1/servers/localhost/zones
+
+# На pwdns2 через curl (API)
+curl -s -H "X-API-Key: xK8mP9nQ2rT5wY7zA1bC3dE5fG7hJ9kL" http://127.0.0.1:8081/api/v1/servers/localhost/zones
+```
+
+## Схема подключений:
+
+```
+pwdns1 (192.168.97.57)
+├── PostgreSQL (pdns_db) ──────────► локальная БД для DNS-зон
+├── PostgreSQL (pdns_admin_db) ─────► локальная БД для админки
+├── PowerDNS (порт 53, 8081) ───────► использует локальную pdns_db
+└── PowerDNS-Admin (порт 9191) ─────► использует локальную pdns_admin_db
+
+pwdns2 (192.168.97.67)
+├── PostgreSQL (pdns_db) ──────────► локальная БД для DNS-зон (реплика с pwdns1)
+├── PowerDNS (порт 53, 8081) ───────► использует локальную pdns_db
+└── PowerDNS-Admin (порт 9191) ─────► использует БД на pwdns1 (192.168.97.57)
+```
+
+----------------------------------------------------------------
+<br/>
+<br/>
+
+
+## Добавление пользователя через SQL с генерацией bcrypt хэша
+
+### Что такое bcrypt хэш?
+
+PowerDNS-Admin **не хранит пароли в открытом виде**. Вместо этого он хранит **хэш** — это результат работы специального алгоритма (bcrypt), который превращает пароль в уникальную строку фиксированной длины. Хэш невозможно превратить обратно в пароль, но при каждой попытке входа система может проверить, соответствует ли введённый пароль сохранённому хэшу.
+
+**Пример хэша для пароля `pEhBYZFjDGEa`:**
+```
+$2b$12$8X8runPwdnS8X8runPwdnSOYKjYk6fB6fYk6fB6fYk6fB6fYk6fB6f
+```
+
+Где:
+| Часть | Значение |
+|-------|----------|
+| `$2b$` | Версия bcrypt |
+| `12` | Стоимость (2^12 = 4096 итераций) |
+| `8X8runPwdnS8X8runPwdnS` | Соль (случайные данные) |
+| `OYKjYk6f...` | Хэш пароля |
+
+---
+
+### Шаг 1: Сгенерировать bcrypt хэш для нужного пароля
+
+```bash
+cd /opt/powerdns-admin
+source venv/bin/activate
+
+python3 <<'EOF'
+import bcrypt
+
+# ЗАДАЙТЕ ЗДЕСЬ ВАШ ПАРОЛЬ
+password = 'pEhBYZFjDGEa'
+
+# Генерируем хэш
+hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+print(f"Пароль: {password}")
+print(f"Хэш для вставки в БД:\n{hashed.decode('utf-8')}")
+EOF
+
+deactivate
+```
+
+**Пример вывода:**
+```
+Пароль: pEhBYZFjDGEa
+Хэш для вставки в БД:
+$2b$12$8X8runPwdnS8X8runPwdnSOYKjYk6fB6fYk6fB6fYk6fB6fYk6fB6f
+```
+
+> ⚠️ **Важно:** У вас сгенерируется **свой уникальный хэш** (соль каждый раз разная). Используйте ТОТ хэш, который вывела команда, не копируйте из примера.
+
+---
+
+### Шаг 2: Узнать ID роли
+
+В PowerDNS-Admin есть три роли:
+
+| Роль | ID | Описание |
+|------|----|----------|
+| Administrator | 1 | Полный доступ |
+| Operator | 2 | Управление зонами |
+| User | 3 | Только свои зоны |
+
+```bash
+sudo -u postgres psql -d pdns_admin_db -c "SELECT id, name FROM role;"
+```
+
+---
+
+### Шаг 3: Добавить пользователя через SQL
+
+```bash
+sudo -u postgres psql -d pdns_admin_db <<EOF
+INSERT INTO "user" (
+    username,
+    password,
+    email,
+    confirmed,
+    role_id
+) VALUES (
+    'newuser',                                    -- имя пользователя
+    '\$2b\$12\$8X8runPwdnS8X8runPwdnSOYKjYk6fB6fYk6fB6fYk6fB6fYk6fB6f',  -- сгенерированный хэш
+    'newuser@local.host',                         -- email
+    1,                                            -- confirmed (1 = да, 0 = нет)
+    3                                             -- role_id (3 = User)
+);
+EOF
+```
+
+> ⚠️ **Важно:** В SQL-запросе знак `$` нужно экранировать как `\$`. То есть хэш `$2b$12$abc...` записывается как `\$2b\$12\$abc...`
+
+---
+
+### Шаг 4: Проверить, что пользователь создан
+
+```bash
+sudo -u postgres psql -d pdns_admin_db -c "SELECT id, username, email, role_id, confirmed FROM \"user\";"
+```
+
+---
+
+### Пример: создать пользователя с ролью Administrator
+
+```bash
+# 1. Генерируем хэш для пароля
+cd /opt/powerdns-admin
+source venv/bin/activate
+HASH=$(python3 -c "import bcrypt; print(bcrypt.hashpw(b'pEhBYZFjDGEa', bcrypt.gensalt()).decode('utf-8'))")
+echo "Хэш: $HASH"
+deactivate
+
+# 2. Экранируем $ для SQL
+HASH_ESCAPED=$(echo "$HASH" | sed 's/\$/\\$/g')
+
+# 3. Добавляем пользователя
+sudo -u postgres psql -d pdns_admin_db <<EOF
+INSERT INTO "user" (username, password, email, confirmed, role_id)
+VALUES ('admin_new', '$HASH_ESCAPED', 'admin_new@local.host', 1, 1);
+EOF
+
+# 4. Проверяем
+sudo -u postgres psql -d pdns_admin_db -c "SELECT id, username, email, role_id FROM \"user\";"
+```
+
+---
+
+### Важное замечание
+
+**В PowerDNS-Admin пароли хэшируются с помощью bcrypt, НЕ через werkzeug.generate_password_hash!**
+
+| Метод | Результат | Совместимость с PDNS-Admin |
+|-------|-----------|---------------------------|
+| `bcrypt.hashpw()` | `$2b$12$...` (60 символов) | ✅ Да |
+| `werkzeug.generate_password_hash()` | `pbkdf2:sha256:600000$...` (102 символа) | ❌ Нет |
+
+Поэтому при добавлении пользователя через SQL **обязательно** используйте bcrypt хэш, сгенерированный как показано выше.
 
 
