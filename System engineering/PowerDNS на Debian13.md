@@ -2084,4 +2084,80 @@ PowerDNS-Admin (создание/вход пользователя)
 <br/>
 
 
+### Как узнать зоны DNS и записи
+```bash
+root@pwdns1 /etc/powerdns
+09:52:27 # sudo -u postgres psql -d pdns_db -c "\dt"
+            List of relations
+ Schema |      Name      | Type  | Owner 
+--------+----------------+-------+-------
+ public | comments       | table | pdns
+ public | cryptokeys     | table | pdns
+ public | domainmetadata | table | pdns
+ public | domains        | table | pdns
+ public | records        | table | pdns
+ public | supermasters   | table | pdns
+ public | tsigkeys       | table | pdns
+(7 rows)
+
+root@pwdns1 /etc/powerdns
+09:53:06 # sudo -u postgres psql -d pdns_db -c "SELECT name, content, ttl FROM records WHERE type='A';"
+          name           |   content    | ttl 
+-------------------------+--------------+-----
+ test.test.ru.domain.com | 192.168.87.2 |  60
+ cc.cc.local             | 127.0.0.1    |  60
+ lk.cc.local             | 127.0.0.1    |  60
+ cc.borishof.ru          | 10.77.2.30   |  60
+ fi.borishof.ru          | 10.77.2.30   |  60
+ lk.borishof.ru          | 10.77.2.30   |  60
+ lktest.borishof.ru      | 10.77.1.54   |  60
+ rttest.borishof.ru      | 10.77.1.54   |  60
+ tfi.borishof.ru         | 10.77.1.54   |  60
+(9 rows)
+
+root@pwdns1 /etc/powerdns
+09:52:23 # sudo -u postgres psql -d pdns_db -c "SELECT name, content FROM records WHERE type='SOA';"
+        name        |                                              content                                               
+--------------------+----------------------------------------------------------------------------------------------------
+ test.ru.domain.com | a.misconfigured.dns.server.invalid hostmaster.test.ru.domain.com 2026041602 10800 3600 604800 3600
+ cc.local           | a.misconfigured.dns.server.invalid hostmaster.cc.local 1776416908 10800 3600 604800 3600
+ borishof.ru        | a.misconfigured.dns.server.invalid hostmaster.borishof.ru 2026041706 10800 3600 604800 3600
+(3 rows)
+
+root@pwdns1 /etc/powerdns
+09:58:09 # sudo -u postgres psql -d pdns_db -c "SELECT * FROM records" | ccze -A
+ id | domain_id |          name           | type |                                              content                                               | ttl  | prio | disabled | ordername | auth  
+----+-----------+-------------------------+------+----------------------------------------------------------------------------------------------------+------+------+----------+-----------+------ 
+  3 |         1 | test.test.ru.domain.com | A    | 192.168.87.2                                                                                       |   60 |    0 | f        |           | t 
+  4 |         1 | test.ru.domain.com      | SOA  | a.misconfigured.dns.server.invalid hostmaster.test.ru.domain.com 2026041602 10800 3600 604800 3600 | 3600 |    0 | f        |           | t 
+ 31 |         3 | cc.cc.local             | A    | 127.0.0.1                                                                                          |   60 |    0 | f        |           | t 
+ 32 |         3 | lk.cc.local             | A    | 127.0.0.1                                                                                          |   60 |    0 | f        |           | t 
+ 33 |         3 | cc.local                | SOA  | a.misconfigured.dns.server.invalid hostmaster.cc.local 1776416908 10800 3600 604800 3600           | 3600 |    0 | f        |           | t 
+ 34 |         2 | cc.borishof.ru          | A    | 10.77.2.30                                                                                         |   60 |    0 | f        |           | t 
+ 35 |         2 | fi.borishof.ru          | A    | 10.77.2.30                                                                                         |   60 |    0 | f        |           | t 
+ 36 |         2 | lk.borishof.ru          | A    | 10.77.2.30                                                                                         |   60 |    0 | f        |           | t 
+ 37 |         2 | lktest.borishof.ru      | A    | 10.77.1.54                                                                                         |   60 |    0 | f        |           | t 
+ 38 |         2 | rttest.borishof.ru      | A    | 10.77.1.54                                                                                         |   60 |    0 | f        |           | t 
+ 39 |         2 | tfi.borishof.ru         | A    | 10.77.1.54                                                                                         |   60 |    0 | f        |           | t 
+ 40 |         2 | borishof.ru             | SOA  | a.misconfigured.dns.server.invalid hostmaster.borishof.ru 2026041706 10800 3600 604800 3600        | 3600 |    0 | f        |           | t 
+(12 rows) 
+
+```
+
+### Как узнать пользователей
+```bash
+root@pwdns1 /etc/powerdns
+09:51:50 # sudo -u postgres psql -d pdns_db -c "SELECT id, name, type FROM domains;"
+ id |        name        |  type  
+----+--------------------+--------
+  1 | test.ru.domain.com | NATIVE
+  2 | borishof.ru        | NATIVE
+  3 | cc.local           | NATIVE
+(3 rows)
+```
+
+
+
+
+
 
