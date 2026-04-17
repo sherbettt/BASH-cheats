@@ -1152,7 +1152,9 @@ sudo mcedit /opt/powerdns-admin/instance/config.py
 
 **Содержимое `/opt/powerdns-admin/instance/config.py` на pwdns1:**
 
+Будет приведён весь вариант файла с учётом всех настроек
 ```python
+06:01:10 # ccat /opt/powerdns-admin/instance/config.py
 import os
 
 SECRET_KEY = 'C1vD9kraoNdZP3CL9QTc1kpiVZ8rflm4fuuhLwAi'
@@ -1200,9 +1202,17 @@ LOGIN_CAPTCHA_ENABLE = False
 REGISTER_CAPTCHA_ENABLE = False
 SIGNUP_ENABLED = True
 
-# для настройки NGINX
-#PREFERRED_URL_SCHEME = 'https'
+PREFERRED_URL_SCHEME = 'https'
+SERVER_NAME = 'pwdns.runtel.ru'
+SERVER_EXTERNAL_SSL = True
 
+
+# OIDC настройки
+OIDC_ENABLED = True
+OIDC_CLIENT_ID = 'powerdns-admin'
+OIDC_CLIENT_SECRET = 'yU9vY9LMSQikT8tCjMstE1AkjVHMOT8c' # получаем, сгенерирова на https://sso.runtel.ru:8443/admin/master/console/#/runtel/clients/9fb686d4-953e-4c9d-af33-86e21ac72e84/credentials
+OIDC_ISSUER = 'https://sso.runtel.ru:8443/realms/runtel'
+OIDC_SCOPES = 'openid profile email'
 ```
 
 ### 2.13.4 Изменение конфигурации на pwdns2
@@ -1245,6 +1255,9 @@ MAIL_PORT = 25
 MAIL_USE_TLS = False
 MAIL_USE_SSL = False
 MAIL_DEFAULT_SENDER = 'noreply@local.host'
+
+# Отключаем запись истории в БД (используем файлы)
+#LOG_HISTORY = False
 
 SESSION_TYPE = 'filesystem'
 PERMANENT_SESSION_LIFETIME = 86400
