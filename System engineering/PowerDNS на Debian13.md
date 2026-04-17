@@ -2156,7 +2156,74 @@ root@pwdns1 /etc/powerdns
 (3 rows)
 ```
 
+### Как узнать структуру таблицы (какие колонки)
+```bash
+root@pwdns1 /etc/powerdns
+10:00:23 # sudo -u postgres psql -d pdns_admin_db -c "\dt"
+                  List of relations
+ Schema |          Name          | Type  |   Owner    
+--------+------------------------+-------+------------
+ public | account                | table | pdns_admin
+ public | account_user           | table | pdns_admin
+ public | alembic_version        | table | pdns_admin
+ public | apikey                 | table | pdns_admin
+ public | apikey_account         | table | pdns_admin
+ public | domain                 | table | pdns_admin
+ public | domain_apikey          | table | pdns_admin
+ public | domain_setting         | table | pdns_admin
+ public | domain_template        | table | pdns_admin
+ public | domain_template_record | table | pdns_admin
+ public | domain_user            | table | pdns_admin
+ public | history                | table | pdns_admin
+ public | role                   | table | pdns_admin
+ public | sessions               | table | pdns_admin
+ public | setting                | table | pdns_admin
+ public | user                   | table | pdns_admin
+(16 rows)
 
+root@pwdns1 /etc/powerdns
+10:03:34 # sudo -u postgres psql -d pdns_admin_db -c "\d domain"
+                                        Table "public.domain"
+     Column      |          Type          | Collation | Nullable |              Default               
+-----------------+------------------------+-----------+----------+------------------------------------
+ id              | integer                |           | not null | nextval('domain_id_seq'::regclass)
+ name            | character varying(255) |           |          | 
+ master          | character varying(128) |           |          | 
+ type            | character varying(8)   |           | not null | 
+ serial          | bigint                 |           |          | 
+ notified_serial | bigint                 |           |          | 
+ last_check      | integer                |           |          | 
+ dnssec          | integer                |           |          | 
+ account_id      | integer                |           |          | 
+Indexes:
+    "domain_pkey" PRIMARY KEY, btree (id)
+    "ix_domain_name" UNIQUE, btree (name)
+Foreign-key constraints:
+    "domain_account_id_fkey" FOREIGN KEY (account_id) REFERENCES account(id)
+Referenced by:
+    TABLE "domain_apikey" CONSTRAINT "domain_apikey_domain_id_fkey" FOREIGN KEY (domain_id) REFERENCES domain(id)
+    TABLE "domain_setting" CONSTRAINT "domain_setting_domain_id_fkey" FOREIGN KEY (domain_id) REFERENCES domain(id)
+    TABLE "domain_user" CONSTRAINT "domain_user_domain_id_fkey" FOREIGN KEY (domain_id) REFERENCES domain(id)
+    TABLE "history" CONSTRAINT "history_domain_id_fkey" FOREIGN KEY (domain_id) REFERENCES domain(id)
+
+root@pwdns1 /etc/powerdns
+10:04:39 # sudo -u postgres psql -d pdns_admin_db -c "\d history"
+                                        Table "public.history"
+   Column   |            Type             | Collation | Nullable |               Default               
+------------+-----------------------------+-----------+----------+-------------------------------------
+ id         | integer                     |           | not null | nextval('history_id_seq'::regclass)
+ msg        | character varying(256)      |           |          | 
+ detail     | text                        |           |          | 
+ created_by | character varying(128)      |           |          | 
+ created_on | timestamp without time zone |           |          | 
+ domain_id  | integer                     |           |          | 
+Indexes:
+    "history_pkey" PRIMARY KEY, btree (id)
+    "ix_history_created_on" btree (created_on)
+Foreign-key constraints:
+    "history_domain_id_fkey" FOREIGN KEY (domain_id) REFERENCES domain(id)
+
+```
 
 
 
