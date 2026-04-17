@@ -1800,8 +1800,88 @@ Bad Requestroot@pwdns1 /opt/powerdns-admin
 
 
 
+## 3. Интеграция с SSO Keycloak.
 
+### 1. В Keycloak (Admin Console)
 
+**Client:** `powerdns-admin`
+
+| Поле | Значение |
+|------|----------|
+| **Client ID** | `powerdns-admin` |
+| **Client authentication** | `On` |
+| **Valid redirect URIs** | `https://pwdns.runtel.ru/oidc/authorized`<br>`https://pwdns.runtel.ru/*`<br>`http://localhost:9191/oidc/authorized` |
+| **Web origins** | `https://pwdns.runtel.ru`<br>`+` |
+| **Root URL** | (оставить пустым) |
+
+**Client Secret** (вкладка Credentials):  
+`yU9vY9LMSQikT8tCjMstE1AkjVHMOT8c`
+
+---
+
+### 2. В PowerDNS-Admin (файл конфигурации)
+
+**Файл:** `/opt/powerdns-admin/instance/config.py`
+
+```python
+PREFERRED_URL_SCHEME = 'https'
+SERVER_NAME = 'pwdns.runtel.ru'
+SERVER_EXTERNAL_SSL = True
+```
+
+---
+
+### 3. В PowerDNS-Admin (веб-интерфейс)
+
+**Страница:** `Admin → Settings → Authentication`  
+**Включить:** `OpenID Connect OAuth`
+
+| Поле | Значение |
+|------|----------|
+| **Client ID** | `powerdns-admin` |
+| **Client Secret** | `yU9vY9LMSQikT8tCjMstE1AkjVHMOT8c` |
+| **Scope** | `openid profile email` |
+| **API URL** | `https://sso.runtel.ru:8443/realms/runtel/protocol/openid-connect/userinfo` |
+| **Metadata URL** | `https://sso.runtel.ru:8443/realms/runtel/.well-known/openid-configuration` |
+| **Logout URL** | `https://sso.runtel.ru:8443/realms/runtel/protocol/openid-connect/logout` |
+| **Username** | `preferred_username` |
+| **Email** | `email` |
+| **First Name** | `given_name` |
+| **Last Name** | `family_name` |
+
+---
+
+### 4. В Nginx (обратный прокси)
+
+**Файл:** `/etc/nginx/sites-available/powerdns-admin`
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:9191;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+---
+
+### Итоговая схема:
+
+```
+PowerDNS-Admin (pwdns.runtel.ru:443)
+        │
+        │ OIDC (redirect_uri)
+        ▼
+Keycloak (sso.runtel.ru:8443/realms/runtel)
+        │
+        │ авторизация пользователя
+        ▼
+PowerDNS-Admin (создание/вход пользователя)
+```
+----------------------------------------------------------------
+<br/>
 
 
 
