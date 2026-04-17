@@ -1809,6 +1809,172 @@ Bad Requestroot@pwdns1 /opt/powerdns-admin
 
 ----------------------------------------------------------------
 <br/>
+
+
+### Ситуация
+Изначально серверы находились в подсети `192.168.97.0/23`:
+- pwdns1: `192.168.97.57`
+- pwdns2: `192.168.97.67`
+
+После переноса в новую подсеть `192.168.46.0/24`:
+- pwdns1: `192.168.46.21`
+- pwdns2: `192.168.46.22`
+
+
+
+## Какие файлы пришлось править
+
+### 1. Конфигурация PostgreSQL (`pg_hba.conf`)
+
+**Файл:** `/etc/postgresql/17/main/pg_hba.conf`
+
+**Что меняли:** IP-адреса для репликации и доступа к БД
+
+**Было:**
+```conf
+host    replication     replicator      192.168.97.67/32        md5
+host    pdns_db         pdns            192.168.97.67/32        md5
+host    pdns_db         pdns            192.168.97.57/32        md5
+host    postgres        replicator      192.168.97.67/32        md5
+host    pdns_admin_db   pdns_admin      192.168.97.67/32        md5
+```
+
+**Стало:**
+```conf
+host    replication     replicator      192.168.46.22/32        md5
+host    pdns_db         pdns            192.168.46.22/32        md5
+host    pdns_db         pdns            192.168.46.21/32        md5
+host    postgres        replicator      192.168.46.22/32        md5
+host    pdns_admin_db   pdns_admin      192.168.46.22/32        md5
+```
+
+**Зачем:** PostgreSQL должен знать, с каких IP-адресов разрешены подключения для репликации и доступа к базам данных.
+
+
+
+### 2. Конфигурация PowerDNS Authoritative (`pdns.conf`)
+
+**Файл:** `/etc/powerdns/pdns.conf`
+
+**Что меняли:** IP-адреса для AXFR трансферов
+
+**Было:**
+```ini
+allow-axfr-ips=192.168.97.67    # на pwdns1
+allow-axfr-ips=192.168.97.57    # на pwdns2
+```
+
+**Стало:**
+```ini
+allow-axfr-ips=192.168.46.22    # на pwdns1
+allow-axfr-ips=192.168.46.21    # на pwdns2
+```
+
+**Зачем:** PowerDNS использует AXFR для передачи зон между серверами. Нужно указать актуальные IP соседних серверов.
+
+---
+
+### 3. Конфигурация PowerDNS-Admin (`config.py`)
+
+**Файл:** `/opt/powerdns-admin/instance/config.py`
+
+**Что меняли:** IP-адрес для подключения к общей БД
+
+**Было:**
+```python
+SQLA_DB_HOST = '192.168.97.57'
+```
+
+**Стало:**
+```python
+SQLA_DB_HOST = '192.168.46.21'
+```
+
+**Зачем:** PowerDNS-Admin на pwdns2 подключается к общей БД на pwdns1. IP-адрес изменился.
+
+---
+
+### 4. Конфигурация Nginx (шлюз)
+
+**Файл:** `/etc/nginx/sites-available/powerdns-admin` (на dmzgateway1)
+
+**Что меняли:** IP-адрес бэкенда
+
+**Было:**
+```nginx
+proxy_pass http://192.168.97.57:9191;
+```
+
+**Стало:**
+```nginx
+proxy_pass http://192.168.46.21:9191;
+```
+
+**Зачем:** Nginx на шлюзе проксирует запросы к PowerDNS-Admin. IP-адрес сервера изменился.
+
+---
+
+### 5. Настройка репликации PostgreSQL (команды)
+
+**Что делали:** Пересоздание репликации с новыми IP
+
+```bash
+# На pwdns2 очистили данные
+sudo rm -rf /var/lib/postgresql/17/main/*
+
+# Скопировали данные с нового IP мастера
+sudo -u postgres pg_basebackup -h 192.168.46.21 -D /var/lib/postgresql/17/main -U replicator -P -R -W
+```
+
+**Зачем:** При смене IP репликация ломается. Нужно пересоздать её с новыми адресами.
+
+---
+
+### 6. DNS/маршрутизация
+
+**Что делали:** Обновили DNS-записи и/или файл `/etc/hosts`
+
+```bash
+# На клиентских машинах
+echo "192.168.46.21 pwdns.runtel.ru" >> /etc/hosts
+```
+
+**Зачем:** Домен должен резолвиться в новый IP-адрес сервера.
+
+---
+
+## Порядок действий при смене IP
+
+| Шаг | Действие | Где |
+|-----|----------|-----|
+| 1 | Обновить `pg_hba.conf` | pwdns1 |
+| 2 | Перезапустить PostgreSQL | pwdns1 |
+| 3 | Обновить `pdns.conf` (allow-axfr-ips) | pwdns1, pwdns2 |
+| 4 | Перезапустить PowerDNS | pwdns1, pwdns2 |
+| 5 | Обновить `config.py` (SQLA_DB_HOST) | pwdns2 |
+| 6 | Перезапустить PowerDNS-Admin | pwdns2 |
+| 7 | Пересоздать репликацию PostgreSQL | pwdns2 |
+| 8 | Обновить Nginx (proxy_pass) | dmzgateway1 |
+| 9 | Обновить DNS/`/etc/hosts` | клиенты |
+
+---
+
+## Типичные ошибки при смене IP
+
+| Ошибка | Причина | Решение |
+|--------|---------|---------|
+| `REFUSED` от pwdns2 | Репликация сломалась | Пересоздать репликацию |
+| `Connection failed` в логах pdns | Неправильный пароль или IP в pdns.conf | Проверить `gpgsql-host` |
+| `no pg_hba.conf entry` | IP не добавлен в pg_hba.conf | Добавить новый IP |
+| 502 Bad Gateway | Nginx смотрит на старый IP | Обновить `proxy_pass` |
+| Редирект на старый IP | `SERVER_NAME` не обновлён | Проверить `config.py` |
+
+
+
+
+
+----------------------------------------------------------------
+<br/>
 <br/>
 
 
