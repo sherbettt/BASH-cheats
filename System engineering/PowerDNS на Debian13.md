@@ -2225,6 +2225,15 @@ Foreign-key constraints:
 
 ```
 
-
+### Alias для быстрой проверки
+```bash
+alias pdns-a='sudo -u postgres psql -d pdns_db -c "SELECT name, content FROM records WHERE type='\''A'\'';"'
+alias pdns-oidc='sudo -u postgres psql -d pdns_admin_db -c "SELECT name, value FROM setting WHERE name LIKE '\''oidc%'\'';"'
+alias pdns-records='sudo -u postgres psql -d pdns_db -c "SELECT name, type, content FROM records LIMIT 20;"'
+alias pdns-roles='sudo -u postgres psql -d pdns_admin_db -c "SELECT id, name FROM role;"'
+alias pdns-settings='sudo -u postgres psql -d pdns_admin_db -c "SELECT name, value FROM setting LIMIT 30;"'
+alias pdns-users='sudo -u postgres psql -d pdns_admin_db -c "SELECT id, username, email, role_id FROM \"user\";"'
+alias pdns-zones='sudo -u postgres psql -d pdns_db -c "SELECT id, name, type FROM domains;"'
+```
 
 
