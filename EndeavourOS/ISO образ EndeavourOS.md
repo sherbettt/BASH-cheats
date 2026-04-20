@@ -1,4 +1,3 @@
-
 # Создание универсального ISO образа EndeavourOS
 
 ## Оглавление
@@ -11,6 +10,8 @@
    - [Проблема 4.3: Не хватает места в EFI](#43-не-хватает-места-в-efi-образе-disk-full)
    - [Проблема 4.4: Отсутствуют модули ядра](#44-отсутствуют-модули-ядра)
    - [Проблема 4.5: Отсутствуют лицензии SPDX](#45-отсутствуют-лицензии-spdx)
+   - [Проблема 4.6: Отсутствует systemd-boot для UEFI](#46-отсутствует-systemd-boot-для-uefi)
+   - [Проблема 4.7: Пустой список пакетов вызывает ошибку](#47-пустой-список-пакетов-вызывает-ошибку)
 5. [Проверка и использование ISO](#5-проверка-и-использование-iso)
 
 ---
@@ -19,8 +20,10 @@
 
 ### 1.1 Установка необходимых пакетов
 ```bash
-pacman -S --needed archiso arch-install-scripts rsync zstd syslinux mkinitcpio
+pacman -S --needed archiso arch-install-scripts rsync zstd mkinitcpio
 ```
+
+**⚠️ Важно:** `syslinux` НЕ нужно устанавливать в основную систему - он устанавливается в live систему через `packages.x86_64`.
 
 ### 1.2 Проверка наличия ядер
 ```bash
@@ -30,10 +33,17 @@ ls -la /boot/
 
 ### 1.3 Если ядер нет - восстановление
 ```bash
-# Переустановка ядер
-pacman -S --overwrite='*' linux linux-lts
+# Устанавливаем mkinitcpio (КРИТИЧЕСКИ ВАЖНО!)
+pacman -S mkinitcpio
 
-# Генерация initramfs
+# Находим ядра в системе
+find /usr/lib/modules -name "vmlinuz*" 2>/dev/null
+
+# Копируем ядра в /boot
+cp /usr/lib/modules/*/vmlinuz /boot/vmlinuz-linux
+cp /usr/lib/modules/*-lts/vmlinuz /boot/vmlinuz-linux-lts
+
+# Генерируем initramfs
 mkinitcpio -P
 ```
 
@@ -63,10 +73,55 @@ WORK_DIR="/root/archlive-work"
 OUT_DIR="/root/archlive-out"
 SNAPSHOT_TAR="$WORK_DIR/rootfs.tar.zst"
 
+# Функция безопасного копирования файлов ядра (БЕЗ СИМЛИНКОВ!)
+safe_copy_kernel_files() {
+    local src_dir="$1"
+    local dst_dir="$2"
+    
+    mkdir -p "$dst_dir"
+    
+    for file in "$src_dir"/vmlinuz-* "$src_dir"/initramfs-*.img "$src_dir"/*-ucode.img; do
+        [ -e "$file" ] || continue
+        
+        if [ -f "$file" ] && [ ! -L "$file" ]; then
+            cp "$file" "$dst_dir/"
+            echo -e "${GREEN}  Копирован реальный файл: $(basename "$file")${NC}"
+        elif [ -L "$file" ]; then
+            local real_file=$(readlink -f "$file")
+            if [ -f "$real_file" ]; then
+                cp "$real_file" "$dst_dir/$(basename "$file")"
+                echo -e "${YELLOW}  Разрешён симлинк: $(basename "$file") -> $(basename "$real_file")${NC}"
+            fi
+        fi
+    done
+}
+
+# Функция очистки рекурсивных симлинков
+clean_recursive_symlinks() {
+    local dir="$1"
+    
+    if [ ! -d "$dir" ]; then
+        return
+    fi
+    
+    echo -e "${YELLOW}Проверка рекурсивных симлинков в $dir${NC}"
+    
+    find "$dir" -type l 2>/dev/null | while read symlink; do
+        local target=$(readlink "$symlink")
+        local link_name=$(basename "$symlink")
+        
+        if [ "$target" = "$link_name" ] || [ "$(readlink -f "$symlink" 2>/dev/null)" = "$(realpath "$symlink" 2>/dev/null)" ]; then
+            echo -e "${RED}  Удалён рекурсивный симлинк: $symlink${NC}"
+            rm -f "$symlink"
+        fi
+    done
+}
+
 # Проверка наличия ядер
 echo -e "${GREEN}=== Проверка ядер ===${NC}"
 if [ ! -f /boot/vmlinuz-linux ] && [ ! -f /boot/vmlinuz-linux-lts ]; then
     echo -e "${RED}ОШИБКА: Не найдены файлы ядра в /boot/${NC}"
+    echo -e "${YELLOW}Решение: find /usr/lib/modules -name 'vmlinuz*' -exec cp {} /boot/ \; && mkinitcpio -P${NC}"
     exit 1
 fi
 
@@ -78,88 +133,165 @@ else
 fi
 echo -e "${GREEN}Используется ядро: $KERNEL_NAME${NC}"
 
-# Очистка
-rm -rf "$WORK_DIR" "$OUT_DIR"
+# Очистка если указан флаг
+if [ "$1" = "--clean" ]; then
+    echo -e "${YELLOW}Очистка предыдущих сборок...${NC}"
+    rm -rf "$WORK_DIR" "$OUT_DIR"
+fi
 
-# 1/7: Установка пакетов
-echo -e "${GREEN}=== 1/7: Установка пакетов ===${NC}"
-pacman -S --needed --noconfirm archiso arch-install-scripts rsync zstd syslinux mkinitcpio
+# 1/7: Установка пакетов для сборки
+echo -e "${GREEN}=== 1/7: Установка пакетов для сборки ===${NC}"
+pacman -S --needed --noconfirm archiso arch-install-scripts rsync zstd mkinitcpio
 
 # 2/7: Подготовка профиля
 echo -e "${GREEN}=== 2/7: Подготовка профиля ===${NC}"
 mkdir -p "$WORK_DIR"
-cp -r /usr/share/archiso/configs/releng/ "$WORK_DIR/profile"
+if [ ! -d "$WORK_DIR/profile" ]; then
+    cp -r /usr/share/archiso/configs/releng/ "$WORK_DIR/profile"
+fi
 
-# 3/7: Добавление пакетов
-echo -e "${GREEN}=== 3/7: Добавление пакетов ===${NC}"
+# 3/7: МИНИМАЛЬНЫЙ список пакетов (только для загрузки!)
+echo -e "${GREEN}=== 3/7: Добавление МИНИМАЛЬНЫХ пакетов для загрузки ===${NC}"
 > "$WORK_DIR/profile/packages.x86_64"
 cat >> "$WORK_DIR/profile/packages.x86_64" << 'PKG_EOF'
-syslinux edk2-shell memtest86+ memtest86+-efi rsync tar zstd grub efibootmgr parted e2fsprogs dosfstools btrfs-progs xfsprogs arch-install-scripts networkmanager iwd dhcpcd linux-firmware sof-firmware amd-ucode intel-ucode xf86-video-vesa xf86-video-amdgpu xf86-video-intel pipewire pipewire-alsa pipewire-pulse wireplumber alsa-firmware dmidecode hwdetect inxi lshw pacman-contrib gparted ntfs-3g exfat-utils f2fs-tools htop btop git curl wget unzip p7zip screen tmux mc nano vim tree jq yq bash-completion mtr traceroute nmap
+syslinux
+edk2-shell
+memtest86+
+memtest86+-efi
 PKG_EOF
 
+echo -e "${YELLOW}ВНИМАНИЕ: Остальные пакеты будут взяты из снапшота системы${NC}"
+
 # 4/7: Создание снапшота
-echo -e "${GREEN}=== 4/7: Создание снапшота ===${NC}"
-mkdir -p "$WORK_DIR/rootfs"
-rsync -aHAX --numeric-ids --delete \
-  --exclude={"/proc/*","/sys/*","/dev/*","/run/*","/tmp/*","/mnt/*","/media/*","/lost+found","$WORK_DIR/*","/home/*/.cache/*","/var/cache/pacman/pkg/*","/var/log/*","/timeshift/*"} \
-  / "$WORK_DIR/rootfs/" 2>/dev/null || true
-
-# 5/7: Очистка
-echo -e "${GREEN}=== 5/7: Очистка ===${NC}"
-rm -f "$WORK_DIR/rootfs/etc/machine-id"
-rm -f "$WORK_DIR/rootfs/var/lib/dbus/machine-id"
-echo "endeavouros" > "$WORK_DIR/rootfs/etc/hostname"
-rm -rf "$WORK_DIR/rootfs/var/log/*" "$WORK_DIR/rootfs/var/tmp/*" "$WORK_DIR/rootfs/tmp/*"
-rm -rf "$WORK_DIR/rootfs/var/cache/pacman/pkg/*" "$WORK_DIR/rootfs/home/*/.cache/*" "$WORK_DIR/rootfs/timeshift"
-
-mkdir -p "$WORK_DIR/rootfs/boot"
-cp -r /boot/* "$WORK_DIR/rootfs/boot/" 2>/dev/null || true
-
-# 6/7: Сжатие
-echo -e "${GREEN}=== 6/7: Сжатие снапшота ===${NC}"
-tar --xattrs --acls --numeric-owner -C "$WORK_DIR/rootfs" -I 'zstd -19 -T0' -cpf "$SNAPSHOT_TAR" . 2>/dev/null || true
-rm -rf "$WORK_DIR/rootfs"
+if [ ! -f "$SNAPSHOT_TAR" ] || [ "$1" = "--refresh-snapshot" ]; then
+    echo -e "${GREEN}=== 4/7: Создание снапшота ===${NC}"
+    mkdir -p "$WORK_DIR/rootfs"
+    
+    echo -e "${YELLOW}Копирование системы (это может занять несколько минут)...${NC}"
+    rsync -aHAX --numeric-ids --delete \
+      --exclude={"/proc/*","/sys/*","/dev/*","/run/*","/tmp/*","/mnt/*","/media/*","/lost+found","$WORK_DIR/*","/home/*/.cache/*","/var/cache/pacman/pkg/*","/var/log/*","/timeshift/*","/root/archlive-*"} \
+      / "$WORK_DIR/rootfs/" 2>/dev/null || true
+    
+    echo -e "${GREEN}=== 5/7: Очистка и подготовка ===${NC}"
+    rm -f "$WORK_DIR/rootfs/etc/machine-id"
+    rm -f "$WORK_DIR/rootfs/var/lib/dbus/machine-id"
+    echo "endeavouros" > "$WORK_DIR/rootfs/etc/hostname"
+    rm -rf "$WORK_DIR/rootfs/var/log/*" "$WORK_DIR/rootfs/var/tmp/*" "$WORK_DIR/rootfs/tmp/*"
+    rm -rf "$WORK_DIR/rootfs/var/cache/pacman/pkg/*" "$WORK_DIR/rootfs/home/*/.cache/*"
+    rm -rf "$WORK_DIR/rootfs/timeshift" "$WORK_DIR/rootfs/root/archlive-*"
+    
+    safe_copy_kernel_files "/boot" "$WORK_DIR/rootfs/boot"
+    
+    echo -e "${GREEN}=== 6/7: Сжатие снапшота ===${NC}"
+    echo -e "${YELLOW}Это займет 15-20 минут...${NC}"
+    tar --xattrs --acls --numeric-owner -C "$WORK_DIR/rootfs" -I 'zstd -19 -T0' -cpf "$SNAPSHOT_TAR" . 2>/dev/null || true
+    rm -rf "$WORK_DIR/rootfs"
+else
+    echo -e "${GREEN}=== Снапшот уже существует, пропускаем ===${NC}"
+fi
 
 # 7/7: Сборка ISO
 echo -e "${GREEN}=== 7/7: Сборка ISO ===${NC}"
 mkdir -p "$WORK_DIR/profile/airootfs/opt/backup"
 cp "$SNAPSHOT_TAR" "$WORK_DIR/profile/airootfs/opt/backup/"
 
-# Копируем ядра
-mkdir -p "$WORK_DIR/profile/airootfs/boot"
-cp /boot/vmlinuz-$KERNEL_NAME "$WORK_DIR/profile/airootfs/boot/vmlinuz-$KERNEL_NAME"
-cp /boot/initramfs-$KERNEL_NAME.img "$WORK_DIR/profile/airootfs/boot/initramfs-$KERNEL_NAME.img"
-cp /boot/amd-ucode.img "$WORK_DIR/profile/airootfs/boot/" 2>/dev/null || true
+# Безопасное копирование файлов ядра
+echo -e "${YELLOW}Копирование файлов ядра...${NC}"
+safe_copy_kernel_files "/boot" "$WORK_DIR/profile/airootfs/boot"
 
-# СОЗДАЁМ profiledef.sh С УВЕЛИЧЕННЫМ РАЗМЕРОМ EFI
-cat > "$WORK_DIR/profile/profiledef.sh" << 'EOF'
+# Очистка от рекурсивных симлинков
+clean_recursive_symlinks "$WORK_DIR/profile/airootfs"
+
+# Копируем модули ядра
+echo -e "${YELLOW}Копирование модулей ядра...${NC}"
+mkdir -p "$WORK_DIR/profile/airootfs/usr/lib/modules"
+cp -r /usr/lib/modules/* "$WORK_DIR/profile/airootfs/usr/lib/modules/" 2>/dev/null || true
+
+# Копируем прошивки
+echo -e "${YELLOW}Копирование прошивок...${NC}"
+mkdir -p "$WORK_DIR/profile/airootfs/usr/lib/firmware"
+cp -r /usr/lib/firmware/* "$WORK_DIR/profile/airootfs/usr/lib/firmware/" 2>/dev/null || true
+
+# Копируем лицензии (ВАЖНО! Без этого ошибка)
+echo -e "${YELLOW}Копирование лицензий...${NC}"
+mkdir -p "$WORK_DIR/profile/airootfs/usr/share/licenses/spdx"
+cp -r /usr/share/licenses/* "$WORK_DIR/profile/airootfs/usr/share/licenses/" 2>/dev/null || true
+
+# Если нет SPDX лицензий - создаём заглушки
+if [ ! -f "$WORK_DIR/profile/airootfs/usr/share/licenses/spdx/GPL-2.0-only.txt" ]; then
+    echo "Создаём заглушки лицензий SPDX..."
+    for lic in GPL-2.0-only GPL-2.0-or-later GPL-3.0-only GPL-3.0-or-later \
+               LGPL-2.1-only LGPL-2.1-or-later LGPL-3.0-only MIT BSD-2-Clause \
+               BSD-3-Clause Apache-2.0 CC0-1.0; do
+        echo "License: $lic" > "$WORK_DIR/profile/airootfs/usr/share/licenses/spdx/${lic}.txt"
+    done
+fi
+
+# СОЗДАЁМ profiledef.sh с увеличенным размером EFI
+cat > "$WORK_DIR/profile/profiledef.sh" << EOF
 #!/usr/bin/env bash
-iso_name="archlinux"
-iso_label="ARCH_$(date +%Y%m)"
-iso_publisher="Arch Linux <https://archlinux.org>"
-iso_application="Arch Linux Live/Rescue DVD"
-iso_version="$(date +%Y.%m.%d)"
+iso_name="endeavouros"
+iso_label="ENDEAVOUR_\$(date +%Y%m)"
+iso_publisher="EndeavourOS <https://endeavouros.com>"
+iso_application="EndeavourOS Live/Rescue DVD"
+iso_version="\$(date +%Y.%m.%d)"
 install_dir="arch"
 buildmodes=('iso')
 bootmodes=('bios.syslinux' 'uefi.systemd-boot')
-efi_image_size="512"                     # <--- ЭТО ГЛАВНОЕ ДЛЯ EFI!
+efi_image_size="1024"
 pacman_conf="pacman.conf"
 airootfs_image_type="squashfs"
 airootfs_image_tool_options=('-comp' 'xz' '-Xbcj' 'x86' '-b' '1M' '-Xdict-size' '1M')
 file_permissions=(
   ["/etc/shadow"]="0:0:400"
   ["/root"]="0:0:750"
-  ["/usr/local/bin/choose-mirror"]="0:0:755"
-  ["/usr/local/bin/livecd-sound"]="0:0:755"
 )
 EOF
 
-# Копируем модули ядра
-mkdir -p "$WORK_DIR/profile/airootfs/usr/lib/modules"
-cp -r /usr/lib/modules/* "$WORK_DIR/profile/airootfs/usr/lib/modules/"
+# Создаём pacman.conf с РФ зеркалами
+cat > "$WORK_DIR/profile/pacman.conf" << 'PACMAN_EOF'
+[options]
+Architecture = auto
+SigLevel = Never
+LocalFileSigLevel = Optional
 
-# Копируем лицензии
-cp -r /usr/share/licenses/* "$WORK_DIR/profile/airootfs/usr/share/licenses/" 2>/dev/null || true
+[core]
+Server = http://mirror.yandex.ru/archlinux/$repo/os/$arch
+Server = http://archlinux.fast-ix.net/$repo/os/$arch
+Server = http://mirror.sba1.ru/archlinux/$repo/os/$arch
+Server = http://mirror.truenetwork.ru/archlinux/$repo/os/$arch
+Server = https://mirror.rackspace.com/archlinux/$repo/os/$arch
+
+[extra]
+Server = http://mirror.yandex.ru/archlinux/$repo/os/$arch
+Server = http://archlinux.fast-ix.net/$repo/os/$arch
+Server = http://mirror.sba1.ru/archlinux/$repo/os/$arch
+Server = http://mirror.truenetwork.ru/archlinux/$repo/os/$arch
+Server = https://mirror.rackspace.com/archlinux/$repo/os/$arch
+PACMAN_EOF
+
+# Создаём mirrorlist для live системы
+mkdir -p "$WORK_DIR/profile/airootfs/etc/pacman.d"
+cat > "$WORK_DIR/profile/airootfs/etc/pacman.d/mirrorlist" << 'MIRROR_EOF'
+Server = http://mirror.yandex.ru/archlinux/$repo/os/$arch
+Server = http://archlinux.fast-ix.net/$repo/os/$arch
+Server = http://mirror.sba1.ru/archlinux/$repo/os/$arch
+Server = http://mirror.truenetwork.ru/archlinux/$repo/os/$arch
+Server = https://mirror.rackspace.com/archlinux/$repo/os/$arch
+MIRROR_EOF
+
+# Создаём pacman.conf в airootfs
+cat > "$WORK_DIR/profile/airootfs/etc/pacman.conf" << 'PACMAN_EOF'
+[options]
+Architecture = auto
+SigLevel = Never
+
+[core]
+Include = /etc/pacman.d/mirrorlist
+
+[extra]
+Include = /etc/pacman.d/mirrorlist
+PACMAN_EOF
 
 # Создаём syslinux.cfg
 mkdir -p "$WORK_DIR/profile/syslinux"
@@ -167,250 +299,41 @@ cat > "$WORK_DIR/profile/syslinux/syslinux.cfg" << SYSLINUX_EOF
 DEFAULT arch
 LABEL arch
     LINUX /boot/vmlinuz-$KERNEL_NAME
-    APPEND initrd=/boot/initramfs-$KERNEL_NAME.img archisobasedir=arch archisolabel=ARCH_$(date +%Y%m)
-SYSLINUX_EOF
-
-cp /usr/lib/syslinux/bios/*.c32 "$WORK_DIR/profile/syslinux/" 2>/dev/null || true
-
-# Сборка
-mkarchiso -v -w "$WORK_DIR/work" -o "$OUT_DIR" "$WORK_DIR/profile"
-
-echo ""
-echo -e "${GREEN}✅ ISO создан!${NC}"
-ls -lh "$OUT_DIR"/*.iso
-```
-
-<details>
-<summary>❗ Альт. вариант ❗</summary>
-
-```bash
-#!/bin/bash
-set -e
-
-# Цвета для вывода
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-RED='\033[0;31m'
-NC='\033[0m'
-
-echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║     Создание УНИВЕРСАЛЬНОГО ISO образа EndeavourOS          ║${NC}"
-echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
-
-# Настройки
-WORK_DIR="/root/archlive-work"
-OUT_DIR="/root/archlive-out"
-SNAPSHOT_TAR="$WORK_DIR/rootfs.tar.zst"
-
-# Проверка наличия ядер
-echo -e "${GREEN}=== Проверка ядер ===${NC}"
-if [ ! -f /boot/vmlinuz-linux ] && [ ! -f /boot/vmlinuz-linux-lts ]; then
-    echo -e "${RED}ОШИБКА: Не найдены файлы ядра в /boot/${NC}"
-    echo -e "${YELLOW}Переустановите ядро: pacman -S linux linux-lts${NC}"
-    exit 1
-fi
-
-# Определяем доступные ядра
-if [ -f /boot/vmlinuz-linux ]; then
-    KERNEL_NAME="linux"
-    KERNEL_VERSION=$(basename $(readlink -f /boot/vmlinuz-linux) | sed 's/vmlinuz-//')
-elif [ -f /boot/vmlinuz-linux-lts ]; then
-    KERNEL_NAME="linux-lts"
-    KERNEL_VERSION=$(basename $(readlink -f /boot/vmlinuz-linux-lts) | sed 's/vmlinuz-//')
-fi
-echo -e "${GREEN}Используется ядро: $KERNEL_NAME${NC}"
-
-# Очистка предыдущих попыток
-rm -rf "$WORK_DIR" "$OUT_DIR"
-
-echo -e "${GREEN}=== 1/7: Установка пакетов ===${NC}"
-pacman -S --needed --noconfirm archiso arch-install-scripts rsync zstd syslinux mkinitcpio
-
-echo -e "${GREEN}=== 2/7: Подготовка профиля ===${NC}"
-mkdir -p "$WORK_DIR"
-cp -r /usr/share/archiso/configs/releng/ "$WORK_DIR/profile"
-
-echo -e "${GREEN}=== 3/7: Добавление универсальных пакетов ===${NC}"
-> "$WORK_DIR/profile/packages.x86_64"
-
-cat >> "$WORK_DIR/profile/packages.x86_64" << 'PKG_EOF'
-# === ОБЯЗАТЕЛЬНЫЕ ПАКЕТЫ ДЛЯ ЗАГРУЗКИ ===
-syslinux
-edk2-shell
-memtest86+
-memtest86+-efi
-
-# === БАЗОВЫЕ УТИЛИТЫ ===
-rsync
-tar
-zstd
-grub
-efibootmgr
-parted
-e2fsprogs
-dosfstools
-btrfs-progs
-xfsprogs
-arch-install-scripts
-networkmanager
-iwd
-dhcpcd
-
-# === ПРОШИВКИ И ДРАЙВЕРЫ ===
-linux-firmware
-sof-firmware
-amd-ucode
-intel-ucode
-
-# === ВИДЕО ДРАЙВЕРЫ ===
-xf86-video-vesa
-xf86-video-amdgpu
-xf86-video-intel
-
-# === ЗВУК ===
-pipewire
-pipewire-alsa
-pipewire-pulse
-wireplumber
-alsa-firmware
-
-# === УТИЛИТЫ ===
-dmidecode
-hwdetect
-inxi
-lshw
-pacman-contrib
-gparted
-ntfs-3g
-exfat-utils
-f2fs-tools
-htop
-btop
-git
-curl
-wget
-unzip
-p7zip
-screen
-tmux
-mc
-nano
-vim
-tree
-jq
-yq
-bash-completion
-mtr
-traceroute
-nmap
-PKG_EOF
-
-echo -e "${GREEN}=== 4/7: Создание снапшота системы ===${NC}"
-echo -e "${YELLOW}Копирование вашей системы...${NC}"
-mkdir -p "$WORK_DIR/rootfs"
-
-rsync -aHAX --numeric-ids --delete \
-  --exclude={"/proc/*","/sys/*","/dev/*","/run/*","/tmp/*","/mnt/*","/media/*","/lost+found","$WORK_DIR/*","/home/*/.cache/*","/var/cache/pacman/pkg/*","/var/log/*","/timeshift/*"} \
-  / "$WORK_DIR/rootfs/" 2>/dev/null || true
-
-echo -e "${GREEN}=== 5/7: Очистка и подготовка к универсальности ===${NC}"
-
-# Удаление специфичных настроек
-rm -f "$WORK_DIR/rootfs/etc/machine-id"
-rm -f "$WORK_DIR/rootfs/var/lib/dbus/machine-id"
-echo "endeavouros" > "$WORK_DIR/rootfs/etc/hostname"
-
-# Очистка временных файлов
-rm -rf "$WORK_DIR/rootfs/var/log/*"
-rm -rf "$WORK_DIR/rootfs/var/tmp/*"
-rm -rf "$WORK_DIR/rootfs/tmp/*"
-rm -rf "$WORK_DIR/rootfs/var/cache/pacman/pkg/*"
-rm -rf "$WORK_DIR/rootfs/home/*/.cache/*"
-rm -rf "$WORK_DIR/rootfs/timeshift"
-
-# Копируем файлы ядра в правильное место в снапшоте
-mkdir -p "$WORK_DIR/rootfs/boot"
-cp -r /boot/* "$WORK_DIR/rootfs/boot/" 2>/dev/null || true
-
-echo -e "${GREEN}=== 6/7: Сжатие снапшота ===${NC}"
-echo -e "${YELLOW}Это займет 10-15 минут...${NC}"
-tar --xattrs --acls --numeric-owner \
-  -C "$WORK_DIR/rootfs" \
-  -I 'zstd -19 -T0' \
-  -cpf "$SNAPSHOT_TAR" . 2>/dev/null || true
-
-echo "Размер снапшота: $(du -h $SNAPSHOT_TAR | cut -f1)"
-rm -rf "$WORK_DIR/rootfs"
-
-echo -e "${GREEN}=== 7/7: Сборка ISO ===${NC}"
-mkdir -p "$WORK_DIR/profile/airootfs/opt/backup"
-cp "$SNAPSHOT_TAR" "$WORK_DIR/profile/airootfs/opt/backup/"
-
-# Копируем ядро и initramfs в правильные имена для archiso
-mkdir -p "$WORK_DIR/profile/airootfs/boot"
-cp /boot/vmlinuz-$KERNEL_NAME "$WORK_DIR/profile/airootfs/boot/vmlinuz-$KERNEL_NAME"
-cp /boot/initramfs-$KERNEL_NAME.img "$WORK_DIR/profile/airootfs/boot/initramfs-$KERNEL_NAME.img"
-
-# Создаем симлинки для archiso (он ищет initramfs-*.img)
-ln -sf "initramfs-$KERNEL_NAME.img" "$WORK_DIR/profile/airootfs/boot/initramfs-linux.img"
-ln -sf "vmlinuz-$KERNEL_NAME" "$WORK_DIR/profile/airootfs/boot/vmlinuz-linux"
-
-# Создаем правильный syslinux.cfg
-mkdir -p "$WORK_DIR/profile/syslinux"
-cat > "$WORK_DIR/profile/syslinux/syslinux.cfg" << SYSLINUX_EOF
-DEFAULT arch
-LABEL arch
-    LINUX /boot/vmlinuz-linux
-    APPEND initrd=/boot/initramfs-linux.img archisobasedir=arch archisolabel=ARCH_202604
+    APPEND initrd=/boot/initramfs-$KERNEL_NAME.img archisobasedir=arch archisolabel=ENDEAVOUR_\$(date +%Y%m)
     SAY Загрузка EndeavourOS
 SYSLINUX_EOF
 
-# Копируем необходимые файлы syslinux
+# Копируем syslinux модули
 cp /usr/lib/syslinux/bios/*.c32 "$WORK_DIR/profile/syslinux/" 2>/dev/null || true
-cp /usr/lib/syslinux/bios/ldlinux.c32 "$WORK_DIR/profile/syslinux/" 2>/dev/null || true
 
 # Сборка ISO
+echo -e "${GREEN}Запуск сборки ISO (это займет 20-40 минут)...${NC}"
 mkarchiso -v -w "$WORK_DIR/work" -o "$OUT_DIR" "$WORK_DIR/profile"
 
 echo ""
 echo -e "${GREEN}✅ ISO создан!${NC}"
 ls -lh "$OUT_DIR"/*.iso
-echo ""
-echo "Запись на флешку: dd if=$OUT_DIR/*.iso of=/dev/sdX bs=4M status=progress"
 ```
-</details>
-<br/>
-
 
 ---
 
 ## 3. Структура файлов archiso
 
-После подготовки профиля, структура каталогов выглядит так:
-
 ```
 /root/archlive-work/
 ├── profile/                          # Корень профиля сборки
-│   ├── profiledef.sh                 # ⭐ ГЛАВНЫЙ КОНФИГ (здесь меняем EFI размер)
-│   ├── packages.x86_64               # Список пакетов для Live системы
-│   ├── pacman.conf                   # Конфиг pacman для сборки
+│   ├── profiledef.sh                 # ⭐ ГЛАВНЫЙ КОНФИГ (EFI размер = 1024 MB)
+│   ├── packages.x86_64               # Только загрузочные пакеты!
+│   ├── pacman.conf                   # Конфиг с РФ зеркалами
 │   ├── syslinux/                     # Загрузчик для BIOS
-│   │   └── syslinux.cfg              # Конфиг загрузчика
-│   └── airootfs/                     # Корневая файловая система Live образа
+│   │   └── syslinux.cfg
+│   └── airootfs/                     # Корневая ФС live образа
 │       ├── boot/                     # Ядра и initramfs
-│       │   ├── vmlinuz-linux
-│       │   ├── initramfs-linux.img
-│       │   └── amd-ucode.img
-│       ├── opt/backup/               # Сюда кладём снапшот системы
-│       │   └── rootfs.tar.zst        # Ваш сжатый снапшот (4.3 ГБ)
-│       ├── usr/lib/modules/          # Модули ядра (критически важно!)
-│       │   ├── 6.18.22-1-lts/
-│       │   └── 6.19.11-arch1-1/
-│       └── usr/share/licenses/       # Лицензии (без них ошибка)
-└── work/                             # Временная директория сборки
-    ├── iso/                          # Содержимое ISO перед упаковкой
-    └── x86_64/airootfs/              # Промежуточная копия
+│       ├── opt/backup/               # rootfs.tar.zst (снапшот)
+│       ├── usr/lib/modules/          # Модули ядра
+│       ├── usr/lib/firmware/         # Прошивки
+│       └── usr/share/licenses/       # ⚠️ Лицензии (должны быть!)
+└── work/                             # Временная директория
 ```
 
 ---
@@ -419,210 +342,68 @@ echo "Запись на флешку: dd if=$OUT_DIR/*.iso of=/dev/sdX bs=4M sta
 
 ### 4.1 Отсутствие ядер в /boot
 
-**Симптом:**
-```bash
-ls /boot/
-amd-ucode.img   # только microcode, нет vmlinuz и initramfs
-```
+**Симптом:** В `/boot` только `amd-ucode.img`, нет `vmlinuz-*` и `initramfs-*.img`
 
-**Решение 1 - Переустановка с перезаписью:**
+**Почему:** Ядра установлены, но `mkinitcpio` не установлен, поэтому initramfs не созданы.
+
+**Решение:**
 ```bash
-pacman -S --overwrite='*' linux linux-lts
+# Устанавливаем mkinitcpio
+pacman -S mkinitcpio
+
+# Находим и копируем ядра
+find /usr/lib/modules -name "vmlinuz*" -exec cp {} /boot/ \;
+
+# Генерируем initramfs
 mkinitcpio -P
-```
-
-**Решение 2 - Установка mkinitcpio:**
-```bash
-pacman -S mkinitcpio mkinitcpio-busybox
-mkinitcpio -p linux
-mkinitcpio -p linux-lts
-```
-
-**Решение 3 - Извлечение из пакетов вручную:**
-```bash
-tar -xf /var/cache/pacman/pkg/linux-*.pkg.tar.zst -C / --wildcards "boot/vmlinuz-*"
 ```
 
 ---
 
 ### 4.2 Рекурсивные симлинки
 
-**Симптом:**
-```bash
-ls -la /root/archlive-work/work/x86_64/airootfs/boot/initramfs-linux.img
-lrwxrwxrwx 1 root root 19 initramfs-linux.img -> initramfs-linux.img  # указывает сам на себя!
-```
+**Симптом:** Ошибка `Too many levels of symbolic links`
 
-**Почему возникает:** При копировании или создании симлинков, команда `ln -sf` может создать ссылку, указывающую на саму себя, если целевой файл не существует.
+**Почему:** При повторном запуске скрипта симлинки создаются сами на себя.
 
-**Решение - удалить симлинк и скопировать реальный файл:**
-```bash
-# Удаляем битые симлинки
-rm -f /root/archlive-work/work/x86_64/airootfs/boot/initramfs-linux.img
-rm -f /root/archlive-work/work/x86_64/airootfs/boot/vmlinuz-linux
-
-# Копируем реальные файлы
-cp /boot/initramfs-linux.img /root/archlive-work/work/x86_64/airootfs/boot/
-cp /boot/vmlinuz-linux /root/archlive-work/work/x86_64/airootfs/boot/
-```
-
-**Альтернативное решение - проверять существование перед созданием симлинка:**
-```bash
-if [ -f "/boot/initramfs-linux.img" ]; then
-    cp /boot/initramfs-linux.img /target/boot/
-else
-    ln -sf initramfs-linux-lts.img /target/boot/initramfs-linux.img
-fi
-```
+**Решение:** Использовать функцию `safe_copy_kernel_files()` которая всегда копирует реальные файлы, а не создаёт симлинки.
 
 ---
 
-### 4.3 Не хватает места в EFI образе (Disk full)
+### 4.3 Не хватает места в EFI образе
 
-**Симптом:**
-```
-[mkarchiso] INFO: Creating FAT image of size: 68 MiB...
-mkfs.fat 4.2 (2021-01-31)
-[mkarchiso] INFO: Preparing kernel and initramfs for the FAT file system...
-Disk full
-```
+**Симптом:** `Disk full` при создании FAT образа
 
-**Причина:** Стандартного размера EFI образа (68 MiB) не хватает для ваших файлов (ядро + initramfs + microcode занимают ~60 MiB, плюс служебные файлы).
-
-#### **Решение 4.3.1 - Увеличение размера через profiledef.sh (РЕКОМЕНДОВАНО)**
-
-**Файл:** `/root/archlive-work/profile/profiledef.sh`
-
-**Что нужно добавить:** Строку `efi_image_size="512"` после строки `bootmodes`
-
-**Было:**
-```bash
-bootmodes=('bios.syslinux'
-           'uefi.systemd-boot')
-pacman_conf="pacman.conf"
-```
-
-**Стало:**
-```bash
-bootmodes=('bios.syslinux'
-           'uefi.systemd-boot')
-efi_image_size="512"
-pacman_conf="pacman.conf"
-```
-
-**Возможные значения:**
-- `efi_image_size="256"` - 256 MB (обычно достаточно)
-- `efi_image_size="512"` - 512 MB (рекомендуется для больших initramfs)
-- `efi_image_size="1024"` - 1 GB (запас)
-
-**Как применить:**
-```bash
-# Редактируем файл
-nano /root/archlive-work/profile/profiledef.sh
-# ИЛИ одной командой:
-sed -i '/bootmodes=.*/a efi_image_size="512"' /root/archlive-work/profile/profiledef.sh
-```
-
----
-
-#### **Решение 4.3.2 - Отключение UEFI (только BIOS)**
-
-**Файл:** `/root/archlive-work/profile/profiledef.sh`
-
-**Изменение:**
-```bash
-# Было:
-bootmodes=('bios.syslinux' 'uefi.systemd-boot')
-
-# Стало (только BIOS):
-bootmodes=('bios.syslinux')
-```
-
-**Применить:**
-```bash
-sed -i "s/bootmodes=('bios.syslinux' 'uefi.systemd-boot')/bootmodes=('bios.syslinux')/" /root/archlive-work/profile/profiledef.sh
-```
-
-**⚠️ Внимание:** ISO будет загружаться только в Legacy/BIOS режиме. На UEFI системах нужно включать CSM/Legacy Boot.
-
----
-
-#### **Решение 4.3.3 - Ручное создание EFI образа большего размера**
-
-```bash
-# Удаляем старый образ
-rm -f /root/archlive-work/work/iso/efi.img
-
-# Создаём новый на 256 MB
-dd if=/dev/zero of=/root/archlive-work/work/iso/efi.img bs=1M count=256
-mkfs.fat -F32 /root/archlive-work/work/iso/efi.img
-
-# Монтируем и копируем файлы
-mkdir -p /mnt/efi_temp
-mount /root/archlive-work/work/iso/efi.img /mnt/efi_temp
-cp -r /root/archlive-work/work/x86_64/airootfs/boot/* /mnt/efi_temp/
-umount /mnt/efi_temp
-```
-
----
-
-#### **Решение 4.3.4 - Уменьшение содержимого /boot**
-
-```bash
-# Удаляем LTS ядро (если не нужно)
-rm -f /root/archlive-work/work/x86_64/airootfs/boot/initramfs-linux-lts.img
-rm -f /root/archlive-work/work/x86_64/airootfs/boot/vmlinuz-linux-lts
-
-# Удаляем memtest86 (занимает ~5 MB)
-rm -f /root/archlive-work/work/x86_64/airootfs/boot/memtest86+-*.bin
-
-# Проверяем размер
-du -sh /root/archlive-work/work/x86_64/airootfs/boot/
-```
-
----
-
-#### **Сравнение решений для EFI:**
-
-| Решение | Сложность | Время | Сохраняет UEFI | Размер ISO | Надёжность |
-|---------|-----------|-------|----------------|------------|------------|
-| Увеличение через profiledef.sh | ⭐ | 1 мин | ✅ Да | Нормальный | ⭐⭐⭐⭐⭐ |
-| Отключение UEFI | ⭐ | 30 сек | ❌ Нет | Меньше | ⭐⭐⭐ |
-| Ручное создание efi.img | ⭐⭐⭐ | 5 мин | ✅ Да | Нормальный | ⭐⭐⭐⭐ |
-| Очистка /boot | ⭐⭐ | 2 мин | ✅ Да | Меньше | ⭐⭐⭐⭐ |
+**Решение:** Увеличить `efi_image_size="1024"` в `profiledef.sh`
 
 ---
 
 ### 4.4 Отсутствуют модули ядра
 
-**Симптом:**
-```
-find: ‘/root/archlive-work/work/x86_64/airootfs/usr/lib/modules’: No such file or directory
-```
+**Симптом:** Ошибка `No such file or directory` для `/usr/lib/modules`
 
-**Решение:**
+**Решение:** Скопировать модули из системы:
 ```bash
-mkdir -p /root/archlive-work/work/x86_64/airootfs/usr/lib/modules
-cp -r /usr/lib/modules/* /root/archlive-work/work/x86_64/airootfs/usr/lib/modules/
+cp -r /usr/lib/modules/* /root/archlive-work/profile/airootfs/usr/lib/modules/
 ```
-
-**Почему это важно:** Без модулей ядро не сможет загрузить драйверы для дисков, сети, видео и т.д.
 
 ---
 
 ### 4.5 Отсутствуют лицензии SPDX
 
-**Симптом:**
+**Симптом:** 
 ```
-install: cannot stat '/root/.../usr/share/licenses/spdx/GPL-2.0-only.txt': No such file or directory
+install: cannot stat '.../usr/share/licenses/spdx/GPL-2.0-only.txt': No such file or directory
 ```
+
+**Почему:** `mkarchiso` ожидает найти SPDX лицензии в airootfs, но их там нет.
 
 **Решение 1 - Копирование из системы:**
 ```bash
 cp -r /usr/share/licenses/* /root/archlive-work/work/x86_64/airootfs/usr/share/licenses/
 ```
 
-**Решение 2 - Создание заглушек:**
+**Решение 2 - Создание заглушек (если в системе нет SPDX):**
 ```bash
 mkdir -p /root/archlive-work/work/x86_64/airootfs/usr/share/licenses/spdx
 for lic in GPL-2.0-only GPL-3.0-only MIT BSD-3-Clause Apache-2.0; do
@@ -630,13 +411,40 @@ for lic in GPL-2.0-only GPL-3.0-only MIT BSD-3-Clause Apache-2.0; do
 done
 ```
 
-**Решение 3 - Игнорирование ошибки (патч mkarchiso):**
-```bash
-cp /usr/bin/mkarchiso /usr/bin/mkarchiso.bak
-sed -i 's/install -Dm644 "\$file"/install -Dm644 "\$file" 2>\/dev\/null || true/' /usr/bin/mkarchiso
-# ... сборка ...
-mv /usr/bin/mkarchiso.bak /usr/bin/mkarchiso
+---
+
+### 4.6 Отсутствует systemd-boot для UEFI
+
+**Симптом:**
 ```
+/root/.../systemd-bootx64.efi: No such file or directory
+/root/.../systemd-bootia32.efi: No such file or directory
+```
+
+**Решение - скопировать EFI файлы:**
+```bash
+mkdir -p /root/archlive-work/work/x86_64/airootfs/usr/lib/systemd/boot/efi/
+cp /usr/lib/systemd/boot/efi/systemd-bootx64.efi /root/archlive-work/work/x86_64/airootfs/usr/lib/systemd/boot/efi/
+touch /root/archlive-work/work/x86_64/airootfs/usr/lib/systemd/boot/efi/systemd-bootia32.efi
+```
+
+---
+
+### 4.7 Пустой список пакетов вызывает ошибку
+
+**Симптом:** `No package specified` или `Missing syslinux package`
+
+**Почему:** Archiso требует минимальный набор пакетов для загрузки.
+
+**Решение:** В `packages.x86_64` добавить **только загрузочные пакеты**:
+```bash
+syslinux
+edk2-shell
+memtest86+
+memtest86+-efi
+```
+
+Остальные пакеты будут взяты из снапшота `rootfs.tar.zst`
 
 ---
 
@@ -645,68 +453,79 @@ mv /usr/bin/mkarchiso.bak /usr/bin/mkarchiso
 ### 5.1 Проверка созданного ISO
 ```bash
 # Информация об ISO
-isoinfo -d -i /root/archlive-out/archlinux-2026.04.15-x86_64.iso
+isoinfo -d -i /root/archlive-out/endeavouros-*.iso
 
 # Контрольная сумма
-md5sum /root/archlive-out/archlinux-2026.04.15-x86_64.iso
+md5sum /root/archlive-out/endeavouros-*.iso
 
-# Монтирование для проверки содержимого
-mount -o loop /root/archlive-out/archlinux-2026.04.15-x86_64.iso /mnt
+# Монтирование для проверки
+mount -o loop /root/archlive-out/endeavouros-*.iso /mnt
 ls -la /mnt/
 umount /mnt
 ```
 
 ### 5.2 Запись на флешку
 ```bash
-# ОСТОРОЖНО! Определите правильный диск
+# Определите правильный диск
 lsblk
 
 # Запись
-dd if=/root/archlive-out/archlinux-2026.04.15-x86_64.iso of=/dev/sdX bs=4M status=progress
+dd if=/root/archlive-out/endeavouros-*.iso of=/dev/sdX bs=4M status=progress
 
 # Синхронизация
 sync
 ```
 
-### 5.3 Что внутри ISO
-```
-/mnt/
-├── arch/
-│   ├── x86_64/
-│   │   ├── airootfs.sfs      # Сжатая файловая система (5.5 ГБ)
-│   │   └── initramfs.img     # Образ initramfs
-│   └── boot/
-│       └── vmlinuz-linux     # Ядро
-├── boot/
-│   └── syslinux/             # BIOS загрузчик
-├── EFI/
-│   └── BOOT/                 # UEFI загрузчик
-└── loader/                   # Конфиги загрузчика
-```
-
 ---
 
-## 📊 Итоговые характеристики
+## 📊 Итоговые характеристики (реальные)
 
 | Параметр | Значение |
 |----------|----------|
-| Размер ISO | 6.0 ГБ |
-| Сжатый снапшот | 4.3 ГБ (rootfs.tar.zst) |
-| Исходная система | ~10-15 ГБ |
-| Время сборки | 20-40 минут |
+| **Размер ISO** | **21 ГБ** (с полной системой) |
+| Сжатый снапшот | ~15-20 ГБ (rootfs.tar.zst) |
+| Исходная система | ~30-40 ГБ |
+| Время сборки | 30-60 минут |
 | Поддержка загрузки | UEFI + BIOS |
-| Размер EFI образа | 512 MB (увеличено с 68 MB) |
+| Размер EFI образа | 1024 MB (увеличено с 68 MB) |
+| РФ зеркала | Яндекс, Fast-IX, SBA1, TrueNetwork |
 
 ---
 
 ## 🎯 Заключение
 
 Успешно создан загрузочный ISO образ системы EndeavourOS, который:
-- Содержит полную копию вашей системы со всеми настройками
+- Содержит **ПОЛНУЮ** копию вашей системы со всеми настройками, программами и драйверами
 - Может быть развёрнут на любом компьютере
 - Имеет автонастройку оборудования при первом запуске
 - Поддерживает оба режима загрузки (UEFI и BIOS)
+- Использует РФ зеркала для быстрой загрузки пакетов
 
-**Ключевой момент для EFI:** добавить `efi_image_size="512"` в файл `profiledef.sh` для избежания ошибки "Disk full".
+### Ключевые моменты, которые мы исправили:
+
+1. **Установка `mkinitcpio`** - без него не создаются initramfs
+2. **Копирование ядер из `/usr/lib/modules/`** - если их нет в `/boot`
+3. **Функция `safe_copy_kernel_files`** - предотвращает рекурсивные симлинки
+4. **Увеличение `efi_image_size="1024"`** - для больших initramfs
+5. **Копирование лицензий SPDX** - иначе ошибка сборки
+6. **Копирование `systemd-boot*.efi`** - для UEFI загрузки
+7. **Минимальный список пакетов** - только загрузочные, остальное из снапшота
+8. **РФ зеркала** - для быстрой установки пакетов в РФ
+
+---
+
+## 📝 Что мы доустанавливали и почему:
+
+| Что делали | Почему |
+|------------|--------|
+| `pacman -S mkinitcpio` | Без него не создаются initramfs |
+| Копировали ядра из `/usr/lib/modules/` | Ядра были установлены, но не в `/boot` |
+| Создавали заглушки SPDX | Archiso требует эти лицензии |
+| Копировали `systemd-boot*.efi` | Для UEFI загрузки |
+| Увеличили `efi_image_size` | Стандартных 68 MB не хватало |
+| Добавили РФ зеркала | Для быстрой загрузки в РФ |
+
+---
+
 
 
