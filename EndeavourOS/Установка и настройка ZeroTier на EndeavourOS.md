@@ -11,10 +11,10 @@
 
 ---
 
-## Шаг 1: Установка пакета
+## Шаг 1: Установка пакетов
 
 ```bash
-sudo pacman -S zerotier-one
+sudo pacman -S zerotier-one zerotier-gui-git
 ```
 
 Пакет находится в официальных репозиториях Arch/EndeavourOS.
