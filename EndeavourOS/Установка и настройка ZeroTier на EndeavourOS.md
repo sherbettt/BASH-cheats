@@ -5,6 +5,8 @@
 - **Версия ZeroTier:** 1.16.0-2
 
 ---
+читай https://github.com/zerotier/ZeroTierOne/blob/dev/doc/zerotier-cli.1.md
+---
 
 ## Шаг 1: Установка пакета
 
