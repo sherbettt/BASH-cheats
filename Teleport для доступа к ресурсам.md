@@ -258,6 +258,11 @@ Jenkins настроен с префиксом `/web/app/jenkins`, чтобы п
 
 #### **`/etc/default/jenkins`:**
 ```bash
+#JENKINS_ARGS="--webroot=/var/cache/$NAME/war --httpPort=$HTTP_PORT"
+JENKINS_ARGS="--webroot=/var/cache/$NAME/war --httpPort=$HTTP_PORT --httpListenAddress=0.0.0.0 --prefix=/web/app/jenkins"
+```
+или
+```bash
 JENKINS_ARGS="--webroot=/var/cache/jenkins/war --httpPort=8080 --httpListenAddress=0.0.0.0 --prefix=/web/app/jenkins"
 ```
 
