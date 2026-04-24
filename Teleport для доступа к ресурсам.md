@@ -206,7 +206,28 @@ spec:
         value: "grafana.teleport.runtel.org"
 ```
 
-### 2.3. DNS (файл `/etc/hosts`)
+### 2.3. Применение конфигурации
+
+```bash
+# создать конфиг для Grafana в  Teleport
+tctl create -f /etc/teleport.d/grafana-app.yaml
+
+sudo systemctl restart teleport
+tctl get apps   # проверка, что все приложения появились
+```
+```bash
+# удалить конфиг
+tctl rm app/grafana
+
+# проверить конфиг
+tctl get app/grafana
+
+# проверить конфиги
+tctl get apps
+```
+
+
+### 2.4. ***ОПЦИОНАЛЬНО!*** DNS (файл `/etc/hosts`)
 
 На сервере Teleport (jumpserver) добавлены записи:
 
@@ -216,20 +237,13 @@ spec:
 192.168.87.209 grafana.teleport.runtel.org
 ```
 
-На рабочей машине пользователя также добавлены записи для всех `public_addr`:
+***Не обязательно!*** На рабочей машине пользователя также добавлены записи для всех `public_addr`:
 
 ```
 192.168.87.238 jenkins.teleport.runtel.org
 192.168.87.238 jira.teleport.runtel.org
 192.168.87.238 gitlab.teleport.runtel.org
 192.168.87.238 grafana.teleport.runtel.org
-```
-
-### 2.4. Применение конфигурации
-
-```bash
-sudo systemctl restart teleport
-tctl get apps   # проверка, что все приложения появились
 ```
 
 ---
