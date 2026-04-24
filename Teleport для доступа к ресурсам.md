@@ -311,7 +311,7 @@ sed -n '30,37p;193,206p' /etc/gitlab/gitlab.rb | ccze -A
 ```ruby
 ##! address from AWS. For more details, see: 
 ##! https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-retrieval.html 
-external_url 'https://gitlab.runtel.org' 
+external_url 'gitlab.teleport.runtel.org' 
 
 # gitlab_rails['trusted_proxies] = [] 
 
@@ -333,7 +333,8 @@ nginx['real_ip_recursive] = 'on'
 sudo gitlab-ctl reconfigure
 ```
 
-**Результат:** GitLab теперь доступен только через `gitlab.teleport.runtel.org`, прямой доступ на `gitlab.runtel.org` приводит к редиректу (что и требуется).
+**Результат:** GitLab теперь доступен только через `gitlab.teleport.runtel.org`, прямой доступ на `gitlab.runtel.org` приводит к редиректу (что и требуется). 
+НО лучше так не делать, чтобы не потерять основной ресурс.
 
 ---
 
