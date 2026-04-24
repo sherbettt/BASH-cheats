@@ -271,9 +271,17 @@ JENKINS_ARGS="--webroot=/var/cache/jenkins/war --httpPort=8080 --httpListenAddre
 Environment="JAVA_OPTS=-Djava.awt.headless=true -Djenkins.forwarded.proto.trusted=192.168.87.238 -Dhudson.security.Realm=jenkins.security.HeaderAuthenticationRealm"
 ```
 
-#### **Дополнительно в Jenkins:**
+#### **Дополнительно в Jenkins (Security ):**
+- Перейти по ссылке https://jenkins.teleport.runtel.org/manage/configureSecurity/
+- развернуть Security configuration
 - Включена опция **"Use Root URL from request"** в настройках безопасности (OIC плагин)
-- Увеличен `sessionTimeout` до 1440 минут (24 часа)
+
+#### 
+- Увеличен `sessionTimeout` до 1440 минут (24 часа) в файле **/lib/systemd/system/jenkins.service**
+  ```
+  # Timeout of session (min)
+  Environment="JENKINS_OPTS=--sessionTimeout=1440"
+  ```
 - Установлен плагин "Remote Authentication" для приёма заголовка `Remote-User` от Teleport
 
 **Почему Jenkins не редиректит:** Он использует относительные ссылки в UI (`/job/...`) и доверяет заголовку `X-Forwarded-Host`.
