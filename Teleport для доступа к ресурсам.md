@@ -1,132 +1,230 @@
-# Настройка Teleport для доступа к Jenkins, Jira, GitLab и создание бота (Machine ID)
+# Настройка Teleport для доступа к Jenkins, Jira, GitLab, Grafana и создание бота (Machine ID)
 
 ## Введение
 
-В этой статье описан опыт настройки Teleport Community (Enterprise) для централизованного доступа к внутренним веб-приложениям: Jenkins, Jira, GitLab. Также рассмотрено создание бота (Machine ID) для автоматизации. Основной фокус — на проблемах редиректов, возникающих из-за особенностей каждого приложения, и способах их решения.
+В этой статье описан реальный опыт настройки **Teleport Enterprise** для централизованного доступа к внутренним веб-приложениям: Jenkins, Jira, GitLab, Grafana. Также рассмотрено создание бота (Machine ID) для автоматизации. Основной фокус — на проблемах редиректов, возникающих из-за особенностей каждого приложения, и способах их решения.
 
 ---
 
-## 1. Архитектура и предварительные требования
+## Используемая инфраструктура
 
-- **Teleport сервер (jumpserver)**: IP `192.168.87.238`, домен `teleport.runtel.org`
-- **Jenkins**: IP `192.168.87.11`, порт `8080`, работает с префиксом `/web/app/jenkins`
-- **Jira**: IP `192.168.46.4`, порт `8080` (или `8082`)
-- **GitLab**: IP `192.168.46.5` (условно), домен `gitlab.runtel.org`
-- **Grafana**: IP `192.168.87.209`, порт `3000`
+| Компонент | IP-адрес | Порт | Внутренний адрес | Адрес в Teleport |
+|-----------|----------|------|------------------|------------------|
+| **Teleport (jumpserver)** | 192.168.87.238 | 443 | — | teleport.runtel.org |
+| **Jenkins** | 192.168.87.11 | 8080 | http://192.168.87.11:8080/web/app/jenkins | jenkins.teleport.runtel.org |
+| **Jira** | 192.168.46.4 | 8080 | http://192.168.46.4:8080 | jira.teleport.runtel.org |
+| **GitLab** | 192.168.46.4 | 443 (HTTPS) | https://gitlab.runtel.org | gitlab.teleport.runtel.org |
+| **Grafana** | 192.168.87.209 | 3000 | http://192.168.87.209:3000 | grafana.teleport.runtel.org |
 
-Все приложения должны быть доступны с сервера Teleport по указанным внутренним адресам.
+**Важно:** Все приложения доступны с сервера Teleport по указанным внутренним адресам (проверено через `curl`).
 
 ---
 
-## 2. Общая философия: почему одни приложения работают «из коробки», а другие нет
+## 1. Почему одни приложения работают «из коробки», а другие — нет?
 
-Проблема редиректов возникает из-за того, как каждое приложение генерирует абсолютные ссылки:
+В ходе настройки мы столкнулись с разным поведением приложений за прокси:
 
-| Приложение | Поведение за прокси | Причина |
-|------------|---------------------|---------|
+| Приложение | Поведение | Причина |
+|------------|-----------|---------|
 | **Jenkins** | ✅ Работает без смены Base URL | Использует относительные ссылки и доверяет заголовку `X-Forwarded-Host` |
+| **Grafana** | ✅ Работает через `root_url` | Поддерживает настройку `root_url` в конфиге |
 | **GitLab** | ❌ Редиректит на `external_url` | Жёстко привязан к своему `external_url`, игнорирует заголовки |
 | **Jira** | ❌ Редиректит на `Base URL` | Аналогично GitLab, требуется смена Base URL |
-| **Grafana** | ✅ Работает через `root_url` | Поддерживает настройку `root_url` в конфиге |
 
-**Вывод:** Для Jenkins и Grafana достаточно настроить Teleport и добавить правильные заголовки. Для Jira и GitLab необходимо изменить их внутренний базовый URL.
+**Вывод:** Jenkins и Grafana — гибкие, их достаточно настроить через заголовки или параметры. GitLab и Jira — жёсткие, требуют изменения внутреннего базового URL.
 
 ---
 
-## 3. Настройка приложений в Teleport
+## 2. Настройка Teleport
 
-### 3.1. Единый подход через `app_service` в `teleport.yaml`
+### 2.1. Основной конфиг `/etc/teleport.yaml`
 
-Все приложения добавляются в секцию `app_service` основного конфига. Это самый надёжный способ.
+Teleport настроен как единый proxy + auth. В секцию `app_service` добавлены все приложения:
 
 ```yaml
 app_service:
   enabled: yes
   apps:
     - name: jenkins
-      uri: http://192.168.87.11:8080/web/app/jenkins
+      uri: http://192.168.87.11:8080
       public_addr: jenkins.teleport.runtel.org
-      rewrite:
-        headers:
-          - name: "Remote-User"
-            value: "{client_cert_subject}"
-          - name: "X-Forwarded-User"
-            value: "{client_cert_subject}"
-          - name: "X-Forwarded-For"
-            value: "{client_ip}"
-          - name: "X-Forwarded-Host"
-            value: "jenkins.runtel.ru"
-          - name: "X-Forwarded-Proto"
-            value: "https"
 
     - name: jira
       uri: http://192.168.46.4:8080
       public_addr: jira.teleport.runtel.org
-      rewrite:
-        headers:
-          - name: "X-Forwarded-For"
-            value: "{client_ip}"
-          - name: "X-Forwarded-Host"
-            value: "jira.teleport.runtel.ru"
-          - name: "X-Forwarded-Proto"
-            value: "https"
 
     - name: gitlab
       uri: https://gitlab.runtel.org
       public_addr: gitlab.teleport.runtel.org
-      rewrite:
-        headers:
-          - name: "X-Forwarded-For"
-            value: "{client_ip}"
-          - name: "X-Forwarded-Host"
-            value: "gitlab.runtel.org"
-          - name: "X-Forwarded-Proto"
-            value: "https"
 
     - name: grafana
       uri: http://192.168.87.209:3000
       public_addr: grafana.teleport.runtel.org
 ```
 
-### 3.2. Добавление DNS-записей (или /etc/hosts)
+### 2.2. Дополнительные файлы конфигурации в `/etc/teleport.d/`
 
-На сервере Teleport (jumpserver) необходимо добавить записи для всех `public_addr`, чтобы Teleport мог резолвить их в свои внутренние IP:
+Для более гибкой настройки заголовков мы использовали отдельные файлы:
 
-```bash
-echo "192.168.87.238 jenkins.teleport.runtel.org" >> /etc/hosts
-echo "192.168.87.238 jira.teleport.runtel.org" >> /etc/hosts
-echo "192.168.87.238 gitlab.teleport.runtel.org" >> /etc/hosts
-echo "192.168.87.238 grafana.teleport.runtel.org" >> /etc/hosts
+#### **`jenkins-app.yaml`**
+```yaml
+kind: app
+version: v3
+metadata:
+  name: jenkins
+spec:
+  uri: http://192.168.87.11:8080/web/app/jenkins
+  public_addr: jenkins.teleport.runtel.org
+  rewrite:
+    headers:
+      - name: "Remote-User"
+        value: "{client_cert_subject}"
+      - name: "X-Forwarded-User"
+        value: "{client_cert_subject}"
+      - name: "X-Forwarded-For"
+        value: "{client_ip}"
+      - name: "X-Forwarded-Host"
+        value: "jenkins.runtel.ru"
+      - name: "X-Forwarded-Proto"
+        value: "https"
 ```
 
-На рабочей машине пользователя также нужно добавить эти записи, либо настроить реальный DNS.
+#### **`jira-app.yaml`**
+```yaml
+kind: app
+version: v3
+metadata:
+  name: jira
+spec:
+  uri: http://192.168.46.4:8080
+  public_addr: jira.teleport.runtel.org
+  rewrite:
+    headers:
+      - name: "X-Forwarded-For"
+        value: "{client_ip}"
+      - name: "X-Forwarded-Host"
+        value: "jira.runtel.ru"
+      - name: "X-Forwarded-Proto"
+        value: "https"
+```
+
+#### **`gitlab-app.yaml`**
+```yaml
+kind: app
+version: v3
+metadata:
+  name: gitlab
+spec:
+  uri: https://gitlab.runtel.org
+  public_addr: gitlab.teleport.runtel.org
+  rewrite:
+    headers:
+      - name: "X-Forwarded-For"
+        value: "{client_ip}"
+      - name: "X-Forwarded-Host"
+        value: "gitlab.runtel.org"
+      - name: "X-Forwarded-Proto"
+        value: "https"
+```
+
+#### **`grafana-app.yaml`**
+```yaml
+kind: app
+version: v3
+metadata:
+  name: grafana
+spec:
+  uri: http://192.168.87.209:3000
+  public_addr: grafana.teleport.runtel.org
+  rewrite:
+    headers:
+      - name: "Origin"
+        value: "https://grafana.teleport.runtel.org"
+      - name: "Host"
+        value: "grafana.teleport.runtel.org"
+```
+
+### 2.3. DNS (файл `/etc/hosts`)
+
+На сервере Teleport (jumpserver) добавлены записи:
+
+```
+192.168.87.238 teleport.runtel.org
+192.168.87.238 teleport-proxy
+192.168.87.209 grafana.teleport.runtel.org
+```
+
+На рабочей машине пользователя также добавлены записи для всех `public_addr`:
+
+```
+192.168.87.238 jenkins.teleport.runtel.org
+192.168.87.238 jira.teleport.runtel.org
+192.168.87.238 gitlab.teleport.runtel.org
+192.168.87.238 grafana.teleport.runtel.org
+```
+
+### 2.4. Применение конфигурации
+
+```bash
+sudo systemctl restart teleport
+tctl get apps   # проверка, что все приложения появились
+```
 
 ---
 
-## 4. Настройка самих приложений для работы за прокси
+## 3. Настройка приложений для работы за прокси
 
-### 4.1. Jenkins (гибкий, не требует смены Base URL)
+### 3.1. Jenkins (гибкий, без смены Base URL)
 
-В `/etc/default/jenkins` добавлен параметр `--prefix`:
+**Сервер:** `jenkins-updated` (192.168.87.11)
 
+Jenkins настроен с префиксом `/web/app/jenkins`, чтобы правильно обрабатывать пути через Teleport.
+
+#### **`/etc/default/jenkins`:**
 ```bash
 JENKINS_ARGS="--webroot=/var/cache/jenkins/war --httpPort=8080 --httpListenAddress=0.0.0.0 --prefix=/web/app/jenkins"
 ```
 
-В `jenkins.service.d/proxy.conf` добавлены настройки прокси и доверия к заголовкам:
-
+#### **Systemd override `/etc/systemd/system/jenkins.service.d/proxy.conf`:**
 ```ini
+[Service]
 Environment="JAVA_OPTS=-Djava.awt.headless=true -Djenkins.forwarded.proto.trusted=192.168.87.238 -Dhudson.security.Realm=jenkins.security.HeaderAuthenticationRealm"
 ```
 
-**Почему нет редиректа:** Jenkins использует относительные ссылки в UI и доверяет заголовку `X-Forwarded-Host`.
+#### **Дополнительно в Jenkins:**
+- Включена опция **"Use Root URL from request"** в настройках безопасности (OIC плагин)
+- Увеличен `sessionTimeout` до 1440 минут (24 часа)
+- Установлен плагин "Remote Authentication" для приёма заголовка `Remote-User` от Teleport
+
+**Почему Jenkins не редиректит:** Он использует относительные ссылки в UI (`/job/...`) и доверяет заголовку `X-Forwarded-Host`.
 
 ---
 
-### 4.2. GitLab (жёсткий, требуется смена `external_url`)
+### 3.2. Grafana (гибкая, через `root_url`)
 
-В `/etc/gitlab/gitlab.rb`:
+**Сервер:** `loki-grafana` (192.168.87.209)
 
+#### **`/etc/grafana/grafana.ini`:**
+```ini
+[server]
+root_url = https://grafana.teleport.runtel.org
+
+[auth]
+# Отключаем проверку Referer для работы через прокси
+disable_login_form = false
+```
+
+**Почему Grafana не редиректит:** Она поддерживает настройку `root_url`, которая указывает внешний адрес. Teleport передаёт правильные заголовки `Origin` и `Host`.
+
+---
+
+### 3.3. GitLab (жёсткий, требуется смена `external_url`)
+
+**Сервер:** `gitlab` (192.168.46.4)
+
+GitLab игнорирует заголовки и жёстко привязан к своему `external_url`. Без его смены при заходе через `gitlab.teleport.runtel.org` происходил бы редирект на `gitlab.runtel.org`.
+
+#### **`/etc/gitlab/gitlab.rb`:**
 ```ruby
 external_url 'https://gitlab.teleport.runtel.org'
 gitlab_rails['trusted_proxies'] = ['192.168.87.238']
@@ -134,53 +232,71 @@ nginx['real_ip_header'] = 'X-Forwarded-For'
 nginx['real_ip_recursive'] = 'on'
 ```
 
-**Почему редирект:** GitLab игнорирует заголовки и жёстко привязан к `external_url`. Без его смены будет бесконечный редирект.
+#### **Применение изменений:**
+```bash
+sudo gitlab-ctl reconfigure
+```
+
+**Результат:** GitLab теперь доступен только через `gitlab.teleport.runtel.org`, прямой доступ на `gitlab.runtel.org` приводит к редиректу (что и требуется).
 
 ---
 
-### 4.3. Jira (аналогично GitLab)
+### 3.4. Jira (жёсткая, требуется смена Base URL)
 
-В `/var/atlassian/jira/atlassian-jira/WEB-INF/classes/jira-application.properties`:
+**Сервер:** `jira` (192.168.46.4, порт 8080)
 
+Аналогично GitLab, Jira использует свой `Base URL` для генерации абсолютных ссылок.
+
+#### **Конфигурация (`jira-application.properties`):**
 ```properties
 jira.baseurl=https://jira.teleport.runtel.org
 ```
 
-Также в `server.xml` Tomcat добавляются `proxyName` и `proxyPort`.
-
-**Почему редирект:** Jira использует `Base URL` для генерации всех абсолютных ссылок.
-
----
-
-### 4.4. Grafana (гибкая, достаточно `root_url`)
-
-В `/etc/grafana/grafana.ini`:
-
-```ini
-[server]
-root_url = https://grafana.teleport.runtel.org
+#### **Tomcat `server.xml`:**
+```xml
+<Connector port="8080" protocol="HTTP/1.1"
+           proxyName="jira.teleport.runtel.org"
+           proxyPort="443"
+           scheme="https"/>
 ```
 
-**Почему нет редиректа:** Grafana поддерживает настройку `root_url` и корректно работает за прокси.
+**Результат:** Jira теперь работает через Teleport без редиректов.
 
 ---
 
-## 5. Создание бота (Machine ID) для Jenkins
+## 4. Создание бота (Machine ID) для Jenkins
 
 Бот позволяет Jenkins'у получать короткоживущие сертификаты для доступа к другим серверам через Teleport.
 
-### 5.1. На сервере Teleport: создание бота
+### 4.1. На сервере Teleport: создание бота и роли
 
+#### **Роль для бота (`jenkins-bot.yaml`):**
+```yaml
+kind: "role"
+version: "v3"
+metadata:
+  name: "jenkins-bot"
+spec:
+  allow:
+    logins: ["root", "kkorablin", "ipetrov", "cgnezdilov"]
+    node_labels:
+      "env": "ci"
+```
+
+```bash
+tctl create -f /etc/teleport.d/jenkins-bot.yaml
+```
+
+#### **Создание бота:**
 ```bash
 tctl bots add jenkins-bot --roles=jenkins-bot
 ```
+**Сохранить токен:** `d4c885b1c76dd21a4150812d26521f9a` (пример)
 
-Сохранить полученный токен.
+### 4.2. На сервере Jenkins: установка и настройка `tbot`
 
-### 5.2. На сервере Jenkins: установка и настройка `tbot`
-
+#### **Установка бинарников Teleport:**
 ```bash
-# Скачать и установить tbot
 cd /tmp
 curl -O https://cdn.teleport.dev/teleport-v18.7.3-linux-amd64-bin.tar.gz
 tar -xzf teleport-v18.7.3-linux-amd64-bin.tar.gz
@@ -188,23 +304,18 @@ cd teleport
 sudo ./install
 ```
 
-Создать конфиг `/etc/tbot.yaml`:
-
+#### **Конфигурация `/etc/tbot.yaml`:**
 ```yaml
 version: v2
 proxy_server: "teleport.runtel.org:443"
 onboarding:
-  token: "<токен_бота>"
+  token: "d4c885b1c76dd21a4150812d26521f9a"
 storage:
   type: directory
-  path: /var/lib/teleport/bot
-destinations:
-  - type: directory
-    path: /opt/machine-id
+  path: /opt/machine-id
 ```
 
-Создать systemd-сервис (вручную, если команда `tbot install` недоступна):
-
+#### **Systemd-сервис `/etc/systemd/system/tbot.service`:**
 ```ini
 [Unit]
 Description=Teleport Machine ID Service (tbot)
@@ -214,7 +325,7 @@ After=network.target
 Type=simple
 User=teleport
 Group=teleport
-ExecStart=/usr/local/bin/tbot start --config=/etc/tbot.yaml --join-method=token --token=<токен_бота>
+ExecStart=/usr/local/bin/tbot start --config=/etc/tbot.yaml --join-method=token --token=d4c885b1c76dd21a4150812d26521f9a
 Restart=on-failure
 RestartSec=5
 
@@ -222,14 +333,13 @@ RestartSec=5
 WantedBy=multi-user.target
 ```
 
-Запустить:
-
+#### **Запуск:**
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable tbot --now
 ```
 
-### 5.3. Использование сертификатов в Jenkins Pipeline
+### 4.3. Использование сертификатов в Jenkins Pipeline
 
 ```groovy
 sh '''
@@ -237,54 +347,55 @@ sh '''
         -o CertificateFile=/opt/machine-id/key-cert.pub \
         -o GlobalKnownHostsFile=/opt/machine-id/sshcacerts \
         -o StrictHostKeyChecking=no \
-        user@target-server "command"
+        kkorablin@192.168.87.238 "hostname"
 '''
 ```
 
 ---
 
-## 6. Проблемы редиректов: причины и решения
+## 5. Проблемы редиректов: причины и решения
 
 | Приложение | Наличие редиректа | Решение |
 |------------|-------------------|---------|
-| **Jenkins** | Нет | Настроить `--prefix` и заголовки в Teleport |
-| **GitLab** | Да (без смены `external_url`) | Сменить `external_url` на адрес Teleport |
-| **Jira** | Да (без смены `Base URL`) | Сменить `Base URL` на адрес Teleport |
-| **Grafana** | Нет | Указать `root_url` в конфиге |
+| **Jenkins** | Нет | Настроен `--prefix` и заголовки `X-Forwarded-Host` |
+| **Grafana** | Нет | Указан `root_url` в конфиге |
+| **GitLab** | Да (без смены `external_url`) | Смена `external_url` на адрес Teleport |
+| **Jira** | Да (без смены `Base URL`) | Смена `Base URL` на адрес Teleport |
 
-### 6.1. Почему Jenkins не редиректит?
+### 5.1. Почему Jenkins и Grafana не редиректят?
 
-Jenkins использует **относительные ссылки** в веб-интерфейсе. При заходе через `https://jenkins.teleport.runtel.org` он генерирует ссылки вида `/job/...`, которые браузер интерпретирует относительно текущего `Host`. Абсолютные ссылки Jenkins использует только для внешних уведомлений (почта). Поэтому его не нужно перенастраивать.
+**Jenkins** использует **относительные ссылки** в веб-интерфейсе. При заходе через `https://jenkins.teleport.runtel.org` он генерирует ссылки вида `/job/...`, которые браузер интерпретирует относительно текущего `Host`. Абсолютные ссылки Jenkins использует только для внешних уведомлений (почта).
 
-### 6.2. Почему GitLab и Jira редиректят?
+**Grafana** поддерживает настройку `root_url`, которая указывает внешний адрес. Teleport передаёт заголовки `Origin` и `Host`, и Grafana корректно их обрабатывает.
 
-Оба приложения генерируют **абсолютные ссылки** на основе своего внутреннего `external_url` (GitLab) или `Base URL` (Jira). При заходе с другого домена они делают редирект на «свой» канонический адрес.
+### 5.2. Почему GitLab и Jira редиректят?
 
-### 6.3. Как определить, будет ли приложение редиректить?
+Оба приложения генерируют **абсолютные ссылки** на основе своего внутреннего `external_url` (GitLab) или `Base URL` (Jira). При заходе с другого домена они делают редирект на «свой» канонический адрес. Это архитектурное решение разработчиков, связанное с безопасностью.
 
-Проверь в исходном коде или документации:
+### 5.3. Как определить, будет ли приложение редиректить?
+
 - Использует ли приложение **абсолютные ссылки** в UI?
 - Можно ли переопределить `Host` через заголовок `X-Forwarded-Host`?
 - Есть ли встроенная поддержка прокси (настройка `root_url`, `--prefix`, `proxyName`)?
 
 ---
 
-## 7. Полезные команды для диагностики
+## 6. Полезные команды для диагностики
 
 ```bash
 # Проверка конфигурации Teleport
 tctl get apps
 
-# Проверка, что Teleport видит приложение
-curl -v https://teleport.runtel.org/web/launch/<app_name> --insecure
-
 # Проверка доступности приложения с jumpserver
-curl -v http://<ip_app>:<port>
+curl -v http://192.168.87.11:8080/web/app/jenkins
+curl -v http://192.168.46.4:8080
+curl -k https://gitlab.runtel.org
+curl -v http://192.168.87.209:3000
 
 # Логи Teleport
 sudo journalctl -u teleport -f
 
-# Логи приложений (Jenkins, GitLab, Jira, Grafana)
+# Логи приложений
 sudo journalctl -u jenkins -f
 sudo gitlab-ctl tail
 sudo journalctl -u grafana-server -f
@@ -292,25 +403,34 @@ sudo journalctl -u grafana-server -f
 
 ---
 
-## 8. Итоги и рекомендации
+## 7. Итоги и рекомендации
 
 1. **Teleport** — отличный инструмент для централизованного доступа, но поведение приложений за прокси зависит от их архитектуры.
-2. **Jenkins** и **Grafana** — «гибкие»: достаточно настроить заголовки и префиксы.
-3. **GitLab** и **Jira** — «жёсткие»: необходимо изменить их базовый URL на адрес Teleport.
+2. **Jenkins** и **Grafana** — гибкие: достаточно настроить заголовки и префиксы.
+3. **GitLab** и **Jira** — жёсткие: необходимо изменить их базовый URL на адрес Teleport.
 4. **Бот (Machine ID)** позволяет Jenkins получать сертификаты для безопасного доступа к другим серверам без хранения паролей.
 5. Всегда проверяй доступность приложения с сервера Teleport (curl) перед добавлением в Teleport.
+6. Для диагностики редиректов используй `curl -v` и смотри заголовок `Location`.
 
-### Финальная архитектура:
+---
+
+## Финальная архитектура
 
 ```
-Пользователь → Teleport (единый вход) → Jenkins / Jira / GitLab / Grafana
+Пользователь
+    │
+    ▼
+Teleport UI (teleport.runtel.org)
+    │
+    ├── Jenkins (jenkins.teleport.runtel.org)
+    ├── Jira (jira.teleport.runtel.org)
+    ├── GitLab (gitlab.teleport.runtel.org)
+    └── Grafana (grafana.teleport.runtel.org)
 ```
 
 Все сервисы доступны через единый интерфейс, с единой аутентификацией (Keycloak) и аудитом.
 
 ---
 
-**Примечание:** Если приложение не поддерживает работу за прокси, всегда можно использовать `tsh apps login` или SSH-туннель.
-
-
+**Примечание:** Если приложение не поддерживает работу за прокси, всегда можно использовать `tsh apps login` или SSH-туннель (`ssh -L`).
 
