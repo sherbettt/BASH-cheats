@@ -42,6 +42,69 @@
 Teleport настроен как единый proxy + auth. В секцию `app_service` добавлены все приложения:
 
 ```yaml
+version: v3
+teleport:
+  auth_token: /var/lib/teleport/token # auth_token generated in the previous step.
+  ca_pin: ###### # ca_pin generated in the previous step.
+  nodename: teleport.runtel.org
+  advertise_ip: 192.168.87.238
+  cache:
+    type: in-memory
+  log:
+    output: stderr
+    severity: DEBUG
+  data_dir: /var/lib/teleport
+  storage:
+    type: dir
+    path: /var/lib/teleport/backend
+  auth_server: 192.168.87.238:3025 # HAProxy IP address or the DNS name pointing to port 3025
+
+auth_service:
+  enabled: yes
+  license_file: /var/lib/teleport/license.pem
+  keep_alive_interval: 1m
+  keep_alive_count_max: 3
+  listen_addr: 192.168.87.238:3025
+  public_addr: 192.168.87.238:3025
+  proxy_listener_mode: multiplex
+  authentication:
+    type: local
+    require_session_mfa: false
+#    second_factor: off
+  cluster_name: teleport-runtel
+
+
+windows_desktop_service:
+  enabled: yes
+  listen_addr: 192.168.87.238:3389
+  static_hosts:
+  - name: win10
+    ad: false
+    addr: 192.168.87.114
+    labels:
+      datacenter: teleport-runtel
+
+ssh_service:
+  enabled: no
+
+proxy_service:
+#  license_file: /var/lib/teleport/license.pem
+  enabled: yes
+  listen_addr: 0.0.0.0:3023
+  tunnel_listen_addr: 0.0.0.0:3080
+  web_listen_addr: 0.0.0.0:443
+  public_addr: teleport.runtel.org:443
+  ssh_public_addr: teleport.runtel.org:3023
+  tunnel_public_addr: teleport.runtel.org:443
+  https_keypairs:
+#    - cert_file: /etc/wc_runtelorg.crt #cert file generated for the domain name of public_addr 
+#      key_file: /etc/wc_runtelorg.key #key file generated for the domain name of public_addr
+    - cert_file: /etc/runtelorg.crt #cert file generated for the domain name of public_addr 
+      key_file: /etc/runtelorg.key #key file generated for the domain name of public_addr
+
+
+
+# секция добавлена в рамках добавления входа на Jenkins через теккущий севрер Teleport
 app_service:
   enabled: yes
   apps:
