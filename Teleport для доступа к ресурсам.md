@@ -305,11 +305,27 @@ disable_login_form = false
 GitLab игнорирует заголовки и жёстко привязан к своему `external_url`. Без его смены при заходе через `gitlab.teleport.runtel.org` происходил бы редирект на `gitlab.runtel.org`.
 
 #### **`/etc/gitlab/gitlab.rb`:**
+```bash
+sed -n '30,37p;193,206p' /etc/gitlab/gitlab.rb | ccze -A
+```
 ```ruby
-external_url 'https://gitlab.teleport.runtel.org'
-gitlab_rails['trusted_proxies'] = ['192.168.87.238']
-nginx['real_ip_header'] = 'X-Forwarded-For'
-nginx['real_ip_recursive'] = 'on'
+##! address from AWS. For more details, see: 
+##! https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-retrieval.html 
+external_url 'https://gitlab.runtel.org' 
+
+# gitlab_rails['trusted_proxies] = [] 
+
+# Добавляем доверие к Teleport 
+gitlab_rails['trusted_proxies] = ['192.168.87.238'] 
+nginx['real_ip_header] = 'X-Forwarded-For' 
+nginx['real_ip_recursive] = 'on' 
+
+# Говорим GitLab, что он может отвечать на оба адреса 
+#nginx['listen_addresses'] = ['*'] 
+#nginx['server_names'] = ['gitlab.runtel.org', 'gitlab.teleport.runtel.org'] 
+
+# Добавляем поддержку второго домена через кастомную конфигурацию nginx 
+#nginx['custom_gitlab_server_config'] = "server_name gitlab.runtel.org gitlab.teleport.runtel.org;\n" 
 ```
 
 #### **Применение изменений:**
