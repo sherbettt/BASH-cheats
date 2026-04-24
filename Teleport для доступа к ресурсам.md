@@ -103,8 +103,7 @@ proxy_service:
       key_file: /etc/runtelorg.key #key file generated for the domain name of public_addr
 
 
-
-# секция добавлена в рамках добавления входа на Jenkins через теккущий севрер Teleport
+# секция добавлена в рамках добавления входа на ресурсы через теккущий севрер Teleport
 app_service:
   enabled: yes
   apps:
