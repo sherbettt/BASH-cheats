@@ -539,3 +539,109 @@ Teleport UI (teleport.runtel.org)
 
 **Примечание:** Если приложение не поддерживает работу за прокси, всегда можно использовать `tsh apps login` или SSH-туннель (`ssh -L`).
 
+---
+
+
+## 🔍 Относительные vs абсолютные ссылки: почему Jira и GitLab редиректят
+
+### 1. Что такое относительные и абсолютные ссылки?
+
+| Тип | Пример | Как работает |
+|-----|---------|---------------|
+| **Относительная** | `/job/test/` | Браузер берёт текущий `Host` (из адресной строки) и подставляет его. Если ты зашёл на `jenkins.teleport.runtel.org`, то ссылка превратится в `https://jenkins.teleport.runtel.org/job/test/` |
+| **Абсолютная** | `https://gitlab.runtel.org/user/project` | Полный URL, который игнорирует текущий `Host`. Браузер идёт строго на указанный домен, даже если ты зашёл с другого адреса |
+
+---
+
+### 2. Почему Jenkins не редиректит, а Jira/GitLab — да?
+
+| Приложение | Тип ссылок | Результат при заходе через Teleport |
+|------------|------------|--------------------------------------|
+| **Jenkins** | Относительные | ✅ Работает. Браузер подставляет `jenkins.teleport.runtel.org` |
+| **Grafana** | Относительные + `root_url` | ✅ Работает. Grafana знает свой внешний адрес |
+| **GitLab** | Абсолютные (на базе `external_url`) | ❌ Редиректит на `gitlab.runtel.org` |
+| **Jira** | Абсолютные (на базе `Base URL`) | ❌ Редиректит на `jira.runtel.ru` |
+
+---
+
+### 3. Механизм редиректа на примере GitLab
+
+1. Ты заходишь на `https://gitlab.teleport.runtel.org`
+2. Teleport проксирует запрос на `https://gitlab.runtel.org`
+3. GitLab получает запрос, видит, что `Host` не совпадает с его `external_url`
+4. GitLab генерирует **абсолютный редирект**:
+   ```
+   HTTP 301/302
+   Location: https://gitlab.runtel.org/users/sign_in
+   ```
+5. Браузер идёт на `gitlab.runtel.org` (минуя Teleport)
+
+**Решение:** Сменить `external_url` на `https://gitlab.teleport.runtel.org`.
+
+---
+
+### 4. Команды для `tsh apps login` и SSH-туннеля
+
+#### **Вариант 1: `tsh apps login` (работает всегда)**
+
+```bash
+# Логин в Teleport
+tsh login --proxy=teleport.runtel.org --user=kkorablin
+
+# Получить доступ к приложению (например, GitLab)
+tsh apps login gitlab
+
+# После этого приложение доступно по адресу:
+# https://localhost:8080
+```
+
+#### **Вариант 2: SSH-туннель (SSH-прокси)**
+
+```bash
+# Для Jenkins (порт 8080)
+ssh -L 8080:192.168.87.11:8080 kkorablin@teleport.runtel.org -N
+
+# Для Jira
+ssh -L 8080:192.168.46.4:8080 kkorablin@teleport.runtel.org -N
+
+# Для Grafana
+ssh -L 3000:192.168.87.209:3000 kkorablin@teleport.runtel.org -N
+
+# Для GitLab (HTTPS)
+ssh -L 443:192.168.46.4:443 kkorablin@teleport.runtel.org -N
+```
+
+**Ключ `-N` означает:** не запускать удалённую оболочку, только туннель.
+
+После этого открывай в браузере:
+- `http://localhost:8080` (Jenkins, Jira)
+- `http://localhost:3000` (Grafana)
+- `https://localhost` (GitLab, потребуется добавить исключение сертификата)
+
+---
+
+### 5. Почему `tsh apps login` лучше?
+
+- Не требует ручного указания IP и портов
+- Работает через ту же аутентификацию Teleport (Keycloak)
+- Автоматически настраивает локальное прокси
+- Поддерживает HTTPS без ошибок сертификатов
+
+```bash
+# Пример для GitLab
+tsh apps login gitlab
+HTTPS → https://localhost:8080
+```
+
+---
+
+## ✅ Итог
+
+| Проблема | Решение |
+|----------|---------|
+| **GitLab/Jira редиректят** | Сменить `external_url` / `Base URL` на адрес Teleport |
+| **Нельзя менять Base URL** | Использовать `tsh apps login` или SSH-туннель |
+| **Jenkins/Grafana работают** | Они используют относительные ссылки |
+
+**Для быстрого доступа к любому приложению через Teleport:**  
+`tsh login --proxy=teleport.runtel.org --user=kkorablin && tsh apps login <app_name>` 🚀
