@@ -109,20 +109,22 @@ app_service:
   apps:
     - name: jenkins
       uri: http://192.168.87.11:8080
-      public_addr: jenkins.teleport.runtel.org
+      public_addr: jenkins.runtel.ru #jenkins.teleport.runtel.org
 
     - name: jira
       uri: http://192.168.46.4:8080
-      public_addr: jira.teleport.runtel.org
+      public_addr: jira.runtel.ru  #jira.teleport.runtel.org
 
     - name: gitlab
       uri: https://gitlab.runtel.org
-      public_addr: gitlab.teleport.runtel.org
+      public_addr: gitlab.runtel.org  #gitlab.teleport.runtel.org
 
     - name: grafana
       uri: http://192.168.87.209:3000
       public_addr: grafana.teleport.runtel.org
 ```
+**Чтобы не прописывать на локальной машине в хостах адреса на ресурсы с абсолютными ссылками (jira, gitlab), можно изменить их в конфиг файле (через # сотавил коммент со старой адресацией, которая тоже правильная). Собственно, это можно сделать и для ресурсов с относительными ссылками (grafana и jenkins, например)**
+
 
 ### 2.2. Дополнительные файлы конфигурации в `/etc/teleport.d/`
 
