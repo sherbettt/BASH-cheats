@@ -229,18 +229,27 @@ tctl get apps
 ```
 
 
-### 2.4. ***ОПЦИОНАЛЬНО!*** DNS (файл `/etc/hosts`)
+### 2.4. DNS (файл `/etc/hosts`)
 
-На сервере Teleport (jumpserver) добавлены записи:
-
+***ОПЦИОНАЛЬНО!*** На сервере Teleport (jumpserver) добавлены записи:
 ```
 192.168.87.238 teleport.runtel.org
 192.168.87.238 teleport-proxy
-192.168.87.209 grafana.teleport.runtel.org
+192.168.87.209 grafana.teleport.runtel.org  #т.к. отсутствует "мировая" запись dns для grafana.runtel.org(ru)
 ```
 
-***Не обязательно!*** На рабочей машине пользователя также добавлены записи для всех `public_addr`:
+***Обязательно!*** На рабочей машине пользователя также добавлены записи для всех `public_addr`:
+Указываем путь до ресурса через IP Teleport'а, т.к. этот оригинальный(прямой) ресурс указана в /etc/teleport.yaml
+```
+# Jira Cluster
+192.168.46.4  jira-node2
+##--Указываем путь до ресурса через IP Teleport'а--
+192.168.87.238  jira.runtel.ru
+192.168.87.238  gitlab.runte.org
+192.168.87.238  jenkins.runtel.ru
+```
 
+***Не обязательно!*** На рабочей машине пользователя старые записи для всех `public_addr`:
 ```
 192.168.87.238 jenkins.teleport.runtel.org
 192.168.87.238 jira.teleport.runtel.org
