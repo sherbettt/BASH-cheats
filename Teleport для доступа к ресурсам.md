@@ -99,8 +99,10 @@ proxy_service:
   https_keypairs:
 #    - cert_file: /etc/wc_runtelorg.crt #cert file generated for the domain name of public_addr 
 #      key_file: /etc/wc_runtelorg.key #key file generated for the domain name of public_addr
-    - cert_file: /etc/runtelorg.crt #cert file generated for the domain name of public_addr 
-      key_file: /etc/runtelorg.key #key file generated for the domain name of public_addr
+#    - cert_file: /etc/runtelorg.crt #cert file generated for the domain name of public_addr 
+#      key_file: /etc/runtelorg.key #key file generated for the domain name of public_addr
+    - cert_file: /etc/letsencrypt/live/teleport.runtel.org/fullchain.pem
+      key_file: /etc/letsencrypt/live/teleport.runtel.org/privkey.pem
 
 
 # секция добавлена в рамках добавления входа на ресурсы через теккущий севрер Teleport
