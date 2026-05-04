@@ -12,6 +12,9 @@ sudo pacman -S nftables lua tcpdump curl
 
 # Для компиляции из исходников
 sudo pacman -S gcc make libcap zlib libnetfilter_queue libpcap
+
+# Устанавливаем nfqueue для Arch/EndeavourOS
+sudo pacman -S libnetfilter_queue
 ```
 
 *Почему:*  
