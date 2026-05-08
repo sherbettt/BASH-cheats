@@ -37,10 +37,24 @@ $ pnpm --version
 ### 1.2 Установка Rust (компилятор)
 
 Pake требует Rust для сборки приложений:
-
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source ~/.cargo/env
+rustup install stable
+rustup default stable
+```
+**Важно: Добавьте ~/.cargo/bin в PATH:**
+```bash
+# Для bash
+echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+# Для zsh
+echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+# Для устранения надоедливого "correct" в zsh (для procs)
+echo 'alias procs="nocorrect procs"' >> ~/.zshrc
 ```
 
 **Проверка:**
