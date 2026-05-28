@@ -355,14 +355,33 @@ Type=simple
 User=root
 Group=root
 ExecStartPre=/usr/bin/modprobe nfnetlink_queue
-ExecStart=/opt/zapret2/nfq2/nfqws2 \
-    --qnum=200 \
-    --lua-init=@/opt/zapret2/lua/zapret-lib.lua \
-    --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua \
-    --filter-tcp=80,443 \
-    --filter-l7=tls,http \
-    --payload=tls_client_hello \
-    --lua-desync=multisplit:pos=1:seqovl=5
+#ExecStart=/opt/zapret2/nfq2/nfqws2 --qnum=300 \
+#    --lua-init=@/opt/zapret2/lua/zapret-lib.lua \
+#    --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua \
+#    --filter-tcp=443 \
+#    --hostlist=/opt/zapret2/hostlists/youtube.txt \
+#    --payload=tls_client_hello \
+#    --lua-desync=fake,multisplit \
+#    --lua-desync-fooling=ts \
+#    --lua-desync-repeats=8 \
+#    --lua-desync-split-seqovl=654 \
+#    --lua-desync-split-pos=1
+
+ExecStart=/opt/zapret2/nfq2/nfqws2 --qnum=300 --lua-init=@/opt/zapret2/lua/zapret-lib.lua --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua \
+    --filter-tcp=443 --hostlist=/opt/zapret2/hostlists/youtube.txt --payload=tls_client_hello \
+    --lua-desync=multidisorder:pos=2:sld
+
+
+#ExecStart=/opt/zapret2/nfq2/nfqws2 \
+#    --qnum=300 --lua-init=@/opt/zapret2/lua/zapret-lib.lua --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua \
+#    --filter-tcp=443 --hostlist=/opt/zapret2/hostlists/youtube.txt --payload=tls_client_hello --lua-desync=multisplit:pos=7:seqovl=620
+
+
+#ExecStart=/opt/zapret2/nfq2/nfqws2 \
+#    --qnum=300 --lua-init=@/opt/zapret2/lua/zapret-lib.lua --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua \
+#    --filter-tcp=443 --hostlist=/opt/zapret2/hostlists/youtube.txt \
+#    --payload=tls_client_hello --lua-desync=tcpseg:pos=0,1:ip_id=rnd:repeats=1
+
 
 Restart=on-failure
 RestartSec=5
