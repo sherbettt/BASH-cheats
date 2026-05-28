@@ -333,36 +333,146 @@ zapret-status
 
 ---
 
-## **9️⃣ АВТОЗАПУСК: systemd сервис с правильной зависимостью**
+## **9️⃣ АВТОЗАПУСК: systemd сервис с правильной зависимостью (ГОТОВЫЙ ФАЙЛ)**
 
-После запуска `install_easy.sh` сервис уже создан. Проверьте его:
+Создайте файл сервиса:
 
 ```bash
-sudo systemctl status zapret2.service
+sudo mcedit /etc/systemd/system/zapret2.service
 ```
 
-Если нужно отредактировать:
+**Полное содержимое файла (копируйте целиком):**
 
-```bash
-sudo systemctl edit --full zapret2.service
+```ini
+[Unit]
+Description=Zapret DPI bypass v0.9.5.2
+After=network.target nftables.service
+Wants=nftables.service
+Before=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStartPre=/usr/bin/modprobe nfnetlink_queue
+ExecStart=/opt/zapret2/nfq2/nfqws2 \
+    --qnum=200 \
+    --lua-init=@/opt/zapret2/lua/zapret-lib.lua \
+    --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua \
+    --filter-tcp=80,443 \
+    --filter-l7=tls,http \
+    --payload=tls_client_hello \
+    --lua-desync=multisplit:pos=1:seqovl=5
+
+Restart=on-failure
+RestartSec=5
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+[Install]
+WantedBy=multi-user.target
 ```
 
-**Важно:** В сервисе должны использоваться абсолютные пути к Lua файлам (с `@/opt/zapret2/lua/...`).
+### **Что важно в этом файле:**
 
-### **Включаем и запускаем**
+| Строка | Почему это важно |
+|--------|------------------|
+| `ExecStartPre=/usr/bin/modprobe nfnetlink_queue` | Гарантирует загрузку модуля ядра ДО запуска zapret |
+| `After=nftables.service` | Запускается только после загрузки nftables |
+| `Wants=nftables.service` | Запускает nftables, если он не активен |
+| `--lua-init=@/opt/zapret2/lua/...` | **Абсолютные пути** — не ломаются после перезагрузки |
+| `Restart=on-failure` | Автоматически перезапускается при падении |
+
+---
+
+### **Альтернативные стратегии (замените строку `ExecStart` на одну из них):**
+
+**Стратегия ALT11 (более агрессивная, если базовая не работает):**
+```bash
+ExecStart=/opt/zapret2/nfq2/nfqws2 \
+    --qnum=200 \
+    --lua-init=@/opt/zapret2/lua/zapret-lib.lua \
+    --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua \
+    --filter-tcp=80,443 \
+    --filter-l7=tls,http \
+    --payload=tls_client_hello \
+    --lua-desync=fake,multisplit \
+    --lua-desync-fooling=ts \
+    --lua-desync-repeats=8 \
+    --lua-desync-split-seqovl=654 \
+    --lua-desync-split-pos=1
+```
+
+**Стратегия только для YouTube (с hostlist, безопасная):**
+```bash
+ExecStart=/opt/zapret2/nfq2/nfqws2 \
+    --qnum=200 \
+    --lua-init=@/opt/zapret2/lua/zapret-lib.lua \
+    --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua \
+    --hostlist=/opt/zapret2/hostlists/youtube.txt \
+    --filter-tcp=443 \
+    --payload=tls_client_hello \
+    --lua-desync=tcpseg:pos=0,1:ip_id=rnd:repeats=1
+```
+
+---
+
+### **Активация сервиса:**
 
 ```bash
+# Перезагружаем systemd, чтобы он увидел новый файл
 sudo systemctl daemon-reload
+
+# Включаем автозапуск
 sudo systemctl enable zapret2.service
+
+# Запускаем сейчас
 sudo systemctl start zapret2.service
+
+# Проверяем статус
 sudo systemctl status zapret2.service
-```
 
-### **Просмотр логов**
-
-```bash
+# Смотрим логи в реальном времени
 sudo journalctl -u zapret2.service -f
 ```
+
+---
+
+### **Проверка, что сервис работает корректно:**
+
+```bash
+# 1. Сервис активен?
+systemctl is-enabled zapret2.service  # должно вернуть "enabled"
+systemctl is-active zapret2.service    # должно вернуть "active"
+
+# 2. Модуль ядра загружен?
+lsmod | grep nfnetlink_queue
+
+# 3. Правила nftables на месте?
+sudo nft list table inet zapret2
+
+# 4. YouTube работает?
+curl -I https://www.youtube.com 2>/dev/null | head -n 1
+# Должно быть: HTTP/2 200
+```
+
+---
+
+### **Если сервис не запускается — смотрим ошибку:**
+
+```bash
+# Подробный статус с ошибкой
+sudo systemctl status zapret2.service -l --no-pager
+
+# Последние 50 строк логов
+sudo journalctl -u zapret2.service -n 50 --no-pager
+
+# Запуск вручную с дебагом (для диагностики)
+sudo /opt/zapret2/nfq2/nfqws2 --qnum=200 --debug --lua-init=@/opt/zapret2/lua/zapret-lib.lua --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua --filter-tcp=80,443 --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
+```
+
+---
+
+Спасибо за замечание — действительно, без готового примера файла инструкция была неполной. Теперь всё есть!
 
 ---
 
