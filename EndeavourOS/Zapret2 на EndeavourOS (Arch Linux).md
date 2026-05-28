@@ -540,3 +540,20 @@ sudo sysctl --system
 4. ✅ Проблему с несоответствием версий ядра после обновления
 5. ✅ Автозагрузку модуля ядра
 6. ✅ Актуальную версию zapret v0.9.5.2
+---------------------------
+<br/>
+
+
+## **"Большая красная кнопка"* для сети
+Если сломался выход на разрешённые ресурсы, по типу https://giga.chat/ , то можно выполнить следующий набор команд:
+```bash
+sudo systemctl restart NetworkManager
+sudo systemctl stop zapret2.service
+sudo nft flush ruleset
+sudo systemctl stop firewalld
+```
+
+
+
+
+
