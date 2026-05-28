@@ -1,5 +1,10 @@
 # 📗 **ИНСТРУКЦИЯ: Установка и настройка zapret v0.9.5.2 на Ximper Linux 0.9.4 в `/opt/`**
 
+> **📌 АКТУАЛЬНО НА 28 МАЯ 2026:**  
+> Проверенная рабочая стратегия — `multisplit:pos=midsld:seqovl=5`
+
+---
+
 ## **1️⃣ Подготовка системы (установка необходимых пакетов)**
 
 ```bash
@@ -10,6 +15,12 @@ epmi nftables libnftnl lua5.3
 
 *Почему:* `nftables` нужен для перенаправления трафика, `lua5.3` — для скриптов zapret. В Ximper Linux, основанном на ALT Linux, используется менеджер пакетов `epm`.
 
+**⚠️ Важно:** После установки nftables команда `nft` находится в `/usr/sbin/nft`. Для удобства добавьте алиас:
+```bash
+echo "alias nft='sudo /usr/sbin/nft'" >> ~/.bashrc
+source ~/.bashrc
+```
+
 ---
 
 ## **2️⃣ Настройка nftables (правила перенаправления трафика)**
@@ -17,7 +28,7 @@ epmi nftables libnftnl lua5.3
 Создаем файл с правилами:
 
 ```bash
-mcedit /etc/nftables/zapret.nft
+sudo mcedit /etc/nftables/zapret.nft
 ```
 
 Вставляем:
@@ -48,8 +59,8 @@ table inet zapret {
 Проверяем загрузку:
 
 ```bash
-nft -f /etc/nftables/zapret.nft
-nft list ruleset
+sudo /usr/sbin/nft -f /etc/nftables/zapret.nft
+sudo /usr/sbin/nft list ruleset
 ```
 
 ---
@@ -57,8 +68,8 @@ nft list ruleset
 ## **3️⃣ Настройка параметра ядра (важно для TCP)**
 
 ```bash
-sysctl net.netfilter.nf_conntrack_tcp_be_liberal=1
-echo "net.netfilter.nf_conntrack_tcp_be_liberal=1" >> /etc/sysctl.conf
+sudo sysctl net.netfilter.nf_conntrack_tcp_be_liberal=1
+echo "net.netfilter.nf_conntrack_tcp_be_liberal=1" | sudo tee -a /etc/sysctl.conf
 ```
 
 ---
@@ -117,12 +128,14 @@ curl -I https://www.youtube.com 2>/dev/null | head -n 1
 # Должно быть медленно или ошибка
 ```
 
-### РАБОЧАЯ стратегия (multisplit) с отладкой:
+### ✅ **РАБОЧАЯ СТРАТЕГИЯ (проверено 28.05.2026):**
 
 ```bash
 cd /opt/zapret2-v0.9.5.2
-sudo ./nfq2/nfqws2 --qnum=200 --debug --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
+sudo ./nfq2/nfqws2 --qnum=200 --debug --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=midsld:seqovl=5
 ```
+
+**Почему эта стратегия:** `pos=midsld` означает разрез посередине домена второго уровня (например, `yout` | `ube.com`). Это один из самых эффективных способов обхода DPI, так как сигнатура SNI разрывается в самом "заметном" для DPI месте.
 
 ### Проверка ПОСЛЕ запуска (в другом терминале):
 
@@ -131,10 +144,23 @@ curl -I https://www.youtube.com 2>/dev/null | head -n 1
 # Должно быть быстро с HTTP/2 200
 ```
 
+### Альтернативные стратегии (если основная перестанет работать):
+
+```bash
+# Вариант 1: классический multisplit
+sudo ./nfq2/nfqws2 --qnum=200 --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
+
+# Вариант 2: разрез после 2 байт
+sudo ./nfq2/nfqws2 --qnum=200 --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=2:seqovl=5
+
+# Вариант 3: два разреза
+sudo ./nfq2/nfqws2 --qnum=200 --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1,midsld:seqovl=5
+```
+
 ### Без отладки (тихий режим):
 
 ```bash
-sudo ./nfq2/nfqws2 --qnum=200 --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
+sudo ./nfq2/nfqws2 --qnum=200 --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=midsld:seqovl=5
 ```
 
 ---
@@ -152,14 +178,14 @@ sudo mcedit /usr/local/bin/zapret-start
 # Запуск zapret с проверкой nftables
 
 echo "🔄 Загружаем правила nftables..."
-nft -f /etc/nftables/zapret.nft 2>/dev/null || {
-    nft delete table inet zapret 2>/dev/null
-    nft -f /etc/nftables/zapret.nft
+/usr/sbin/nft -f /etc/nftables/zapret.nft 2>/dev/null || {
+    /usr/sbin/nft delete table inet zapret 2>/dev/null
+    /usr/sbin/nft -f /etc/nftables/zapret.nft
 }
 
 echo "🚀 Запускаем nfqws2..."
 cd /opt/zapret2-v0.9.5.2
-./nfq2/nfqws2 --qnum=200 --daemon --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
+./nfq2/nfqws2 --qnum=200 --daemon --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=midsld:seqovl=5
 
 sleep 2
 if pgrep -f nfqws2 >/dev/null; then
@@ -191,7 +217,7 @@ echo "=== NFQWS2 ==="
 pgrep -f nfqws2 >/dev/null && echo "✅ РАБОТАЕТ" || echo "❌ НЕ РАБОТАЕТ"
 
 echo "=== NFTABLES ==="
-nft list table inet zapret &>/dev/null && echo "✅ ЗАГРУЖЕНЫ" || echo "❌ НЕ ЗАГРУЖЕНЫ"
+/usr/sbin/nft list table inet zapret &>/dev/null && echo "✅ ЗАГРУЖЕНЫ" || echo "❌ НЕ ЗАГРУЖЕНЫ"
 
 echo "=== YouTube тест ==="
 curl -I https://www.youtube.com 2>/dev/null | head -n 1 || echo "❌ Не отвечает"
@@ -256,7 +282,7 @@ Before=network-online.target
 Type=simple
 User=root
 Group=root
-ExecStart=/opt/zapret2-v0.9.5.2/nfq2/nfqws2 --qnum=200 --lua-init=@/opt/zapret2-v0.9.5.2/lua/zapret-lib.lua --lua-init=@/opt/zapret2-v0.9.5.2/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
+ExecStart=/opt/zapret2-v0.9.5.2/nfq2/nfqws2 --qnum=200 --lua-init=@/opt/zapret2-v0.9.5.2/lua/zapret-lib.lua --lua-init=@/opt/zapret2-v0.9.5.2/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=midsld:seqovl=5
 Restart=on-failure
 RestartSec=5
 
@@ -306,11 +332,11 @@ cat /opt/zapret2-v0.9.5.2/lua/zapret-antidpi.lua | grep -A 5 "desync profiles"
 
 ```bash
 # Есть ли таблица?
-sudo nft list tables
+sudo /usr/sbin/nft list tables
 
 # Если пусто — правила не загружены
 sudo systemctl restart nftables-zapret.service
-sudo nft list table inet zapret
+sudo /usr/sbin/nft list table inet zapret
 ```
 
 ### Дополнительная диагностика:
@@ -328,7 +354,7 @@ sudo journalctl -u zapret -f
 ```bash
 sudo zapret-stop
 sudo systemctl stop nftables-zapret.service
-sudo nft delete table inet zapret 2>/dev/null
+sudo /usr/sbin/nft delete table inet zapret 2>/dev/null
 curl -I https://www.youtube.com/
 ```
 
@@ -346,7 +372,7 @@ sudo systemctl disable nftables-zapret
 sudo rm /etc/systemd/system/zapret.service
 sudo rm /etc/systemd/system/nftables-zapret.service
 sudo systemctl daemon-reload
-sudo nft delete table inet zapret
+sudo /usr/sbin/nft delete table inet zapret
 sudo rm -rf /opt/zapret2-v0.9.5.2
 sudo rm /usr/local/bin/zapret-{start,stop,status}
 ```
@@ -358,9 +384,9 @@ sudo rm /usr/local/bin/zapret-{start,stop,status}
 | Компонент | Значение |
 |-----------|----------|
 | **Версия zapret** | v0.9.5.2 |
-| **Стратегия** | `multisplit:pos=1:seqovl=5` |
+| **Стратегия** | `multisplit:pos=midsld:seqovl=5` ✅ **проверено 28.05.2026** |
 | **Порты** | TCP 80, 443 |
-| **Команда запуска** | `sudo /opt/zapret2-v0.9.5.2/nfq2/nfqws2 --qnum=200 --lua-init=@/opt/zapret2-v0.9.5.2/lua/zapret-lib.lua --lua-init=@/opt/zapret2-v0.9.5.2/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5` |
+| **Команда запуска** | `sudo /opt/zapret2-v0.9.5.2/nfq2/nfqws2 --qnum=200 --lua-init=@/opt/zapret2-v0.9.5.2/lua/zapret-lib.lua --lua-init=@/opt/zapret2-v0.9.5.2/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=midsld:seqovl=5` |
 | **Правила nftables** | `/etc/nftables/zapret.nft` |
 | **Сервис nftables** | `nftables-zapret.service` |
 | **Сервис zapret** | `zapret.service` |
@@ -371,15 +397,65 @@ sudo rm /usr/local/bin/zapret-{start,stop,status}
 ---
 
 ## ✅ **Что теперь работает**
-- YouTube открывается без тормозов
+- YouTube открывается без тормозов (`HTTP/2 200`)
 - Другие заблокированные сайты тоже могут работать
 - Всё запускается автоматически после перезагрузки
 - Удобное управление через `zapret-start/stop/status`
 
 ---
 
-## 📝 **Примечание:**
-Стратегии могут меняться со временем. Если перестанет работать — попробуйте другие варианты из файла `zapret-antidpi.lua` или проверьте актуальную документацию на https://github.com/bol-van/zapret2/
+## 📝 **Примечание о стратегиях:**
+
+Стратегии могут меняться со временем в зависимости от обновлений DPI провайдера. 
+
+**На 28 мая 2026 года проверенная рабочая стратегия:**  
+`multisplit:pos=midsld:seqovl=5`
+
+### Что означает эта стратегия:
+- `midsld` (mid second-level domain) — разрез посередине домена второго уровня
+- Для YouTube это означает разрыв между `yout` и `ube.com`
+- DPI не может прочитать SNI, так как он разорван в самом "уязвимом" месте
+- Сервер при этом собирает части и正常工作
+
+### Если перестанет работать:
+Попробуйте другие варианты:
+1. `multisplit:pos=1:seqovl=5` — классический разрез после 1 байта
+2. `multisplit:pos=2:seqovl=5` — разрез после 2 байт
+3. `multisplit:pos=1,midsld:seqovl=5` — два разреза
+4. `multisplit:pos=midsld:seqovl=10` — увеличенное перекрытие
+
+Актуальную документацию смотрите на https://github.com/bol-van/zapret2/
+
+---
+
+## 🎯 **Краткий чек-лист для быстрой установки:**
+
+```bash
+# 1. Установка nftables
+sudo epm update && sudo epmi nftables libnftnl lua5.3
+echo "alias nft='sudo /usr/sbin/nft'" >> ~/.bashrc && source ~/.bashrc
+
+# 2. Настройка nftables
+sudo mcedit /etc/nftables/zapret.nft   # вставить правила из раздела 2️⃣
+sudo nft -f /etc/nftables/zapret.nft
+
+# 3. Параметр ядра
+sudo sysctl net.netfilter.nf_conntrack_tcp_be_liberal=1
+
+# 4. Установка zapret
+cd ~/Загрузки/ && wget https://github.com/bol-van/zapret2/releases/download/v0.9.5.2/zapret2-v0.9.5.2.tar.gz
+sudo tar -xzf zapret2-v0.9.5.2.tar.gz -C /opt/
+cd /opt/zapret2-v0.9.5.2 && sudo cp binaries/linux-x86_64/nfqws2 nfq2/
+
+# 5. Запуск с рабочей стратегией
+sudo ./nfq2/nfqws2 --qnum=200 --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=midsld:seqovl=5
+
+# 6. Проверка (в другом терминале)
+curl -I https://youtube.com 2>/dev/null | head -1
+# → HTTP/2 200
+```
+
+---
 
 ------------------------------------------------------------
 <br/>
@@ -575,16 +651,16 @@ cat /etc/nftables.conf
 
 ```bash
 # Посмотреть все правила
-sudo nft list ruleset
+sudo /usr/sbin/nft list ruleset
 
 # Посмотреть конкретную таблицу
-sudo nft list table inet zapret
+sudo /usr/sbin/nft list table inet zapret
 
 # Мониторинг событий
-sudo nft monitor
+sudo /usr/sbin/nft monitor
 
 # Статистика по правилам
-sudo nft list ruleset -a
+sudo /usr/sbin/nft list ruleset -a
 ```
 
 ---
@@ -600,3 +676,8 @@ sudo nft list ruleset -a
 - **RHEL** даёт enterprise-подход
 
 Наш код адаптируется под каждый дистрибутив, уважая его традиции, но везде использует **современный nftables**, а не устаревший iptables. 🚀
+
+---
+
+## ✅ **Ваша установка завершена успешно!**
+
