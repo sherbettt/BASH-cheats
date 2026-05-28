@@ -551,6 +551,7 @@ sudo systemctl restart NetworkManager
 sudo systemctl stop zapret2.service
 sudo nft flush ruleset
 sudo systemctl stop firewalld
+sudo systemctl enable --now firewalld
 ```
 
 
