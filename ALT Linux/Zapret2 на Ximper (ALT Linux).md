@@ -1,6 +1,4 @@
-# 📗 **ИНСТРУКЦИЯ: Установка и настройка zapret на Simply Linux (ALT Linux) в системную директорию**
-
-
+# 📗 **ИНСТРУКЦИЯ: Установка и настройка zapret v0.9.5.2 на Ximper Linux 0.9.4 в `/opt/`**
 
 ## **1️⃣ Подготовка системы (установка необходимых пакетов)**
 
@@ -10,7 +8,7 @@ epm update
 epmi nftables libnftnl lua5.3
 ```
 
-*Почему:* `nftables` нужен для перенаправления трафика, `lua5.3` — для скриптов zapret. В Simply Linux используется менеджер пакетов `epm`.
+*Почему:* `nftables` нужен для перенаправления трафика, `lua5.3` — для скриптов zapret. В Ximper Linux, основанном на ALT Linux, используется менеджер пакетов `epm`.
 
 ---
 
@@ -65,23 +63,25 @@ echo "net.netfilter.nf_conntrack_tcp_be_liberal=1" >> /etc/sysctl.conf
 
 ---
 
-## **4️⃣ Скачивание zapret в системную директорию**
+## **4️⃣ Скачивание zapret v0.9.5.2 в `/opt/`**
 
 ```bash
 cd ~/Загрузки/
-wget https://github.com/bol-van/zapret2/releases/download/v0.9.4.5/zapret2-v0.9.4.5.tar.gz
-sudo cp zapret2-v0.9.4.5.tar.gz /usr/local/bin/
-cd /usr/local/bin/
-sudo tar -xzf zapret2-v0.9.4.5.tar.gz
-sudo rm zapret2-v0.9.4.5.tar.gz
+wget https://github.com/bol-van/zapret2/releases/download/v0.9.5.2/zapret2-v0.9.5.2.tar.gz
+sudo cp zapret2-v0.9.5.2.tar.gz /opt/
+cd /opt/
+sudo tar -xzf zapret2-v0.9.5.2.tar.gz
+sudo rm zapret2-v0.9.5.2.tar.gz
 ```
+
+Теперь программа установлена в `/opt/zapret2-v0.9.5.2/`.
 
 ---
 
 ## **5️⃣ Использование готовых бинарников (без компиляции)**
 
 ```bash
-cd /usr/local/bin/zapret2-v0.9.4.5
+cd /opt/zapret2-v0.9.5.2
 sudo cp binaries/linux-x86_64/nfqws2 nfq2/
 sudo cp binaries/linux-x86_64/ip2net ip2net/
 sudo cp binaries/linux-x86_64/mdig mdig/
@@ -99,12 +99,11 @@ ls -la nfq2/nfqws2   # должно быть -rwxr-xr-x
 ## **6️⃣ ВАЖНО: Права доступа к Lua файлам**
 
 ```bash
-cd /usr/local/bin/zapret2-v0.9.4.5
-sudo chmod a+x /usr/local/
-sudo chmod a+x /usr/local/bin/
-sudo chmod a+x /usr/local/bin/zapret2-v0.9.4.5/
-sudo chmod a+x /usr/local/bin/zapret2-v0.9.4.5/lua/
-sudo chmod a+r /usr/local/bin/zapret2-v0.9.4.5/lua/*.lua
+cd /opt/zapret2-v0.9.5.2
+sudo chmod a+x /opt/
+sudo chmod a+x /opt/zapret2-v0.9.5.2/
+sudo chmod a+x /opt/zapret2-v0.9.5.2/lua/
+sudo chmod a+r /opt/zapret2-v0.9.5.2/lua/*.lua
 ```
 
 ---
@@ -121,7 +120,7 @@ curl -I https://www.youtube.com 2>/dev/null | head -n 1
 ### РАБОЧАЯ стратегия (multisplit) с отладкой:
 
 ```bash
-cd /usr/local/bin/zapret2-v0.9.4.5
+cd /opt/zapret2-v0.9.5.2
 sudo ./nfq2/nfqws2 --qnum=200 --debug --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
 ```
 
@@ -159,7 +158,7 @@ nft -f /etc/nftables/zapret.nft 2>/dev/null || {
 }
 
 echo "🚀 Запускаем nfqws2..."
-cd /usr/local/bin/zapret2-v0.9.4.5
+cd /opt/zapret2-v0.9.5.2
 ./nfq2/nfqws2 --qnum=200 --daemon --lua-init=@lua/zapret-lib.lua --lua-init=@lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
 
 sleep 2
@@ -248,7 +247,7 @@ sudo mcedit /etc/systemd/system/zapret.service
 
 ```ini
 [Unit]
-Description=Zapret2 DPI bypass
+Description=Zapret2 DPI bypass (v0.9.5.2)
 After=network.target nftables-zapret.service
 Wants=nftables-zapret.service
 Before=network-online.target
@@ -257,7 +256,7 @@ Before=network-online.target
 Type=simple
 User=root
 Group=root
-ExecStart=/usr/local/bin/zapret2-v0.9.4.5/nfq2/nfqws2 --qnum=200 --lua-init=@/usr/local/bin/zapret2-v0.9.4.5/lua/zapret-lib.lua --lua-init=@/usr/local/bin/zapret2-v0.9.4.5/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
+ExecStart=/opt/zapret2-v0.9.5.2/nfq2/nfqws2 --qnum=200 --lua-init=@/opt/zapret2-v0.9.5.2/lua/zapret-lib.lua --lua-init=@/opt/zapret2-v0.9.5.2/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
 Restart=on-failure
 RestartSec=5
 
@@ -288,7 +287,7 @@ zapret-status
 ## **🔟 Как посмотреть доступные стратегии**
 
 ```bash
-cat /usr/local/bin/zapret2-v0.9.4.5/lua/zapret-antidpi.lua | grep -A 5 "desync profiles"
+cat /opt/zapret2-v0.9.5.2/lua/zapret-antidpi.lua | grep -A 5 "desync profiles"
 ```
 
 ---
@@ -348,25 +347,26 @@ sudo rm /etc/systemd/system/zapret.service
 sudo rm /etc/systemd/system/nftables-zapret.service
 sudo systemctl daemon-reload
 sudo nft delete table inet zapret
-sudo rm -rf /usr/local/bin/zapret2-v0.9.4.5
+sudo rm -rf /opt/zapret2-v0.9.5.2
 sudo rm /usr/local/bin/zapret-{start,stop,status}
 ```
 
 ---
 
-## **📌 ИТОГ: РАБОЧАЯ КОНФИГУРАЦИЯ**
+## **📌 ИТОГ: РАБОЧАЯ КОНФИГУРАЦИЯ для Ximper Linux 0.9.4**
 
 | Компонент | Значение |
 |-----------|----------|
+| **Версия zapret** | v0.9.5.2 |
 | **Стратегия** | `multisplit:pos=1:seqovl=5` |
 | **Порты** | TCP 80, 443 |
-| **Команда запуска** | `sudo /usr/local/bin/zapret2-v0.9.4.5/nfq2/nfqws2 --qnum=200 --lua-init=@/usr/local/bin/zapret2-v0.9.4.5/lua/zapret-lib.lua --lua-init=@/usr/local/bin/zapret2-v0.9.4.5/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5` |
+| **Команда запуска** | `sudo /opt/zapret2-v0.9.5.2/nfq2/nfqws2 --qnum=200 --lua-init=@/opt/zapret2-v0.9.5.2/lua/zapret-lib.lua --lua-init=@/opt/zapret2-v0.9.5.2/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5` |
 | **Правила nftables** | `/etc/nftables/zapret.nft` |
 | **Сервис nftables** | `nftables-zapret.service` |
 | **Сервис zapret** | `zapret.service` |
 | **Скрипты управления** | `zapret-start`, `zapret-stop`, `zapret-status` |
 | **Параметр ядра** | `net.netfilter.nf_conntrack_tcp_be_liberal=1` |
-| **Рабочая директория** | `/usr/local/bin/zapret2-v0.9.4.5` |
+| **Рабочая директория** | `/opt/zapret2-v0.9.5.2` |
 
 ---
 
@@ -384,9 +384,6 @@ sudo rm /usr/local/bin/zapret-{start,stop,status}
 ------------------------------------------------------------
 <br/>
 <br/>
-
-
-
 
 # 🔥 **nftables: полное руководство для понимания**
 
@@ -472,7 +469,7 @@ nft list ruleset
 - **RHEL 9 / AlmaLinux 9** → только nftables (iptables — символическая ссылка)
 - **Debian 12** → nftables по умолчанию
 - **Arch Linux** → nftables рекомендуется
-- **ALT Linux** → поддерживает оба, но nftables современнее
+- **ALT Linux / Ximper Linux** → поддерживает оба, но nftables современнее
 
 ---
 
@@ -482,14 +479,14 @@ nft list ruleset
 
 | Дистрибутив | Подход | Почему |
 |-------------|--------|--------|
-| **ALT Linux** | Минимальный сервис или rc.local | Философия: "дай пользователю контроль, не навязывай готовых решений" |
+| **ALT Linux / Ximper Linux** | Минимальный сервис или rc.local | Философия: "дай пользователю контроль, не навязывай готовых решений" |
 | **Debian/Ubuntu** | `netfilter-persistent.service` | Консервативный подход, сохранение совместимости |
 | **Arch Linux** | `nftables.service` (стандартный) | Философия KISS — один сервис, который загружает `/etc/nftables.conf` |
 | **Fedora/RHEL** | `nftables.service` + firewalld | Enterprise-подход: firewalld как высокоуровневый интерфейс |
 | **openSUSE** | `nftables.service` | Аналогично Arch, но с YaST интеграцией |
 
-### **Подробнее про ALT Linux:**
-В ALT Linux:
+### **Подробнее про Ximper Linux:**
+В Ximper Linux (как и в ALT Linux, на котором он основан):
 ```bash
 # Нет предустановленного сервиса nftables
 ls /etc/systemd/system/ | grep nftables
@@ -499,7 +496,7 @@ ls /etc/systemd/system/ | grep nftables
 echo "nft -f /etc/nftables.zapret" >> /etc/rc.local
 ```
 
-**Почему?** ALT Linux следует принципу:  
+**Почему?** Ximper Linux следует принципу:  
 > "Система должна быть минимальной и предсказуемой. Пользователь сам решает, как управлять сервисами."
 
 ### **Подробнее про Arch/EndeavourOS:**
@@ -560,7 +557,7 @@ cat /etc/nftables.conf
 
 | Дистрибутив | Как работать с nftables |
 |-------------|------------------------|
-| **ALT Linux** | Создай свой сервис или используй rc.local |
+| **Ximper Linux / ALT Linux** | Создай свой сервис или используй rc.local |
 | **Debian/Ubuntu** | `netfilter-persistent` + правила в `/etc/nftables/` |
 | **Arch/EndeavourOS** | `nftables.service` + `/etc/nftables.conf` |
 | **Fedora/RHEL** | `firewalld` (поверх nftables) или прямой nftables |
@@ -597,7 +594,7 @@ sudo nft list ruleset -a
 **nftables** — это эволюция сетевой фильтрации в Linux. Он не просто "замена iptables", а принципиально новый подход: единый, атомарный, производительный.
 
 Разница в реализации между дистрибутивами — это не баг, а фича, отражающая их философию:
-- **ALT Linux** даёт свободу
+- **Ximper Linux / ALT Linux** даёт свободу
 - **Arch Linux** даёт инфраструктуру
 - **Debian** даёт стабильность
 - **RHEL** даёт enterprise-подход
