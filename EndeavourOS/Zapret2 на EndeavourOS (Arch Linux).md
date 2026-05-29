@@ -190,6 +190,21 @@ table inet zapret {
 }
 ```
 
+**Запускаем zapret через sysv-скрипт**
+```bash
+sudo /opt/zapret2/init.d/sysv/zapret2 start
+```
+
+**Проверяем, что процесс запустился**
+```bash
+ps aux | grep nfqws2 | grep -v grep
+```
+
+**Тестируем YouTube**
+```bash
+curl -I https://youtube.com 2>/dev/null | head -1
+```
+
 ```bash
 # Включаем и запускаем nftables (если ещё не включен)
 sudo systemctl enable nftables
