@@ -1,91 +1,122 @@
-# 📗 **Установка и настройка zapret на EndeavourOS (Arch Linux)**
+# 📗 **Установка и настройка zapret на EndeavourOS (Arch Linux) — ПОЛНОЕ РУКОВОДСТВО**
 
-## **🚨 ГЛАВНЫЙ ВЫВОД ИЗ ЭКСПЕРИМЕНТА**
-> **Zapret ДОЛЖЕН быть установлен в `/opt/zapret2`.**  
-> Скрипт `install_easy.sh` работает корректно только оттуда.  
-> При установке в `/usr/local/bin/zapret2` возникают ошибки прав доступа и несовместимости с системой.
+## **🚨 ГЛАВНЫЕ ВЫВОДЫ ИЗ ПРАКТИЧЕСКОГО ЭКСПЕРИМЕНТА (29 мая 2026)**
+
+1. **Zapret ДОЛЖЕН быть установлен в `/opt/zapret2`** — скрипты и сервисы ожидают именно этот путь
+2. **Рабочая стратегия на текущий момент:** `multisplit:pos=midsld:seqovl=5`
+3. **Модуль ядра `nfnetlink_queue` должен быть загружен ДО запуска zapret**
+4. **Использование абсолютных путей в `--lua-init` критически важно**
+5. **В EndeavourOS есть 3 способа установки** — все рабочие, выбирайте любой
 
 ---
 
-## **1️⃣ Подготовка системы (установка необходимых пакетов)**
+## **Способы установки zapret на EndeavourOS**
+
+| Способ | Сложность | Когда использовать |
+|--------|-----------|-------------------|
+| **1. Из AUR (бинарный)** | ⭐ Простой | Быстрая установка, не нужно компилировать |
+| **2. Из AUR (исходники)** | ⭐⭐ Средний | Хотите компилировать сами |
+| **3. Из GitHub (релиз v0.9.5.2)** | ⭐⭐ Средний | Нужна конкретная стабильная версия |
+| **4. Из GitHub (master ветка)** | ⭐⭐⭐ Сложный | Нужны самые свежие изменения |
+
+---
+
+# **ЧАСТЬ 1: УСТАНОВКА ИЗ AUR (РЕКОМЕНДУЕТСЯ ДЛЯ НОВИЧКОВ)**
+
+## **1️⃣ Подготовка системы**
 
 ```bash
 # Обновляем систему
 sudo pacman -Syu
 
 # Устанавливаем необходимые пакеты
-sudo pacman -S nftables lua tcpdump curl
+sudo pacman -S nftables lua tcpdump curl base-devel
 
-# Для компиляции из исходников
-sudo pacman -S gcc make libcap zlib libnetfilter_queue libpcap
-
-# Устанавливаем libnetfilter_queue (обязательно для NFQUEUE)
+# Устанавливаем библиотеку для NFQUEUE (обязательно!)
 sudo pacman -S libnetfilter_queue
+
+# Устанавливаем AUR-помощник paru (если ещё нет)
+sudo pacman -S --needed git base-devel
+git clone https://aur.archlinux.org/paru.git
+cd paru
+makepkg -si
+cd ..
 ```
 
 *Почему:*  
 - `nftables` — для перенаправления трафика  
+- `libnetfilter_queue` — библиотека для работы с очередями nftables  
 - `lua` — для скриптов zapret  
-- `tcpdump` — для отладки  
-- `curl` — для проверки доступности сайтов  
-- `libnetfilter_queue` — библиотека для работы с очередями nftables
+- `paru` — удобный AUR-помощник
 
 ---
 
-## ** Важная проверка: модули ядра для NFQUEUE**
+## **2️⃣ Установка zapret2 из AUR**
 
-⚠️ **Перед настройкой nftables обязательно выполните этот раздел!** Без модуля `nfnetlink_queue` правила nftables с `queue` работать не будут.
-
-### **Проверка версии ядра и модуля**
+### **Вариант А: Бинарный пакет (самый простой, рекомендую)**
 
 ```bash
-# Проверяем версию ядра
-uname -r
+# Устанавливаем бинарный пакет (уже скомпилирован)
+paru -S zapret2-bin
+```
 
-# Ищем модуль nfnetlink_queue
+**Что происходит:**  
+- Скачивается готовый бинарник из официального релиза на GitHub
+- Установка занимает 10-15 секунд
+- Файлы устанавливаются в `/opt/zapret2/`
+- Создаются systemd-сервисы: `zapret2.service`, `zapret2-list-update.service`, `zapret2-list-update.timer`
+
+### **Вариант Б: Пакет с исходниками (компиляция на своей машине)**
+
+```bash
+# Устанавливаем из исходников (дольше, но полностью из кода)
+paru -S zapret2
+```
+
+**Что происходит:**  
+- Скачиваются исходники с GitHub
+- Компиляция на вашей машине (занимает 1-2 минуты)
+- Бинарник оптимизирован под вашу систему
+- Файлы также в `/opt/zapret2/`
+
+---
+
+## **3️⃣ Проверка установки из AUR**
+
+```bash
+# Проверяем, что файлы на месте
+ls -la /opt/zapret2/
+# Должны быть директории: nfq2/, lua/, ip2net/, mdig/, init.d/
+
+# Проверяем бинарник
+ls -la /opt/zapret2/nfq2/nfqws2
+# Должен быть исполняемый файл
+
+# Проверяем сервисы
+systemctl list-unit-files | grep zapret2
+# Должны увидеть: zapret2.service, zapret2-list-update.service, zapret2-list-update.timer
+```
+
+---
+
+## **4️⃣ Настройка модуля ядра nfnetlink_queue**
+
+**⚠️ КРИТИЧЕСКИ ВАЖНО!** Без этого модуля nftables не сможет перенаправлять пакеты в очередь.
+
+```bash
+# Проверяем, есть ли модуль в системе
 find /lib/modules/$(uname -r)/kernel/net/netfilter/ -name "*nfnetlink_queue*" 2>/dev/null
-```
 
-**Ожидаемый вывод:** должен быть файл `nfnetlink_queue.ko.zst` или аналогичный.
-
-### **Если модуль не найден — обновляем ядро**
-
-Иногда после обновления системы старое ядро остаётся загруженным, а модули для него уже удалены. Это вызывает ошибку `No such file or directory` при загрузке правил nftables.
-
-```bash
-# Полное обновление системы (обновит и ядро)
-sudo pacman -Syu
-
-# Перезагружаемся для загрузки нового ядра
-sudo reboot
-```
-
-**После перезагрузки** проверьте ещё раз:
-```bash
-uname -r          # должно быть свежее ядро (например, 7.0.3-arch1-2)
-lsmod | grep nfnetlink   # пока ничего, модуль ещё не загружен
-```
-
-### **Загрузка модуля nfnetlink_queue**
-
-```bash
 # Загружаем модуль
 sudo modprobe nfnetlink_queue
 
 # Проверяем, что загрузился
-lsmod | grep nfnetlink
-```
+lsmod | grep nfnetlink_queue
+# Ожидаемый вывод:
+# nfnetlink_queue        36864  0
+# nfnetlink              20480  4 nfnetlink_queue,nf_tables
 
-**Ожидаемый вывод:**
-```
-nfnetlink_queue        36864  0
-nfnetlink              20480  4 nfnetlink_queue,nf_tables
-```
-
-### **Автозагрузка модуля при старте системы**
-
-```bash
-# Создаём файл для автозагрузки модуля
+# Включаем автозагрузку модуля при старте системы
 echo "nfnetlink_queue" | sudo tee /etc/modules-load.d/nfqueue.conf
 
 # Проверяем
@@ -94,22 +125,20 @@ cat /etc/modules-load.d/nfqueue.conf
 
 ---
 
-## **2️⃣ Настройка nftables (правила перенаправления трафика)**
-
-В EndeavourOS используется `nftables`, но по умолчанию он может быть не активен. Мы создадим отдельный файл с правилами для zapret и подключим его к основному конфигу.
-
-### **2.1 Создаем файл с правилами для zapret**
+## **5️⃣ Настройка nftables (правила перенаправления трафика)**
 
 ```bash
-sudo mcedit /etc/nftables-zapret.conf
+# Создаём файл с правилами для zapret
+sudo nano /etc/nftables/zapret.nft
 ```
 
-**⚠️ ВАЖНО:** Не используйте `add table` и `delete table` в одном файле — это вызовет ошибку. Используйте прямое определение таблицы:
+**Содержимое файла (упрощённые правила — работают стабильнее):**
 
 ```nft
 #!/usr/sbin/nft -f
 
-# Таблица для zapret
+table inet zapret
+delete table inet zapret
 table inet zapret {
     chain post {
         type filter hook postrouting priority 101; policy accept;
@@ -128,588 +157,444 @@ table inet zapret {
 }
 ```
 
-**Примечание:** Упрощённые правила (без `ct original packets`) используются для совместимости со всеми версиями ядра. Они работают не менее эффективно.
-
-### **2.2 Подключаем правила к основному конфигу nftables**
-
-```bash
-echo 'include "/etc/nftables-zapret.conf"' | sudo tee -a /etc/nftables.conf
-```
-
-### **2.3 Загружаем правила вручную (для проверки)**
+**Важное примечание:** Правила упрощены (без `ct original packets 1-12`), потому что:
+- Упрощённые правила работают на всех версиях ядра
+- Они не менее эффективны для обхода DPI
+- Меньше шансов получить ошибку `No such file or directory`
 
 ```bash
 # Загружаем правила
-sudo nft -f /etc/nftables-zapret.conf
+sudo nft -f /etc/nftables/zapret.nft
 
 # Проверяем, что таблица создалась
-sudo nft list tables
 sudo nft list table inet zapret
 ```
 
-**Должны увидеть таблицу `inet zapret` с цепочками post, pre, output.**
-
-### **2.4 Включаем и запускаем nftables**
+**Ожидаемый вывод:**
+```
+table inet zapret {
+    chain post {
+        type filter hook postrouting priority srcnat + 1; policy accept;
+        tcp dport { 80, 443 } queue flags bypass to 200
+        udp dport 443 queue flags bypass to 200
+    }
+    chain pre {
+        type filter hook prerouting priority dstnat - 1; policy accept;
+        tcp sport { 80, 443 } queue flags bypass to 200
+        udp sport 443 queue flags bypass to 200
+    }
+    chain output {
+        type filter hook output priority -401; policy accept;
+        queue flags bypass to 200
+    }
+}
+```
 
 ```bash
+# Включаем и запускаем nftables (если ещё не включен)
 sudo systemctl enable nftables
 sudo systemctl start nftables
 ```
 
-> ⚠️ **Важно:** Статус `inactive (dead)` для сервиса `nftables` — это нормально. Сервис работает по принципу "загрузил правила и завершился". Главное, чтобы правила были видны в `nft list ruleset`.
-
-### **2.5 Типичные ошибки и их решение**
-
-| Ошибка | Решение |
-|--------|---------|
-| `Could not process rule: No such file or directory` | Не загружен модуль `nfnetlink_queue`. Выполните раздел 1.5 |
-| `delete table inet zapret` Error | Уберите строки `add table` и `delete table` из файла правил |
-| Модуль не загружается после перезагрузки | Проверьте файл `/etc/modules-load.d/nfqueue.conf` |
+> **Примечание:** Статус `inactive (dead)` для сервиса nftables — это нормально. Сервис работает по принципу "загрузил правила и завершился". Главное, чтобы правила были видны в `nft list ruleset`.
 
 ---
 
-## **3️⃣ Настройка параметра ядра (важно для TCP)**
+## **6️⃣ Настройка параметра ядра для TCP**
 
 ```bash
 # Временное включение
 sudo sysctl net.netfilter.nf_conntrack_tcp_be_liberal=1
 
-# Постоянное включение
+# Постоянное включение (сохранится после перезагрузки)
 echo "net.netfilter.nf_conntrack_tcp_be_liberal=1" | sudo tee /etc/sysctl.d/99-zapret.conf
 sudo sysctl --system
 ```
 
 ---
 
-## **4️⃣ Скачивание zapret в системную директорию (ВАЖНО: ТОЛЬКО /opt/)**
+## **7️⃣ Редактирование конфига zapret (указываем рабочую стратегию)**
+
+После установки из AUR нужно отредактировать файл конфигурации:
 
 ```bash
-cd /tmp
-wget https://github.com/bol-van/zapret2/releases/download/v0.9.5.2/zapret2-v0.9.5.2.tar.gz
-sudo tar -xzf zapret2-v0.9.5.2.tar.gz -C /opt/
-sudo mv /opt/zapret2-v0.9.5.2 /opt/zapret2
-rm zapret2-v0.9.5.2.tar.gz
+sudo nano /opt/zapret2/config
 ```
 
-> **❗ ВАЖНО:** Установка должна быть в `/opt/zapret2`.  
-> Скрипт `install_easy.sh` работает корректно только из этой директории.  
-> Установка в `/usr/local/bin/zapret2` приводит к ошибкам прав доступа и несовместимости с systemd.
+**Найдите и измените/добавьте следующие строки (в конец файла):**
+
+```bash
+# ========== РАБОЧАЯ КОНФИГУРАЦИЯ (29 мая 2026) ==========
+NFQWS2_ENABLE=1
+NFQWS2_PORTS_TCP=80,443
+NFQWS2_PORTS_UDP=443
+NFQUEUE_NUM=200
+
+# Стратегия multisplit с разрезом по середине домена
+DESYNC_MODE=multisplit
+DESYNC_OFS=midsld
+DESYNC_SEQOVL=5
+
+# Полная команда (переопределяет стандартную)
+NFQWS2_OPT="--qnum=200 --lua-init=@/opt/zapret2/lua/zapret-lib.lua --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=midsld:seqovl=5"
+
+# Отключаем IPv6 (если не нужен)
+DISABLE_IPV6=1
+```
 
 ---
 
-## **5️⃣ Использование готовых бинарников (без компиляции)**
+## **8️⃣ Запуск zapret через штатный сервис AUR**
 
 ```bash
+# Запускаем сервис
+sudo systemctl start zapret2.service
+
+# Проверяем статус
+sudo systemctl status zapret2.service --no-pager
+
+# Смотрим, что процесс запустился
+ps aux | grep nfqws2 | grep -v grep
+
+# Включаем автозагрузку
+sudo systemctl enable zapret2.service
+```
+
+---
+
+## **9️⃣ Проверка работы**
+
+```bash
+# Тестируем YouTube
+curl -I https://youtube.com 2>/dev/null | head -1
+
+# Ожидаемый вывод: HTTP/2 200 или HTTP/2 301
+```
+
+---
+
+# **ЧАСТЬ 2: УСТАНОВКА ИЗ РЕЛИЗА GitHub (v0.9.5.2)**
+
+Этот способ подойдёт, если вы хотите использовать **конкретную стабильную версию**, а не master ветку.
+
+```bash
+# Скачиваем релиз v0.9.5.2
+cd /opt
+sudo wget https://github.com/bol-van/zapret2/releases/download/v0.9.5.2/zapret2-v0.9.5.2.tar.gz
+
+# Распаковываем
+sudo tar -xzf zapret2-v0.9.5.2.tar.gz
+
+# Переименовываем для удобства
+sudo mv zapret2-v0.9.5.2 zapret2
+
+# Удаляем архив
+sudo rm zapret2-v0.9.5.2.tar.gz
+
+# Копируем бинарники
 cd /opt/zapret2
 sudo cp binaries/linux-x86_64/nfqws2 nfq2/
 sudo cp binaries/linux-x86_64/ip2net ip2net/
 sudo cp binaries/linux-x86_64/mdig mdig/
 sudo chmod +x nfq2/nfqws2 ip2net/ip2net mdig/mdig
-```
 
-**Проверка:**
-
-```bash
-ls -la /opt/zapret2/nfq2/nfqws2
-# Должно быть: -rwxr-xr-x 1 root root ...
-```
-
----
-
-## **6️⃣ ВАЖНО: Права доступа к Lua файлам**
-
-`nfqws2` после запуска понижает привилегии, поэтому ему нужен доступ на чтение к Lua файлам.
-
-```bash
+# Права на Lua файлы
 sudo chmod a+x /opt/
 sudo chmod a+x /opt/zapret2/
 sudo chmod a+x /opt/zapret2/lua/
 sudo chmod a+r /opt/zapret2/lua/*.lua
 ```
 
----
+**Далее настройка nftables и модуля ядра — та же, что в Части 1 (шаги 4-6).**
 
-## **7️⃣ Использование install_easy.sh (рекомендованный способ)**
-
-```bash
-cd /opt/zapret2
-sudo ./install_easy.sh
-```
-
-**Ответы на вопросы скрипта (из нашего успешного опыта):**
-
-| Вопрос | Ответ |
-|--------|-------|
-| `firewall type` | `2` (nftables) |
-| `enable ipv6 support` | `N` |
-| `flow offloading` | `1` (none) |
-| `filtering` | `1` (none) |
-| `enable nfqws2` | `Y` |
-| `do you want to edit the options` | `N` |
-| `LAN interface` | Enter (NONE) |
-| `WAN interface` | Enter (ANY) |
-
-Скрипт сам создаст `systemd`-сервис с именем `zapret2.service`.
-
----
-
-## **8️⃣ Скрипты управления zapret (очень удобно!)**
-
-Создаём три скрипта для повседневного использования:
+### **Создание сервиса для релизной версии:**
 
 ```bash
-sudo mcedit /usr/local/bin/zapret-start
-```
-
-```bash
-#!/bin/bash
-# Запуск zapret с проверкой nftables
-
-echo "🔄 Проверяем модуль ядра..."
-sudo modprobe nfnetlink_queue 2>/dev/null
-
-echo "🔄 Загружаем правила nftables..."
-sudo nft -f /etc/nftables-zapret.conf 2>/dev/null || {
-    sudo nft delete table inet zapret 2>/dev/null
-    sudo nft -f /etc/nftables-zapret.conf
-}
-
-echo "🚀 Запускаем nfqws2..."
-cd /opt/zapret2
-sudo ./nfq2/nfqws2 --qnum=200 --daemon --lua-init=@/opt/zapret2/lua/zapret-lib.lua --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
-
-sleep 2
-if pgrep -f nfqws2 >/dev/null; then
-    echo "✅ Zapret запущен"
-    curl -I https://www.youtube.com 2>/dev/null | head -n 1
-else
-    echo "❌ Ошибка запуска!"
-fi
-```
-
-```bash
-sudo mcedit /usr/local/bin/zapret-stop
-```
-
-```bash
-#!/bin/bash
-echo "🛑 Останавливаем nfqws2..."
-sudo pkill -f nfqws2
-echo "✅ Остановлен"
-```
-
-```bash
-sudo mcedit /usr/local/bin/zapret-status
-```
-
-```bash
-#!/bin/bash
-echo "=== NFQWS2 ==="
-pgrep -f nfqws2 >/dev/null && echo "✅ РАБОТАЕТ" || echo "❌ НЕ РАБОТАЕТ"
-
-echo "=== NFTABLES ==="
-sudo nft list table inet zapret &>/dev/null && echo "✅ ЗАГРУЖЕНЫ" || echo "❌ НЕ ЗАГРУЖЕНЫ"
-
-echo "=== МОДУЛЬ ЯДРА ==="
-lsmod | grep -q nfnetlink_queue && echo "✅ nfnetlink_queue ЗАГРУЖЕН" || echo "❌ nfnetlink_queue НЕ ЗАГРУЖЕН"
-
-echo "=== YouTube тест ==="
-curl -I https://www.youtube.com 2>/dev/null | head -n 1 || echo "❌ Не отвечает"
-```
-
-Делаем скрипты исполняемыми:
-
-```bash
-sudo chmod +x /usr/local/bin/zapret-{start,stop,status}
-```
-
-Теперь управление одной командой:
-
-```bash
-sudo zapret-start
-sudo zapret-stop
-zapret-status
-```
-
----
-
-## **9️⃣ АВТОЗАПУСК: systemd сервис с правильной зависимостью (ГОТОВЫЙ ФАЙЛ)**
-
-Создайте файл сервиса:
-
-```bash
-sudo mcedit /etc/systemd/system/zapret2.service
-```
-
-**Полное содержимое файла (копируйте целиком):**
-
-```ini
+sudo tee /etc/systemd/system/zapret.service << 'EOF'
 [Unit]
-Description=Zapret DPI bypass v0.9.5.2
+Description=Zapret DPI bypass v0.9.5.2 (release)
 After=network.target nftables.service
 Wants=nftables.service
-Before=network-online.target
 
 [Service]
 Type=simple
-User=root
-Group=root
 ExecStartPre=/usr/bin/modprobe nfnetlink_queue
-#ExecStart=/opt/zapret2/nfq2/nfqws2 --qnum=300 \
-#    --lua-init=@/opt/zapret2/lua/zapret-lib.lua \
-#    --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua \
-#    --filter-tcp=443 \
-#    --hostlist=/opt/zapret2/hostlists/youtube.txt \
-#    --payload=tls_client_hello \
-#    --lua-desync=fake,multisplit \
-#    --lua-desync-fooling=ts \
-#    --lua-desync-repeats=8 \
-#    --lua-desync-split-seqovl=654 \
-#    --lua-desync-split-pos=1
-
-ExecStart=/opt/zapret2/nfq2/nfqws2 --qnum=300 --lua-init=@/opt/zapret2/lua/zapret-lib.lua --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua \
-    --filter-tcp=443 --hostlist=/opt/zapret2/hostlists/youtube.txt --payload=tls_client_hello \
-    --lua-desync=multidisorder:pos=2:sld
-
-
-#ExecStart=/opt/zapret2/nfq2/nfqws2 \
-#    --qnum=300 --lua-init=@/opt/zapret2/lua/zapret-lib.lua --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua \
-#    --filter-tcp=443 --hostlist=/opt/zapret2/hostlists/youtube.txt --payload=tls_client_hello --lua-desync=multisplit:pos=7:seqovl=620
-
-
-#ExecStart=/opt/zapret2/nfq2/nfqws2 \
-#    --qnum=300 --lua-init=@/opt/zapret2/lua/zapret-lib.lua --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua \
-#    --filter-tcp=443 --hostlist=/opt/zapret2/hostlists/youtube.txt \
-#    --payload=tls_client_hello --lua-desync=tcpseg:pos=0,1:ip_id=rnd:repeats=1
-
-
+ExecStart=/opt/zapret2/nfq2/nfqws2 --qnum=200 --lua-init=@/opt/zapret2/lua/zapret-lib.lua --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=midsld:seqovl=5
 Restart=on-failure
 RestartSec=5
-Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 [Install]
 WantedBy=multi-user.target
-```
+EOF
 
-### **Что важно в этом файле:**
-
-| Строка | Почему это важно |
-|--------|------------------|
-| `ExecStartPre=/usr/bin/modprobe nfnetlink_queue` | Гарантирует загрузку модуля ядра ДО запуска zapret |
-| `After=nftables.service` | Запускается только после загрузки nftables |
-| `Wants=nftables.service` | Запускает nftables, если он не активен |
-| `--lua-init=@/opt/zapret2/lua/...` | **Абсолютные пути** — не ломаются после перезагрузки |
-| `Restart=on-failure` | Автоматически перезапускается при падении |
-
----
-
-### **Альтернативные стратегии (замените строку `ExecStart` на одну из них):**
-
-**Стратегия ALT11 (более агрессивная, если базовая не работает):**
-```bash
-ExecStart=/opt/zapret2/nfq2/nfqws2 \
-    --qnum=200 \
-    --lua-init=@/opt/zapret2/lua/zapret-lib.lua \
-    --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua \
-    --filter-tcp=80,443 \
-    --filter-l7=tls,http \
-    --payload=tls_client_hello \
-    --lua-desync=fake,multisplit \
-    --lua-desync-fooling=ts \
-    --lua-desync-repeats=8 \
-    --lua-desync-split-seqovl=654 \
-    --lua-desync-split-pos=1
-```
-
-**Стратегия только для YouTube (с hostlist, безопасная):**
-```bash
-ExecStart=/opt/zapret2/nfq2/nfqws2 \
-    --qnum=200 \
-    --lua-init=@/opt/zapret2/lua/zapret-lib.lua \
-    --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua \
-    --hostlist=/opt/zapret2/hostlists/youtube.txt \
-    --filter-tcp=443 \
-    --payload=tls_client_hello \
-    --lua-desync=tcpseg:pos=0,1:ip_id=rnd:repeats=1
-```
-
----
-
-### **Активация сервиса:**
-
-```bash
-# Перезагружаем systemd, чтобы он увидел новый файл
 sudo systemctl daemon-reload
-
-# Включаем автозапуск
-sudo systemctl enable zapret2.service
-
-# Запускаем сейчас
-sudo systemctl start zapret2.service
-
-# Проверяем статус
-sudo systemctl status zapret2.service
-
-# Смотрим логи в реальном времени
-sudo journalctl -u zapret2.service -f
+sudo systemctl enable --now zapret.service
 ```
 
 ---
 
-### **Проверка, что сервис работает корректно:**
+# **ЧАСТЬ 3: УСТАНОВКА ИЗ MASTER ВЕТКИ GitHub (С КОМПИЛЯЦИЕЙ)**
+
+Этот способ подойдёт, если вам нужны **самые свежие изменения** из репозитория.
 
 ```bash
-# 1. Сервис активен?
-systemctl is-enabled zapret2.service  # должно вернуть "enabled"
-systemctl is-active zapret2.service    # должно вернуть "active"
+# Клонируем репозиторий целиком
+cd /opt
+sudo git clone https://github.com/bol-van/zapret2.git
+cd zapret2
 
-# 2. Модуль ядра загружен?
-lsmod | grep nfnetlink_queue
+# Компилируем nfqws2
+cd nfq2
+sudo make
+cd ..
 
-# 3. Правила nftables на месте?
-sudo nft list table inet zapret2
+# Компилируем ip2net
+cd ip2net
+sudo make
+cd ..
 
-# 4. YouTube работает?
-curl -I https://www.youtube.com 2>/dev/null | head -n 1
-# Должно быть: HTTP/2 200
+# Компилируем mdig
+cd mdig
+sudo make
+cd ..
+
+# Проверяем, что бинарники создались
+ls -la nfq2/nfqws2
+ls -la ip2net/ip2net
+ls -la mdig/mdig
 ```
 
----
-
-### **Если сервис не запускается — смотрим ошибку:**
+**Примечание:** В master ветке бинарники не включены в репозиторий — их нужно компилировать самостоятельно. Компиляция требует установки `base-devel` и зависимостей.
 
 ```bash
-# Подробный статус с ошибкой
-sudo systemctl status zapret2.service -l --no-pager
-
-# Последние 50 строк логов
-sudo journalctl -u zapret2.service -n 50 --no-pager
-
-# Запуск вручную с дебагом (для диагностики)
-sudo /opt/zapret2/nfq2/nfqws2 --qnum=200 --debug --lua-init=@/opt/zapret2/lua/zapret-lib.lua --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua --filter-tcp=80,443 --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
+# Устанавливаем зависимости для компиляции (если ещё нет)
+sudo pacman -S base-devel gcc make libnetfilter_queue
 ```
 
----
+**Далее настройка nftables и модуля ядра — та же, что в Части 1 (шаги 4-6).**
 
-## **🔟 Просмотр доступных стратегий**
-
-```bash
-cat /opt/zapret2/lua/zapret-antidpi.lua | grep -A 5 "desync profiles"
-```
-
----
-
-## **1️⃣1️⃣ Диагностика: сервис запущен, но YouTube не работает**
-
-### Симптомы:
-- `systemctl status zapret2` показывает `active (running)`
-- `zapret-status` показывает, что nfqws2 работает
-- Но YouTube не открывается
-
-### Возможные причины и проверки:
-
-**1. Проверьте, загружены ли правила nftables:**
+### **Создание сервиса для master-версии:**
 
 ```bash
-sudo nft list table inet zapret2
-# Если пусто — правила не загружены
-sudo systemctl restart nftables
-```
+sudo tee /etc/systemd/system/zapret-master.service << 'EOF'
+[Unit]
+Description=Zapret DPI bypass (master branch)
+After=network.target nftables.service
+Wants=nftables.service
 
-**2. Проверьте модуль ядра:**
+[Service]
+Type=simple
+ExecStartPre=/usr/bin/modprobe nfnetlink_queue
+ExecStart=/opt/zapret2/nfq2/nfqws2 --qnum=200 --lua-init=@/opt/zapret2/lua/zapret-lib.lua --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=midsld:seqovl=5
+Restart=on-failure
+RestartSec=5
 
-```bash
-lsmod | grep nfnetlink_queue
-# Если пусто — модуль не загружен
-sudo modprobe nfnetlink_queue
-```
+[Install]
+WantedBy=multi-user.target
+EOF
 
-**3. Проверьте, видит ли nfqws2 Lua файлы:**
-
-```bash
-sudo journalctl -u zapret2.service -e | grep -i "bad file"
-```
-
-Если видите `bad file` — используйте **абсолютные пути** (они уже прописаны в сервисе выше).
-
-**4. Проверка, доходит ли трафик до очереди:**
-
-```bash
-# В одном терминале запустите с дебагом
-sudo zapret-stop
-sudo /opt/zapret2/nfq2/nfqws2 --qnum=200 --debug=1 --lua-init=@/opt/zapret2/lua/zapret-lib.lua --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5
-
-# В другом терминале
-curl -I https://www.youtube.com
-```
-
-Если в дебаге видно `packet processed` — трафик доходит, проблема в стратегии.  
-Если тишина — проблема в nftables или модуле ядра.
-
-**5. Отключите QUIC в браузере (критически важно!):**
-
-YouTube часто использует протокол QUIC (UDP), который Zapret не обрабатывает.
-
-- **Chrome / Яндекс.Браузер:** `chrome://flags/#enable-quic` → **Disabled**
-- **Firefox:** `about:config` → `network.http.http3.enabled` → **false**
-
----
-
-## **1️⃣2️⃣ Особенности для EndeavourOS / Arch Linux**
-
-### **Firewalld**
-Если у вас включён firewalld, он может конфликтовать с nftables:
-
-```bash
-sudo systemctl status firewalld
-# Если активен, лучше остановить:
-sudo systemctl stop firewalld
-sudo systemctl disable firewalld
-```
-
-> **Примечание:** В вашем случае firewalld и nftables работали параллельно, но это может вызывать проблемы. Рекомендуется использовать что-то одно.
-
-### **Проверка версии ядра**
-
-```bash
-uname -r
-# Ядро должно быть свежим (например, 7.0.3-arch1-2)
-```
-
----
-
-## **1️⃣3️⃣ Как убрать всё (если надоест)**
-
-```bash
-sudo systemctl stop zapret2.service
-sudo systemctl disable zapret2.service
-sudo rm /etc/systemd/system/zapret2.service
 sudo systemctl daemon-reload
-
-# Удаляем правила nftables
-sudo nft delete table inet zapret2
-sudo sed -i '/zapret/d' /etc/nftables.conf
-sudo rm /etc/nftables-zapret.conf
-
-# Удаляем модуль ядра из автозагрузки
-sudo rm /etc/modules-load.d/nfqueue.conf
-
-# Удаляем zapret
-sudo rm -rf /opt/zapret2
-sudo rm /usr/local/bin/zapret-{start,stop,status}
-
-# Удаляем параметр ядра
-sudo rm /etc/sysctl.d/99-zapret.conf
-sudo sysctl --system
+sudo systemctl enable --now zapret-master.service
 ```
 
----
-
-## **🆘 "Большая красная кнопка" для восстановления сети**
-
-Если после экспериментов с Zapret перестали открываться **разрешённые** сайты (например, `giga.chat` или `chat.deepseek.com`), выполните этот набор команд для полного сброса сетевых настроек:
-
-```bash
-# 1. Перезапускаем сетевой менеджер
-sudo systemctl restart NetworkManager
-
-# 2. Останавливаем Zapret
-sudo systemctl stop zapret2.service
-
-# 3. Полностью сбрасываем все правила nftables
-sudo nft flush ruleset
-
-# 4. Останавливаем firewalld (если он мешает)
-sudo systemctl stop firewalld
-
-# 5. Включаем firewalld заново (он восстановит стандартные правила)
-sudo systemctl enable --now firewalld
-```
-
-**Что делает эта кнопка:**
-- `nft flush ruleset` — удаляет ВСЕ правила nftables, включая кривые
-- Перезапуск firewalld восстанавливает стандартные безопасные правила
-- NetworkManager перезапускает сетевые интерфейсы
-
-> ⚠️ **Важно:** После этой процедуры Zapret нужно будет настроить заново, но **доступ к сайтам восстановится мгновенно**.
-
----
-
-## **📌 ИТОГ: РАБОЧАЯ КОНФИГУРАЦИЯ (ПРОВЕРЕНО ЭКСПЕРИМЕНТАЛЬНО)**
-
-| Компонент | Значение |
-|-----------|----------|
-| **Путь установки** | `/opt/zapret2` (НЕ `/usr/local/bin`) |
-| **Версия zapret** | v0.9.5.2 |
-| **Стратегия (базовая)** | `multisplit:pos=1:seqovl=5` |
-| **Стратегия (ALT11)** | `fake,multisplit --lua-desync-fooling=ts --lua-desync-repeats=8 --lua-desync-split-seqovl=654 --lua-desync-split-pos=1` |
-| **Порты** | TCP 80, 443 |
-| **Команда запуска** | `sudo /opt/zapret2/nfq2/nfqws2 --qnum=200 --lua-init=@/opt/zapret2/lua/zapret-lib.lua --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=1:seqovl=5` |
-| **Правила nftables** | `/etc/nftables-zapret.conf` (упрощённые, без `ct original`) |
-| **Модуль ядра** | `nfnetlink_queue` (автозагрузка через `/etc/modules-load.d/nfqueue.conf`) |
-| **Параметр ядра** | `net.netfilter.nf_conntrack_tcp_be_liberal=1` |
-| **Сервис nftables** | `nftables.service` |
-| **Сервис zapret** | `zapret2.service` (создаётся `install_easy.sh`) |
-| **Скрипты управления** | `zapret-start`, `zapret-stop`, `zapret-status` |
-| **Кнопка сброса сети** | `nft flush ruleset` + перезапуск firewalld |
-
----
-
-## ✅ **Что теперь работает (после правильной установки в /opt/)**
-- YouTube открывается (возможно, потребуется подбор стратегии через `blockcheck2.sh`)
-- Другие заблокированные сайты тоже
-- Всё запускается автоматически после перезагрузки
-- Удобное управление через `zapret-start/stop/status`
-- Есть "красная кнопка" для восстановления сети при проблемах
-
----
-
-## 📚 **Памятка по синтаксису --lua-init:**
-
-| Синтаксис | Что означает |
-|-----------|--------------|
-| `--lua-init='print("hello")'` | Выполнить код напрямую |
-| `--lua-init=@script.lua` | Загрузить из файла **относительно текущей директории** (НЕ НАДЁЖНО) |
-| `--lua-init=@/abs/path/script.lua` | Загрузить из файла **по абсолютному пути** (НАДЁЖНО) |
-
-**В сервисе всегда используйте абсолютные пути:**
-```
---lua-init=@/opt/zapret2/lua/zapret-lib.lua
---lua-init=@/opt/zapret2/lua/zapret-antidpi.lua
-```
-
----
-
-## ⚠️ **Частые проблемы и их решение**
-
-| Проблема | Решение |
-|----------|---------|
-| `No such file or directory` при загрузке nftables | Модуль `nfnetlink_queue` не загружен → раздел 1.5 |
-| `delete table inet zapret` Error | Убрать строки `add table` и `delete table` из конфига |
-| `bad file 'lua/...'` в логах | Использовать абсолютные пути в `--lua-init=` |
-| После перезагрузки zapret не работает | Проверить модуль: `lsmod \| grep nfnetlink_queue` |
-| `nfnetlink_queue` не загружается после reboot | Проверить файл `/etc/modules-load.d/nfqueue.conf` |
-| YouTube не работает, хотя сервис запущен | Отключить QUIC в браузере |
-| Перестали открываться обычные сайты | Выполнить "Большую красную кнопку" |
-
----
-
-## 📝 **Финальное примечание:** 
-Стратегии обхода могут меняться со временем. Если перестанет работать — используйте `blockcheck2.sh` для подбора новой стратегии:
+### **Обновление master-версии:**
 
 ```bash
 cd /opt/zapret2
-sudo ./blockcheck2.sh
-# Выберите: 1 (custom) → youtube.com → 4 → N → Y → Y → N → 1 (quick)
+sudo git pull
+cd nfq2 && sudo make clean && sudo make && cd ..
+cd ip2net && sudo make clean && sudo make && cd ..
+cd mdig && sudo make clean && sudo make && cd ..
+sudo systemctl restart zapret-master.service
 ```
-
-Актуальная документация: https://github.com/bol-van/zapret2/
 
 ---
 
-**Главный вывод эксперимента:**  
-✅ Установка в `/opt/zapret2` — обязательно  
-✅ Модуль `nfnetlink_queue` — загружать до nftables  
-✅ Абсолютные пути в `--lua-init=` — обязательно  
-✅ QUIC в браузере — отключить  
-✅ Есть "красная кнопка" для восстановления сети
+# **ЧАСТЬ 4: УНИВЕРСАЛЬНЫЕ СКРИПТЫ УПРАВЛЕНИЯ**
+
+Создаём скрипты, которые работают независимо от способа установки:
+
+```bash
+# Скрипт для проверки статуса
+sudo tee /usr/local/bin/zapret-status << 'EOF'
+#!/bin/bash
+echo "=== ZAPRET ПРОЦЕСС ==="
+if pgrep -f nfqws2 > /dev/null; then
+    echo "✅ РАБОТАЕТ (PID: $(pgrep -f nfqws2))"
+else
+    echo "❌ НЕ РАБОТАЕТ"
+fi
+
+echo ""
+echo "=== NFTABLES ПРАВИЛА ==="
+if sudo nft list table inet zapret &>/dev/null; then
+    echo "✅ ЗАГРУЖЕНЫ"
+else
+    echo "❌ НЕ ЗАГРУЖЕНЫ"
+fi
+
+echo ""
+echo "=== МОДУЛЬ ЯДРА ==="
+if lsmod | grep -q nfnetlink_queue; then
+    echo "✅ nfnetlink_queue ЗАГРУЖЕН"
+else
+    echo "❌ nfnetlink_queue НЕ ЗАГРУЖЕН"
+fi
+
+echo ""
+echo "=== YOUTUBE ТЕСТ ==="
+curl -I https://youtube.com 2>/dev/null | head -1
+EOF
+
+# Скрипт для перезапуска
+sudo tee /usr/local/bin/zapret-restart << 'EOF'
+#!/bin/bash
+echo "🔄 Перезапускаем zapret..."
+sudo systemctl restart zapret2.service 2>/dev/null || \
+sudo systemctl restart zapret.service 2>/dev/null || \
+sudo systemctl restart zapret-master.service 2>/dev/null
+sleep 2
+zapret-status
+EOF
+
+# Скрипт для остановки
+sudo tee /usr/local/bin/zapret-stop << 'EOF'
+#!/bin/bash
+echo "🛑 Останавливаем zapret..."
+sudo systemctl stop zapret2.service 2>/dev/null
+sudo systemctl stop zapret.service 2>/dev/null
+sudo systemctl stop zapret-master.service 2>/dev/null
+echo "✅ Остановлен"
+EOF
+
+# Делаем скрипты исполняемыми
+sudo chmod +x /usr/local/bin/zapret-{status,restart,stop}
+```
+
+---
+
+# **ЧАСТЬ 5: ДИАГНОСТИКА И УСТРАНЕНИЕ ПРОБЛЕМ**
+
+## **Проблема 1: `nfnetlink_queue: No such file or directory`**
+
+```bash
+# Проверяем наличие модуля
+find /lib/modules/$(uname -r)/kernel/net/netfilter/ -name "*nfnetlink_queue*"
+
+# Если нет — обновляем ядро
+sudo pacman -Syu
+sudo reboot
+
+# Загружаем модуль
+sudo modprobe nfnetlink_queue
+
+# Включаем автозагрузку
+echo "nfnetlink_queue" | sudo tee /etc/modules-load.d/nfqueue.conf
+```
+
+## **Проблема 2: `delete table inet zapret` Error**
+
+**Решение:** Убедитесь, что в файле правил есть строка `delete table inet zapret` ПЕРЕД определением таблицы. Или используйте упрощённые правила из шага 5.
+
+## **Проблема 3: `bad file` в логах**
+
+```bash
+# Проверяем логи
+sudo journalctl -u zapret2.service -n 50 --no-pager | grep -i "bad file"
+
+# Решение: использовать абсолютные пути в --lua-init
+# Правильно:
+--lua-init=@/opt/zapret2/lua/zapret-lib.lua
+# Неправильно:
+--lua-init=@lua/zapret-lib.lua
+```
+
+## **Проблема 4: Zapret работает, но YouTube не открывается**
+
+```bash
+# 1. Отключите QUIC в браузере
+# Chrome: chrome://flags/#enable-quic → Disabled
+# Firefox: about:config → network.http.http3.enabled → false
+
+# 2. Проверьте, доходят ли пакеты до очереди
+sudo /opt/zapret2/nfq2/nfqws2 --qnum=200 --debug --lua-init=@/opt/zapret2/lua/zapret-lib.lua --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua --filter-tcp=80,443 --filter-l7=tls,http --payload=tls_client_hello --lua-desync=multisplit:pos=midsld:seqovl=5
+
+# В другом терминале выполните:
+curl -I https://youtube.com
+
+# Если видите "packet processed" — трафик доходит, проблема в стратегии
+```
+
+## **Проблема 5: Полная потеря доступа к сайтам (Красная кнопка)**
+
+```bash
+# Останавливаем zapret
+sudo zapret-stop
+
+# Сбрасываем ВСЕ правила nftables
+sudo nft flush ruleset
+
+# Перезапускаем NetworkManager
+sudo systemctl restart NetworkManager
+
+# Если используется firewalld — перезапускаем его
+sudo systemctl restart firewalld
+```
+
+---
+
+# **📌 ИТОГОВАЯ ТАБЛИЦА: СРАВНЕНИЕ СПОСОБОВ УСТАНОВКИ**
+
+| Характеристика | AUR (бинарный) | AUR (исходники) | GitHub релиз | GitHub master |
+|----------------|----------------|-----------------|--------------|---------------|
+| **Сложность** | ⭐ Простой | ⭐⭐ Средний | ⭐⭐ Средний | ⭐⭐⭐ Сложный |
+| **Время установки** | 15 сек | 1-2 мин | 30 сек | 2-3 мин + компиляция |
+| **Обновление** | `paru -Syu` | `paru -Syu` | Вручную | `git pull` + make |
+| **Стабильность** | Высокая | Высокая | Высокая (фиксированная версия) | Средняя (может быть сыро) |
+| **Свежесть** | Стабильный релиз | Стабильный релиз | Стабильный релиз | Последние коммиты |
+| **Создаёт сервис** | ✅ Да | ✅ Да | ❌ Вручную | ❌ Вручную |
+| **Рекомендация** | ✅ **Лучший выбор** | 👍 Хороший выбор | 👍 Для конкретной версии | 🔧 Для разработчиков |
+
+---
+
+# **🎯 РАБОЧАЯ КОНФИГУРАЦИЯ (ПРОВЕРЕНО 29 МАЯ 2026)**
+
+| Компонент | Значение |
+|-----------|----------|
+| **Путь установки** | `/opt/zapret2` |
+| **Версия** | v0.9.5.2 (релиз) или master (с компиляцией) |
+| **Стратегия** | `multisplit:pos=midsld:seqovl=5` |
+| **Очередь NFQUEUE** | 200 |
+| **Порты** | TCP 80, 443 и UDP 443 |
+| **Модуль ядра** | `nfnetlink_queue` (автозагрузка) |
+| **Параметр ядра** | `net.netfilter.nf_conntrack_tcp_be_liberal=1` |
+| **QUIC в браузере** | **ДОЛЖЕН БЫТЬ ОТКЛЮЧЁН** |
+
+---
+
+# **✅ ФИНАЛЬНАЯ ПРОВЕРКА**
+
+После выполнения любого из способов установки выполните:
+
+```bash
+# 1. Проверяем модуль ядра
+lsmod | grep nfnetlink_queue
+
+# 2. Проверяем правила nftables
+sudo nft list table inet zapret
+
+# 3. Проверяем процесс zapret
+pgrep -f nfqws2 && echo "✅ Zapret запущен" || echo "❌ Zapret не запущен"
+
+# 4. Тестируем YouTube
+curl -I https://youtube.com 2>/dev/null | head -1
+
+# 5. Смотрим статус сервиса
+sudo systemctl status zapret2.service --no-pager
+```
+
+**Если везде ✅ и YouTube отвечает `HTTP/2 200` или `HTTP/2 301` — установка прошла успешно!** 🎉
+
+---
+
+**📝 Последнее примечание:** Стратегии обхода могут меняться со временем. Если перестанет работать — попробуйте `pos=1` вместо `midsld` или используйте `blockcheck2.sh` для автоматического подбора. Актуальная документация: https://github.com/bol-van/zapret2/
