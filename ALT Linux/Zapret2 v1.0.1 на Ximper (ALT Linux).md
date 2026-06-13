@@ -1,9 +1,27 @@
-# 📗 **Полное руководство по установке и настройке Zapret2 v1.0.1 на Ximper Linux**
+# 📗 **ПОЛНОЕ РУКОВОДСТВО: Установка и настройка Zapret2 v1.0.1 на Ximper Linux**
 
 > **📅 Актуально на 13 июня 2026**  
-> **✅ Проверенная рабочая стратегия:** `multisplit:pos=midsld:seqovl=5`
-> 
+> **✅ Проверенная рабочая стратегия:** `multisplit:pos=midsld:seqovl=5`  
+> **📂 Важное примечание:** Конфиг находится в `/opt/zapret2/config`, а НЕ в `/etc/zapret2/config`!
+>
 > **https://github.com/bol-van/zapret2/releases/tag/v1.0.1**
+
+---
+
+## 🎯 **Что такое Zapret2 и зачем он нужен?**
+
+**Zapret2** — это инструмент для обхода Deep Packet Inspection (DPI), который используют провайдеры для блокировки сайтов. Он работает по принципу "разрыва" пакетов таким образом, что DPI не может определить, к какому сайту обращается пользователь.
+
+**Версия v1.0.1** — это современный релиз, который **значительно упростил установку** по сравнению с предыдущими версиями. Главное новшество — интерактивный установщик `install_easy.sh`, который автоматически:
+- Определяет вашу систему (systemd/OpenRC)
+- Настраивает правила nftables
+- Создаёт systemd сервис
+- Настраивает автоматическое обновление списков сайтов
+
+**⚠️ ВАЖНОЕ ОТЛИЧИЕ ОТ СТАРЫХ ВЕРСИЙ:**
+- В версии v1.0.1 **НЕ нужно вручную создавать правила nftables** — установщик делает всё сам
+- **Конфигурационный файл** находится в `/opt/zapret2/config`, а не в `/etc/zapret2/config`
+- **Список сайтов** (hostlist) хранится в `/opt/zapret2/ipset/zapret-hosts-user.txt`
 
 ---
 
@@ -187,7 +205,18 @@ sudo systemctl status zapret2
 ```
 **Ожидаемый вывод:** `active (running)`
 
-### **Проверяем правила nftables:**
+### **Проверяем конфигурационный файл:**
+```bash
+# Конфиг находится ЗДЕСЬ, а не в /etc/zapret2/
+cat /opt/zapret2/config | grep NFQWS2_OPT
+```
+
+**Ожидаемый вывод:**
+```bash
+NFQWS2_OPT="--filter-tcp=443 --filter-l7=tls --payload=tls_client_hello --lua-desync=multisplit:pos=midsld:seqovl=5"
+```
+
+### **Проверяем правила nftables (создаются автоматически!):**
 ```bash
 # Смотрим все таблицы
 sudo nft list tables
@@ -196,7 +225,7 @@ sudo nft list tables
 sudo nft list table inet zapret2
 ```
 
-**Пример вывода:**
+**Пример вывода (важно!):**
 ```nft
 table inet zapret2 {
         set zapret {
@@ -301,15 +330,156 @@ table inet zapret2 {
 }
 ```
 
+**Обратите внимание:** В v1.0.1 используется **queue 300** (не 200, как в старых версиях)!
+
+### **Проверяем список сайтов (hostlist):**
+```bash
+# Где хранится список сайтов для обхода
+cat /opt/zapret2/ipset/zapret-hosts-user.txt
+
+# Сколько сайтов в списке
+wc -l /opt/zapret2/ipset/zapret-hosts-user.txt
+```
+
 ### **Проверяем работу YouTube:**
 ```bash
-curl -I https://www.youtube.com 2>/dev/null | head -n 1
+curl -I https://www.youtube.com 2>/dev/null | head -n 3
 ```
 **Ожидаемый вывод:** `HTTP/2 200` (быстрый ответ)
 
 ---
 
-## 🛠️ **6. Удобные скрипты для управления**
+## 📂 **6. Где всё лежит: полная структура файлов**
+
+| Что ищем | Где находится | Как посмотреть |
+|----------|---------------|----------------|
+| **Главный конфиг** | `/opt/zapret2/config` | `cat /opt/zapret2/config` |
+| **Стратегия обхода** | В конфиге строка `NFQWS2_OPT` | `grep NFQWS2_OPT /opt/zapret2/config` |
+| **Список доменов (hostlist)** | `/opt/zapret2/ipset/zapret-hosts-user.txt` | `cat /opt/zapret2/ipset/zapret-hosts-user.txt` |
+| **Исключения** | `/opt/zapret2/ipset/zapret-hosts-user-exclude.txt` | `cat /opt/zapret2/ipset/zapret-hosts-user-exclude.txt` |
+| **IP-адреса (сгенерированные)** | В nftables set `zapret` | `sudo nft list set inet zapret2 zapret` |
+| **Правила nftables** | В памяти ядра | `sudo nft list table inet zapret2` |
+| **Скрипт обновления списков** | `/opt/zapret2/ipset/get_antizapret_domains.sh` | `ls -la /opt/zapret2/ipset/get_*.sh` |
+| **Скрипт создания IP** | `/opt/zapret2/ipset/create_ipset.sh` | `cat /opt/zapret2/ipset/create_ipset.sh` |
+| **Исполняемый файл** | `/opt/zapret2/nfq2/nfqws2` | `file /opt/zapret2/nfq2/nfqws2` |
+| **Systemd сервис** | `/usr/lib/systemd/system/zapret2.service` | `sudo systemctl cat zapret2` |
+| **Логи** | Журнал systemd | `sudo journalctl -u zapret2 -f` |
+
+---
+
+## 🔍 **7. Как посмотреть стратегию обхода (Подробно)**
+
+### **Способ 1: Прямой просмотр конфига**
+```bash
+# Показать всю строку с опциями
+grep "^NFQWS2_OPT=" /opt/zapret2/config
+
+# Только значение стратегии (без переменной)
+grep "^NFQWS2_OPT=" /opt/zapret2/config | cut -d'"' -f2
+```
+
+### **Способ 2: Просмотр с цветом (если установлен ccat)**
+```bash
+ccat /opt/zapret2/config | grep NFQWS2_OPT --color=always
+```
+
+### **Способ 3: Подробный вывод с номерами строк**
+```bash
+cat -n /opt/zapret2/config | grep -A2 -B2 NFQWS2_OPT
+```
+
+---
+
+## 📋 **8. Как посмотреть список сайтов (hostlist)**
+
+**Важное пояснение:** В zapret2 v1.0.1 нет отдельного файла с именем `hostlist`. Список сайтов хранится в виде **доменных имён** в специальном файле, а затем преобразуется в **IP-адреса** для nftables.
+
+### **Способ 1: Посмотреть исходные домены**
+```bash
+# Основной список доменов для обхода
+cat /opt/zapret2/ipset/zapret-hosts-user.txt
+
+# Посмотреть первые 10 доменов
+head -10 /opt/zapret2/ipset/zapret-hosts-user.txt
+
+# Посмотреть последние 10 доменов
+tail -10 /opt/zapret2/ipset/zapret-hosts-user.txt
+```
+
+### **Способ 2: Посмотреть IP-адреса в nftables**
+```bash
+# IP-адреса, которые реально обрабатываются (сгенерированы из доменов)
+sudo nft list set inet zapret2 zapret | head -30
+
+# Только IP-адреса (без форматирования nft)
+sudo nft -j list set inet zapret2 zapret | jq -r '.nftables[1].set.elem[].elem.val | if type=="string" then . else .[0] end' 2>/dev/null || \
+sudo nft list set inet zapret2 zapret | grep -E '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -20
+```
+
+### **Способ 3: Поиск конкретного сайта в списке**
+```bash
+# Ищем YouTube
+grep -i "youtube" /opt/zapret2/ipset/zapret-hosts-user.txt
+
+# Ищем Discord
+grep -i "discord" /opt/zapret2/ipset/zapret-hosts-user.txt
+
+# Ищем Telegram
+grep -i "telegram" /opt/zapret2/ipset/zapret-hosts-user.txt
+```
+
+### **Способ 4: Статистика по спискам**
+```bash
+echo "=== СТАТИСТИКА СПИСКОВ ==="
+echo "Доменов в основном списке: $(wc -l < /opt/zapret2/ipset/zapret-hosts-user.txt)"
+echo "Доменов в исключениях: $(wc -l < /opt/zapret2/ipset/zapret-hosts-user-exclude.txt)"
+echo "IP-адресов в nftables: $(sudo nft list set inet zapret2 zapret 2>/dev/null | grep -c '^[[:space:]]*[0-9]' || echo 0)"
+```
+
+---
+
+## 🛠️ **9. Если список сайтов пустой (ручное создание)**
+
+```bash
+# Создаём базовый список самых популярных сайтов
+sudo tee /opt/zapret2/ipset/zapret-hosts-user.txt << 'EOF'
+youtube.com
+youtu.be
+googlevideo.com
+ggpht.com
+googleapis.com
+discord.com
+discord.gg
+discordapp.com
+telegram.org
+t.me
+web.telegram.org
+twitter.com
+x.com
+facebook.com
+instagram.com
+whatsapp.com
+spotify.com
+netflix.com
+twitch.tv
+reddit.com
+github.com
+gitlab.com
+cloudflare.com
+cloudflare.net
+EOF
+
+# Проверяем
+wc -l /opt/zapret2/ipset/zapret-hosts-user.txt
+# Должно быть: 24
+
+# Теперь нужно сгенерировать IP-адреса и загрузить в nftables
+sudo systemctl restart zapret2
+```
+
+---
+
+## 🎯 **10. Удобные скрипты для управления**
 
 ### **Скрипт быстрого запуска:**
 ```bash
@@ -318,20 +488,20 @@ sudo mcedit /usr/local/bin/zapret-on
 
 ```bash
 #!/bin/bash
-# Быстрый запуск zapret с проверкой
 echo "🔄 Запускаем zapret..."
 sudo systemctl start zapret2
 
 sleep 2
-
 if systemctl is-active --quiet zapret2; then
     echo "✅ Zapret успешно запущен"
+    echo ""
+    echo "📊 Текущая стратегия:"
+    grep NFQWS2_OPT /opt/zapret2/config | cut -d'"' -f2
     echo ""
     echo "📊 Проверка YouTube:"
     curl -I https://www.youtube.com 2>/dev/null | head -n 1
 else
     echo "❌ Ошибка запуска!"
-    echo "📋 Последние логи:"
     sudo journalctl -u zapret2 -n 10 --no-pager
 fi
 ```
@@ -343,7 +513,6 @@ sudo mcedit /usr/local/bin/zapret-off
 
 ```bash
 #!/bin/bash
-# Быстрая остановка zapret
 echo "🛑 Останавливаем zapret..."
 sudo systemctl stop zapret2
 
@@ -357,15 +526,13 @@ else
 fi
 ```
 
-### **Скрипт проверки статуса:**
+### **Скрипт проверки статуса (расширенный):**
 ```bash
 sudo mcedit /usr/local/bin/zapret-status
 ```
 
 ```bash
 #!/bin/bash
-# Полная диагностика zapret
-
 echo "=== 📡 ZAPRET STATUS ==="
 if systemctl is-active --quiet zapret2; then
     echo "✅ Сервис: РАБОТАЕТ"
@@ -376,22 +543,30 @@ else
 fi
 
 echo ""
+echo "=== ⚙️ ТЕКУЩАЯ СТРАТЕГИЯ ==="
+grep "^NFQWS2_OPT=" /opt/zapret2/config | cut -d'"' -f2
+
+echo ""
 echo "=== 🔥 NFTABLES RULES ==="
 if sudo nft list table inet zapret2 &>/dev/null; then
-    echo "✅ Правила загружены"
-    RULES_COUNT=$(sudo nft list table inet zapret2 | grep -c "queue flags bypass")
-    echo "   Найдено правил: $RULES_COUNT"
+    echo "✅ Таблица zapret2 загружена"
+    QUEUE_NUM=$(sudo nft list table inet zapret2 | grep -o "queue [^ ]* to [0-9]*" | head -1)
+    echo "   Очередь: $QUEUE_NUM"
 else
-    echo "❌ Правила не загружены"
+    echo "❌ Таблица zapret2 не найдена"
 fi
 
 echo ""
 echo "=== 📋 СПИСКИ САЙТОВ ==="
 if [ -f /opt/zapret2/ipset/zapret-hosts-user.txt ]; then
-    SIZE=$(wc -l < /opt/zapret2/ipset/zapret-hosts-user.txt)
-    echo "✅ Список сайтов: $SIZE записей"
+    DOMAINS=$(wc -l < /opt/zapret2/ipset/zapret-hosts-user.txt)
+    echo "✅ Доменов в списке: $DOMAINS"
+    
+    # Показываем первые 5 сайтов
+    echo "   Первые 5 сайтов:"
+    head -5 /opt/zapret2/ipset/zapret-hosts-user.txt | sed 's/^/     - /'
 else
-    echo "❌ Список сайтов отсутствует"
+    echo "❌ Список доменов отсутствует"
 fi
 
 echo ""
@@ -399,73 +574,20 @@ echo "=== 🎬 YOUTUBE TEST ==="
 curl -I https://www.youtube.com 2>/dev/null | head -n 1
 
 echo ""
-echo "=== 📊 СТАТИСТИКА ==="
+echo "=== 📊 СТАТИСТИКА ПРОЦЕССА ==="
 if systemctl is-active --quiet zapret2; then
-    echo "📈 CPU использование:"
-    ps aux | grep nfqws2 | grep -v grep | awk '{print "   CPU: " $3 "%  MEM: " $4 "%"}'
-    
-    echo "📈 Сетевые очереди:"
-    cat /proc/net/netfilter/nfnetlink_queue 2>/dev/null | head -5
-fi
-```
-
-### **Скрипт смены стратегии:**
-```bash
-sudo mcedit /usr/local/bin/zapret-change-strategy
-```
-
-```bash
-#!/bin/bash
-# Быстрая смена стратегии обхода DPI
-
-if [ -z "$1" ]; then
-    echo "📖 Использование: zapret-change-strategy \"стратегия\""
-    echo ""
-    echo "📝 Примеры рабочих стратегий:"
-    echo "   zapret-change-strategy \"multisplit:pos=midsld:seqovl=5\""
-    echo "   zapret-change-strategy \"multisplit:pos=2:seqovl=5\""
-    echo "   zapret-change-strategy \"multisplit:pos=1,midsld:seqovl=5\""
-    echo "   zapret-change-strategy \"multidisorder:pos=1,midsld\""
-    echo ""
-    echo "📌 Текущая стратегия:"
-    grep "^NFQWS2_OPT=" /etc/zapret2/config | sed 's/NFQWS2_OPT="//' | sed 's/"$//'
-    exit 1
-fi
-
-NEW_STRATEGY="$1"
-
-# Создаём бэкап
-sudo cp /etc/zapret2/config /etc/zapret2/config.backup.$(date +%Y%m%d_%H%M%S)
-
-# Заменяем стратегию
-sudo sed -i "s/NFQWS2_OPT=\".*\"/NFQWS2_OPT=\"--filter-tcp=443 --filter-l7=tls --payload=tls_client_hello --lua-desync=$NEW_STRATEGY\"/" /etc/zapret2/config
-
-echo "🔄 Применяем новую стратегию: $NEW_STRATEGY"
-sudo systemctl restart zapret2
-
-sleep 2
-
-if systemctl is-active --quiet zapret2; then
-    echo "✅ Zapret перезапущен с новой стратегией"
-    echo ""
-    echo "📊 Проверка YouTube:"
-    curl -I https://www.youtube.com 2>/dev/null | head -n 1
-else
-    echo "❌ Ошибка! Стратегия не работает. Возвращаем предыдущую..."
-    sudo cp /etc/zapret2/config.backup.* /etc/zapret2/config 2>/dev/null
-    sudo systemctl restart zapret2
-    echo "✅ Восстановлена предыдущая стратегия"
+    ps aux | grep nfqws2 | grep -v grep | awk '{print "   CPU: " $3 "%  MEM: " $4 "%  RSS: " $6 " KB"}'
 fi
 ```
 
 ### **Делаем скрипты исполняемыми:**
 ```bash
-sudo chmod +x /usr/local/bin/zapret-{on,off,status,change-strategy}
+sudo chmod +x /usr/local/bin/zapret-{on,off,status}
 ```
 
 ---
 
-## 🔄 **7. Управление сервисами и автозапуском**
+## 🔄 **11. Управление сервисами**
 
 ### **Основные команды systemd:**
 ```bash
@@ -484,180 +606,151 @@ sudo systemctl status zapret2
 # Посмотреть логи в реальном времени
 sudo journalctl -u zapret2 -f
 
-# Посмотреть последние 50 строк логов
-sudo journalctl -u zapret2 -n 50 --no-pager
-
 # Включить автозапуск при загрузке
 sudo systemctl enable zapret2
 
 # Отключить автозапуск
 sudo systemctl disable zapret2
-
-# Проверить включён ли автозапуск
-sudo systemctl is-enabled zapret2
 ```
 
-### **Управление автообновлением списков:**
+### **Управление обновлением списков:**
 ```bash
-# Проверить статус таймера
-sudo systemctl status zapret2-list-update.timer
+# Обновить список сайтов вручную
+sudo /opt/zapret2/ipset/get_antizapret_domains.sh
 
-# Посмотреть когда будет следующее обновление
-sudo systemctl list-timers zapret2-list-update.timer
-
-# Запустить обновление вручную
-sudo systemctl start zapret2-list-update
-
-# Отключить автообновление
-sudo systemctl disable zapret2-list-update.timer
-
-# Включить автообновление
-sudo systemctl enable --now zapret2-list-update.timer
+# После обновления списка перезапустить сервис
+sudo systemctl restart zapret2
 ```
 
 ---
 
-## 📂 **8. Важные файлы и их расположение**
+## 🔧 **12. Диагностика проблем**
 
-| Файл/Директория | Назначение | Как посмотреть/изменить |
-|----------------|------------|------------------------|
-| `/opt/zapret2/` | Основная директория программы | `ls -la /opt/zapret2/` |
-| `/opt/zapret2/nfq2/nfqws2` | Исполняемый файл | `file /opt/zapret2/nfq2/nfqws2` |
-| `/etc/zapret2/config` | **Главный конфиг** | `sudo mcedit /etc/zapret2/config` |
-| `/etc/zapret2/config.backup` | Резервная копия | `sudo cat /etc/zapret2/config.backup` |
-| `/opt/zapret2/ipset/zapret-hosts-user.txt` | Список доменов для обхода | `head -20 /opt/zapret2/ipset/zapret-hosts-user.txt` |
-| `/opt/zapret2/ipset/get_antizapret_domains.sh` | Скрипт обновления списков | `sudo /opt/zapret2/ipset/get_antizapret_domains.sh` |
-| `/usr/lib/systemd/system/zapret2.service` | systemd сервис | `sudo systemctl cat zapret2` |
-| `/etc/nftables/zapret2.nft` | Правила nftables | `sudo cat /etc/nftables/zapret2.nft` |
-| `/var/log/` | Логи (через journal) | `sudo journalctl -u zapret2` |
-
----
-
-## 🧪 **9. Диагностика проблем**
-
-### **Проблема 1: Сервис не запускается**
+### **Проблема: YouTube не открывается, но сервис работает**
 ```bash
-# Смотрим ошибки
-sudo journalctl -u zapret2 -n 50 --no-pager
+# 1. Проверяем, есть ли YouTube в списке
+grep -i "youtube" /opt/zapret2/ipset/zapret-hosts-user.txt
 
-# Проверяем синтаксис конфига
-grep -v "^#" /etc/zapret2/config | grep -v "^$"
+# 2. Проверяем, загружены ли IP-адреса в nftables
+sudo nft list set inet zapret2 zapret | grep -E '(64\.233|74\.125|142\.250|172\.217|216\.58)'
 
-# Проверяем наличие бинарных файлов
-ls -la /opt/zapret2/nfq2/nfqws2
+# 3. Временно отключаем фильтрацию по спискам
+sudo sed -i 's/MODE_FILTER=hostlist/MODE_FILTER=none/' /opt/zapret2/config
+sudo systemctl restart zapret2
+curl -I https://youtube.com 2>/dev/null | head -1
+
+# 4. Возвращаем обратно
+sudo sed -i 's/MODE_FILTER=none/MODE_FILTER=hostlist/' /opt/zapret2/config
+sudo systemctl restart zapret2
 ```
 
-### **Проблема 2: YouTube не открывается**
+### **Проблема: Список сайтов пустой**
 ```bash
-# Проверяем что сервис работает
-systemctl status zapret2
+# Создаём список вручную (как показано в разделе 9)
+sudo tee /opt/zapret2/ipset/zapret-hosts-user.txt > /dev/null << 'EOF'
+youtube.com
+youtu.be
+googlevideo.com
+discord.com
+telegram.org
+EOF
 
-# Проверяем что nftables правила загружены
-sudo nft list table inet zapret2
-
-# Временно отключаем zapret для теста
-zapret-off
-curl -I https://youtube.com  # Должно быть медленно
-
-# Включаем обратно
-zapret-on
+# Перезапускаем сервис
+sudo systemctl restart zapret2
 ```
 
-### **Проблема 3: Ошибка "DNS is not working" при установке**
+### **Проблема: Ошибка "Unit zapret2.service not found"**
 ```bash
-# Проверяем DNS
-cat /etc/resolv.conf
+# Проверяем, установлен ли сервис
+ls -la /usr/lib/systemd/system/zapret2.service
 
-# Временно меняем DNS на Google
-echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
-
-# Продолжаем установку
+# Если нет - переустанавливаем
+cd /opt/zapret2
+sudo ./install_easy.sh
 ```
 
 ---
 
-## 🗑️ **10. Полное удаление Zapret2**
-
-Если потребуется полностью удалить zapret:
-
-```bash
-# Останавливаем и отключаем сервисы
-sudo systemctl stop zapret2
-sudo systemctl disable zapret2
-sudo systemctl stop zapret2-list-update.timer
-sudo systemctl disable zapret2-list-update.timer
-
-# Удаляем системные файлы
-sudo rm /etc/systemd/system/zapret2.service
-sudo rm /etc/systemd/system/zapret2-list-update.*
-sudo rm /etc/zapret2 -rf
-sudo rm /etc/nftables/zapret2.nft
-
-# Удаляем саму программу
-sudo rm /opt/zapret2 -rf
-
-# Удаляем скрипты управления
-sudo rm /usr/local/bin/zapret-*
-
-# Удаляем параметр ядра (опционально)
-sudo sed -i '/net.netfilter.nf_conntrack_tcp_be_liberal=1/d' /etc/sysctl.conf
-
-# Перезагружаем systemd
-sudo systemctl daemon-reload
-
-echo "✅ Zapret2 полностью удалён"
-```
-
----
-
-## 🎯 **11. Заключение и список команд быстрого доступа**
-
-### **Ежедневное управление:**
-```bash
-zapret-on          # Включить обход
-zapret-off         # Выключить обход
-zapret-status      # Проверить всё
-zapret-change-strategy "multisplit:pos=2:seqovl=5"  # Сменить стратегию
-```
-
-### **Мониторинг:**
-```bash
-sudo systemctl status zapret2           # Статус сервиса
-sudo journalctl -u zapret2 -f           # Логи в реальном времени
-sudo nft list table inet zapret2        # Правила nftables
-htop                                    # Нагрузка на CPU
-```
-
-### **Обслуживание:**
-```bash
-sudo systemctl restart zapret2          # Перезапустить после изменений
-sudo /opt/zapret2/ipset/get_antizapret_domains.sh  # Обновить списки вручную
-```
-
----
-
-## 📌 **Ключевые отличия версии v1.0.1 от v0.9.5.2**
+## 📊 **13. Сравнение v1.0.1 с предыдущей версией v0.9.5.2**
 
 | Аспект | v0.9.5.2 (старая) | v1.0.1 (новая) |
 |--------|-------------------|----------------|
-| **Установка** | Ручная, нужно создавать сервисы | Интерактивный установщик |
-| **nftables** | Нужно создавать вручную | Автоматическая настройка |
-| **Systemd** | Писать вручную | Автоматически создаётся |
-| **Обновление списков** | Ручной скрипт | Автоматический таймер |
-| **Конфигурация** | Сложная, много параметров | Упрощённая, одна строка |
-| **Стратегии** | Требуют глубокого понимания | Готовые шаблоны |
+| **Расположение конфига** | `/etc/zapret2/config` | `/opt/zapret2/config` ⚡ |
+| **Создание nftables** | Вручную | **Автоматически** ✅ |
+| **Номер очереди** | 200 | **300** ⚡ |
+| **Установка** | Ручная, сложная | Интерактивный установщик ✅ |
+| **Systemd сервис** | Писать вручную | Автоматически ✅ |
+| **Список сайтов** | Нужно скачивать | Автоматическая загрузка ✅ |
+| **Стратегия** | `multisplit:pos=midsld:seqovl=5` | Та же (работает) ✅ |
 
 ---
 
-## ✅ **Что у вас получилось после установки**
+## ✅ **14. Итоговый чек-лист: что должно работать**
 
-1. ✅ **Zapret2 v1.0.1** установлен в `/opt/zapret2`
-2. ✅ **Systemd сервис** автоматически запускается при загрузке
-3. ✅ **nftables правила** настроены для перенаправления трафика
-4. ✅ **Списки сайтов** автоматически обновляются каждые несколько дней
-5. ✅ **Рабочая стратегия** `multisplit:pos=midsld:seqovl=5`
-6. ✅ **Удобные скрипты** для повседневного управления
-7. ✅ **YouTube и другие сайты** открываются без блокировок
+После правильной установки у вас должно быть:
+
+```bash
+# ✅ 1. Конфиг существует и содержит стратегию
+[ -f /opt/zapret2/config ] && echo "✅ Конфиг есть"
+grep -q "multisplit:pos=midsld:seqovl=5" /opt/zapret2/config && echo "✅ Стратегия установлена"
+
+# ✅ 2. Список сайтов не пустой
+[ $(wc -l < /opt/zapret2/ipset/zapret-hosts-user.txt) -gt 0 ] && echo "✅ Список сайтов загружен"
+
+# ✅ 3. Сервис работает
+systemctl is-active --quiet zapret2 && echo "✅ Сервис активен"
+
+# ✅ 4. nftables правила загружены
+sudo nft list table inet zapret2 &>/dev/null && echo "✅ nftables настроен"
+
+# ✅ 5. YouTube отвечает быстро
+curl -I https://youtube.com 2>/dev/null | grep -q "HTTP/2 200" && echo "✅ YouTube работает"
+```
+
+---
+
+## 🚀 **15. Быстрые команды для ежедневного использования**
+
+```bash
+# Включить обход
+zapret-on
+
+# Выключить обход
+zapret-off
+
+# Проверить статус
+zapret-status
+
+# Посмотреть стратегию
+grep NFQWS2_OPT /opt/zapret2/config | cut -d'"' -f2
+
+# Посмотреть список сайтов
+head -10 /opt/zapret2/ipset/zapret-hosts-user.txt
+
+# Добавить сайт в список вручную
+echo "example.com" | sudo tee -a /opt/zapret2/ipset/zapret-hosts-user.txt
+sudo systemctl restart zapret2
+
+# Обновить список сайтов
+sudo /opt/zapret2/ipset/get_antizapret_domains.sh
+sudo systemctl restart zapret2
+
+# Посмотреть логи
+sudo journalctl -u zapret2 -f
+
+# Перезапустить сервис (если что-то пошло не так)
+sudo systemctl restart zapret2
+```
+
+---
+
+## 📌 **Главные отличия, которые нужно запомнить:**
+
+1. **Конфиг теперь в `/opt/zapret2/config`**, а не в `/etc/zapret2/config`
+2. **nftables правила создаются автоматически** — не нужно писать вручную
+3. **Очередь 300**, а не 200 (но это не нужно знать для работы)
+4. **Список сайтов** в `/opt/zapret2/ipset/zapret-hosts-user.txt`
+5. **Стратегия** осталась та же — `multisplit:pos=midsld:seqovl=5` (рабочая на июнь 2026)
 
 ---
 
