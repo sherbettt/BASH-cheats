@@ -199,24 +199,105 @@ sudo nft list table inet zapret2
 **Пример вывода:**
 ```nft
 table inet zapret2 {
-    set zapret {
-        type ipv4_addr
-        flags interval
-        elements = { 64.233.160.0/19, 74.125.0.0/16, 172.217.0.0/16, ... }
-    }
-    
-    chain prerouting {
-        type filter hook prerouting priority -101; policy accept;
-        ip saddr @zapret tcp dport { 80, 443 } queue flags bypass to 200
-        ip saddr @zapret udp dport 443 queue flags bypass to 200
-        ip6 saddr @zapret tcp dport { 80, 443 } queue flags bypass to 200
-        ip6 saddr @zapret udp dport 443 queue flags bypass to 200
-    }
-    
-    chain output {
-        type filter hook output priority -401; policy accept;
-        queue flags bypass to 200
-    }
+        set zapret {
+                type ipv4_addr
+                size 522288
+                flags interval
+                auto-merge
+        }
+
+        set ipban {
+                type ipv4_addr
+                size 522288
+                flags interval
+                auto-merge
+        }
+
+        set nozapret {
+                type ipv4_addr
+                size 65536      # count 6
+                flags interval
+                auto-merge
+                elements = { 10.0.0.0/8, 100.64.0.0/10,
+                             127.0.0.0/8, 169.254.0.0/16,
+                             172.16.0.0/12, 192.168.0.0/16 }
+        }
+
+        set wanif {
+                type ifname
+        }
+
+        set wanif6 {
+                type ifname
+        }
+
+        set lanif {
+                type ifname
+        }
+
+        chain forward_hook {
+                type filter hook forward priority filter - 1; policy accept;
+        }
+
+        chain flow_offload {
+        }
+
+        chain flow_offload_zapret {
+        }
+
+        chain flow_offload_always {
+        }
+
+        chain postrouting {
+        }
+
+        chain postrouting_hook {
+                type filter hook postrouting priority srcnat - 1; policy accept;
+        }
+
+        chain postnat {
+                meta nfproto ipv4 udp dport 443 ct original packets 1-5 meta mark set meta mark | 0x20000000 ct mark set ct mark | 0x40000000 queue flags bypass to 300
+                meta nfproto ipv4 tcp dport { 80, 443 } ct original packets 1-20 meta mark set meta mark | 0x20000000 ct mark set ct mark | 0x40000000 queue flags bypass to 300
+        }
+
+        chain postnat_hook {
+                type filter hook postrouting priority srcnat + 1; policy accept;
+                meta mark & 0x40000000 == 0x00000000 ip daddr != @nozapret jump postnat
+        }
+
+        chain prerouting {
+        }
+
+        chain prerouting_hook {
+                type filter hook prerouting priority dstnat + 1; policy accept;
+                icmp type time-exceeded ct state invalid drop
+                icmp type time-exceeded ct mark & 0x40000000 != 0x00000000 drop comment "nfqws related : prevent ttl expired socket errors"
+        }
+
+        chain prenat_hook {
+                type filter hook prerouting priority dstnat - 1; policy accept;
+                meta mark & 0x40000000 == 0x00000000 ip saddr != @nozapret jump prenat
+        }
+
+        chain prenat {
+                meta nfproto ipv4 udp sport 443 ct reply packets 1-3 ct mark set ct mark | 0x40000000 queue flags bypass to 300
+                meta nfproto ipv4 tcp sport { 80, 443 } ct reply packets 1-10 ct mark set ct mark | 0x40000000 queue flags bypass to 300
+        }
+
+        chain predefrag {
+                type filter hook output priority -401; policy accept;
+                meta mark & 0x40000000 != 0x00000000 jump predefrag_nfqws comment "nfqws generated : avoid drop by INVALID conntrack state"
+        }
+
+        chain predefrag_nfqws {
+                meta mark & 0x20000000 != 0x00000000 notrack comment "postnat traffic"
+                ip frag-off & 0x1fff != 0x0 notrack comment "ipfrag"
+                exthdr frag exists notrack comment "ipfrag"
+                tcp flags ! syn,rst,ack notrack comment "datanoack"
+        }
+
+        chain ruletest {
+        }
 }
 ```
 
