@@ -99,7 +99,7 @@ sudo /opt/mssql/bin/mssql-conf set-sa-password
 # Запускаем службу заново
 sudo systemctl start mssql-server
 ```
-*   **Комментарий**: Пароль должен быть сложным. Мы использовали `V3q20ENLUygH9MhyG26`. Службу обязательно нужно остановить перед сменой пароля, иначе мастер выдаст ошибку.
+*   **Комментарий**: Пароль должен быть сложным. Мы использовали `HardPass1729VeryW`. Службу обязательно нужно остановить перед сменой пароля, иначе мастер выдаст ошибку.
 
 ### Часть 4: Установка клиентских инструментов
 
@@ -120,7 +120,7 @@ sudo ACCEPT_EULA=Y apt install -y mssql-tools18 unixodbc-dev
 
 ```bash
 # Экспортируем пароль в переменную окружения, чтобы не вводить его каждый раз
-export SQLCMDPASSWORD="V3q20ENLUygH9MhyG26"
+export SQLCMDPASSWORD="HardPass1729VeryW"
 
 # Подключаемся к локальному серверу
 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C
