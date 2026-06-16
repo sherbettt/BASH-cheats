@@ -162,4 +162,275 @@ Microsoft SQL Server 2022 (RTM-CU25) (KB5081477) - 16.0.4255.1 (X64)
 
 
 
+## 🗄️ Основные операции с базами данных в SQL Server
+
+В этом разделе рассмотрим базовые команды для работы с базами данных, таблицами и данными через утилиту `sqlcmd`.
+
+### 🔌 Подключение к серверу
+
+Перед выполнением команд подключитесь к серверу:
+
+```bash
+export SQLCMDPASSWORD="HardPass1729VeryW"
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C
+```
+
+После подключения вы увидите приглашение `1>`. Все последующие команды вводятся в этом режиме, а `GO` выполняет их.
+
+---
+
+### 1️⃣ Создание базы данных
+
+#### Команда:
+```sql
+CREATE DATABASE MyProject;
+GO
+```
+
+#### Полный пример сессии:
+```bash
+1> CREATE DATABASE MyProject;
+2> GO
+```
+
+После выполнения вы увидите сообщение:
+```
+Commands completed successfully.
+```
+
+#### Проверка, что база создана:
+```sql
+SELECT name FROM sys.databases;
+GO
+```
+
+---
+
+### 2️⃣ Выбор (переключение на) базу данных
+
+Перед созданием таблиц нужно переключиться на нужную базу:
+
+```sql
+USE MyProject;
+GO
+```
+
+При успешном переключении вы увидите:
+```
+Changed database context to 'MyProject'.
+```
+
+---
+
+### 3️⃣ Создание таблицы
+
+#### Пример создания таблицы "Пользователи":
+```sql
+CREATE TABLE Users (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    FirstName NVARCHAR(50) NOT NULL,
+    LastName NVARCHAR(50) NOT NULL,
+    Email NVARCHAR(100) UNIQUE,
+    CreatedDate DATETIME DEFAULT GETDATE()
+);
+GO
+```
+
+#### Расшифровка:
+- `INT` — целочисленный тип
+- `NVARCHAR(50)` — строковый тип с поддержкой Unicode
+- `PRIMARY KEY` — первичный ключ (уникальный идентификатор записи)
+- `IDENTITY(1,1)` — автоматическое увеличение значения (начало с 1, шаг 1)
+- `NOT NULL` — поле обязательно для заполнения
+- `UNIQUE` — значение должно быть уникальным
+- `DEFAULT GETDATE()` — если не указано, подставляется текущая дата и время
+
+#### Другой пример (таблица "Заказы"):
+```sql
+CREATE TABLE Orders (
+    OrderId INT PRIMARY KEY IDENTITY(1,1),
+    UserId INT NOT NULL,
+    ProductName NVARCHAR(100) NOT NULL,
+    Quantity INT CHECK (Quantity > 0),
+    Price DECIMAL(10,2) NOT NULL
+);
+GO
+```
+
+---
+
+### 4️⃣ Просмотр структуры базы данных
+
+#### ✅ Список всех баз данных:
+```sql
+SELECT name, database_id, create_date 
+FROM sys.databases
+ORDER BY name;
+GO
+```
+
+#### ✅ Список всех таблиц в текущей базе:
+```sql
+SELECT TABLE_NAME, TABLE_TYPE
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_TYPE = 'BASE TABLE'
+ORDER BY TABLE_NAME;
+GO
+```
+
+#### ✅ Структура конкретной таблицы (поля, типы данных):
+```sql
+SELECT 
+    COLUMN_NAME,
+    DATA_TYPE,
+    CHARACTER_MAXIMUM_LENGTH,
+    IS_NULLABLE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Users'
+ORDER BY ORDINAL_POSITION;
+GO
+```
+
+---
+
+### 5️⃣ Работа с данными (CRUD)
+
+#### 📥 Вставка данных (INSERT)
+```sql
+-- Добавление одного пользователя
+INSERT INTO Users (FirstName, LastName, Email)
+VALUES ('Иван', 'Петров', 'ivan@example.com');
+GO
+
+-- Добавление нескольких записей сразу
+INSERT INTO Users (FirstName, LastName, Email)
+VALUES 
+    ('Мария', 'Иванова', 'maria@example.com'),
+    ('Петр', 'Сидоров', 'petr@example.com');
+GO
+```
+
+#### 📖 Чтение данных (SELECT)
+```sql
+-- Выбрать всех пользователей
+SELECT * FROM Users;
+GO
+
+-- Выбрать только определённые поля
+SELECT FirstName, LastName, Email FROM Users;
+GO
+
+-- Выбрать с условием (WHERE)
+SELECT * FROM Users 
+WHERE LastName = 'Петров';
+GO
+
+-- Сортировка
+SELECT * FROM Users 
+ORDER BY CreatedDate DESC;
+GO
+
+-- Ограничение количества записей (первые 10)
+SELECT TOP 10 * FROM Users;
+GO
+```
+
+#### ✏️ Обновление данных (UPDATE)
+```sql
+-- Изменить email пользователя с Id=1
+UPDATE Users 
+SET Email = 'ivan.new@example.com' 
+WHERE Id = 1;
+GO
+```
+
+#### ❌ Удаление данных (DELETE)
+```sql
+-- Удалить пользователя с Id=3
+DELETE FROM Users 
+WHERE Id = 3;
+GO
+
+-- Удалить всех пользователей с фамилией 'Иванова'
+DELETE FROM Users 
+WHERE LastName = 'Иванова';
+GO
+```
+
+---
+
+### 6️⃣ Удаление базы данных
+
+#### Команда для удаления базы:
+```sql
+DROP DATABASE MyProject;
+GO
+```
+
+⚠️ **Внимание!** Эта команда **безвозвратно** удаляет базу данных и все её таблицы с данными. Восстановить их будет невозможно без бэкапа.
+
+#### Проверка удаления:
+```sql
+SELECT name FROM sys.databases;
+GO
+```
+
+---
+
+### 📋 Команды для работы с существующими данными
+
+| Команда | Описание |
+|---------|----------|
+| `SELECT * FROM TableName;` | Вывести все данные из таблицы |
+| `SELECT COUNT(*) FROM TableName;` | Узнать количество записей |
+| `SELECT DISTINCT ColumnName FROM TableName;` | Уникальные значения столбца |
+| `TRUNCATE TABLE TableName;` | Очистить таблицу (удалить все данные, но сохранить структуру) |
+
+---
+
+### 🔑 Важные замечания
+
+1. **Все команды в `sqlcmd` выполняются после ввода `GO`** — не забывайте эту команду!
+2. **Регистр не важен** — `SELECT` и `select` работают одинаково.
+3. **Точка с запятой (`;`)** не обязательна, но рекомендуется для читаемости.
+4. **Чтобы выйти из `sqlcmd`**, введите `QUIT` или `EXIT` (без `GO`).
+5. **Для многострочных запросов** просто нажимайте Enter на новых строках, пока не введёте `GO`.
+
+### 🔄 Быстрый полный пример сессии
+
+```bash
+# Подключение
+export SQLCMDPASSWORD="HardPass1729VeryW"
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C
+
+# Создание базы
+1> CREATE DATABASE TestDB;
+2> GO
+
+# Переключение на неё
+1> USE TestDB;
+2> GO
+
+# Создание таблицы
+1> CREATE TABLE Employees (Id INT PRIMARY KEY IDENTITY(1,1), Name NVARCHAR(50), Position NVARCHAR(50));
+2> GO
+
+# Добавление данных
+1> INSERT INTO Employees (Name, Position) VALUES ('Анна', 'Менеджер'), ('Сергей', 'Разработчик');
+2> GO
+
+# Просмотр данных
+1> SELECT * FROM Employees;
+2> GO
+
+# Удаление базы
+1> DROP DATABASE TestDB;
+2> GO
+
+# Выход
+1> QUIT
+```
+
+---
+
 
