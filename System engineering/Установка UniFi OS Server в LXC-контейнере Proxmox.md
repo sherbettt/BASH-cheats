@@ -716,4 +716,16 @@ ss -tulpn | grep -E "11443|8080|8444|3478"
   <img src="https://github.com/sherbettt/BASH-cheats/blob/main/images/UniFiOS_Runtel_1.png" alt="UniFiOS_Runtel_1">
 </p>
 
+<p align="center">
+  <img src="https://github.com/sherbettt/BASH-cheats/blob/main/images/UniFiOS_Runtel_2.png" alt="UniFiOS_Runtel_2">
+</p>
+
+<p align="center">
+  <img src="https://github.com/sherbettt/BASH-cheats/blob/main/images/UniFiOS_Runtel_3.png" alt="UniFiOS_Runtel_3">
+</p>
+
+<p align="center">
+  <img src="https://github.com/sherbettt/BASH-cheats/blob/main/images/UniFiOS_Runtel_4.png" alt="UniFiOS_Runtel_4">
+</p>
+
 
