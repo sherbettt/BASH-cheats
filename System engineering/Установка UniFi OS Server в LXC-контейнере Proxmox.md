@@ -596,3 +596,12 @@ podman logs uosserver | grep -i error
 3. **Инкапсуляция трафика**  
    Некоторые функции UniFi (например, Site Magic SD-WAN) требуют создания VPN-туннелей между сайтами. TUN как раз для этого и предназначен — он позволяет "прокладывать" виртуальные каналы поверх существующей сети.
 
+------------
+<br>
+
+
+<p align="center">
+  <img src="https://github.com/sherbettt/BASH-cheats/blob/main/images/UniFiOS_Runtel_1.png" alt="UniFiOS_Runtel_1">
+</p>
+
+
