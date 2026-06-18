@@ -704,6 +704,14 @@ ss -tulpn | grep -E "11443|8080|8444|3478"
 <br>
 
 
+### Вход на сервер
+- непосредственно по IP адресу (первый раз)
+- в дальнейшем можно и по https://unifi.ui.com/
+- конкретно https://unifi.ui.com/consoles/66311754-2f46-4766-b196-b79e5a2b5630/network/default/dashboard (Runtel UniFi Server)
+------------
+<br>
+
+
 <p align="center">
   <img src="https://github.com/sherbettt/BASH-cheats/blob/main/images/UniFiOS_Runtel_1.png" alt="UniFiOS_Runtel_1">
 </p>
