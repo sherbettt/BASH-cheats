@@ -457,6 +457,7 @@ podman exec -it uosserver /bin/bash
 
 # Просмотр информации о контейнере
 podman inspect uosserver
+sudo -i -u uosserver podman inspect uosserver | grep -ie "running"
 
 # Просмотр статистики использования ресурсов
 podman stats uosserver
