@@ -348,6 +348,223 @@ podman exec -it uosserver /bin/bash
 ---
 
 
+## Часть 9. Управление службой и контейнером
+
+### 9.1. Управление системной службой uosserver
+
+UniFi OS Server работает как системная служба (systemd). Вот основные команды для управления ей:
+
+```bash
+# Проверка статуса службы
+systemctl status uosserver
+
+# Запуск службы
+systemctl start uosserver
+
+# Остановка службы
+systemctl stop uosserver
+
+# Перезапуск службы
+systemctl restart uosserver
+
+# Включение автозагрузки
+systemctl enable uosserver
+
+# Отключение автозагрузки
+systemctl disable uosserver
+```
+
+**Пример вывода `systemctl status uosserver`:**
+```
+● uosserver.service - UniFi OS Server Service
+     Loaded: loaded (/etc/systemd/system/uosserver.service; enabled)
+     Active: active (running) since Thu 2026-06-18 05:54:38 UTC
+   Main PID: 622 (uosserver-servi)
+      Tasks: 8 (limit: 154210)
+     Memory: 10.2M
+     CGroup: /system.slice/uosserver.service
+             ├─622 /var/lib/uosserver/bin/uosserver-service
+             └─627 /var/lib/uosserver/bin/discovery
+```
+
+### 9.2. Просмотр логов
+
+**Чтение логов через journalctl:**
+
+```bash
+# Просмотр логов в реальном времени (как tail -f)
+journalctl -u uosserver -f
+
+# Просмотр последних 50 строк логов
+journalctl -u uosserver -n 50
+
+# Просмотр логов за последние 10 минут
+journalctl -u uosserver --since "10 minutes ago"
+
+# Просмотр логов за сегодня
+journalctl -u uosserver --since today
+
+# Просмотр логов с цветным выводом (удобно для чтения)
+journalctl -u uosserver -f | ccze -A
+```
+
+**Где ещё хранятся логи:**
+
+```bash
+# Основные логи службы
+ls -la /var/lib/uosserver/logs/
+
+# Логи Podman-контейнера
+podman logs uosserver
+
+# Логи в реальном времени из контейнера
+podman logs -f uosserver
+```
+
+### 9.3. Управление Podman-контейнером
+
+UniFi OS Server работает внутри Podman-контейнера с именем `uosserver`. Вот основные команды для управления им:
+
+```bash
+# Список запущенных контейнеров
+podman ps
+
+# Список всех контейнеров (включая остановленные)
+podman ps -a
+
+# Просмотр логов контейнера
+podman logs uosserver
+
+# Просмотр логов в реальном времени
+podman logs -f uosserver
+
+# Остановка контейнера
+podman stop uosserver
+
+# Запуск контейнера
+podman start uosserver
+
+# Перезапуск контейнера
+podman restart uosserver
+
+# Вход в контейнер для диагностики (интерактивный режим)
+podman exec -it uosserver /bin/bash
+
+# Просмотр информации о контейнере
+podman inspect uosserver
+
+# Просмотр статистики использования ресурсов
+podman stats uosserver
+```
+
+### 9.4. Проверка сетевых портов
+
+```bash
+# Проверка всех портов, используемых UniFi OS Server
+ss -tulpn | grep -E "11443|8080|8444|3478|6789|8880|8881|8882"
+
+# Проверка конкретного порта (например, 11443)
+ss -tulpn | grep 11443
+
+# Проверка с помощью netstat (если установлен)
+netstat -tulpn | grep 11443
+```
+
+**Пример вывода для порта 11443:**
+```
+tcp   LISTEN 0      128                *:11443            *:*    users:(("pasta",pid=690,fd=160))
+```
+
+### 9.5. Проверка состояния контейнера
+
+```bash
+# Проверка, что контейнер работает
+podman ps | grep uosserver
+
+# Проверка, что все процессы внутри контейнера работают
+podman exec uosserver ps aux
+
+# Проверка использования памяти контейнером
+podman stats --no-stream uosserver
+```
+
+---
+
+## Часть 10. Часто используемые команды (шпаргалка)
+
+| Действие | Команда |
+|----------|---------|
+| Статус службы | `systemctl status uosserver` |
+| Запуск службы | `systemctl start uosserver` |
+| Остановка службы | `systemctl stop uosserver` |
+| Перезапуск службы | `systemctl restart uosserver` |
+| Логи в реальном времени | `journalctl -u uosserver -f` |
+| Логи за последние 50 строк | `journalctl -u uosserver -n 50` |
+| Логи с цветом | `journalctl -u uosserver -f \| ccze -A` |
+| Список контейнеров | `podman ps` |
+| Логи контейнера | `podman logs uosserver` |
+| Вход в контейнер | `podman exec -it uosserver /bin/bash` |
+| Проверка портов | `ss -tulpn \| grep 11443` |
+| Проверка swap | `free -h` |
+| Проверка памяти | `free -m` |
+
+---
+
+## Часть 11. Устранение неполадок
+
+### 11.1. Служба не запускается
+
+```bash
+# Проверить статус
+systemctl status uosserver
+
+# Посмотреть ошибки в логах
+journalctl -u uosserver -n 50
+
+# Проверить, что контейнер существует
+podman ps -a | grep uosserver
+
+# Попробовать запустить контейнер вручную
+podman start uosserver
+```
+
+### 11.2. Веб-интерфейс не открывается
+
+```bash
+# Проверить, что служба работает
+systemctl status uosserver
+
+# Проверить, что порт 11443 слушает
+ss -tulpn | grep 11443
+
+# Проверить логи на наличие ошибок
+journalctl -u uosserver -f
+
+# Проверить, что контейнер запущен
+podman ps | grep uosserver
+
+# Проверить доступность порта из контейнера
+podman exec uosserver curl -k https://localhost:443/api/ping
+```
+
+### 11.3. Устройства не видны (Adoption не работает)
+
+```bash
+# Проверить, что порт 8080 открыт
+ss -tulpn | grep 8080
+
+# Проверить, что устройства в одной сети
+ip a
+
+# Проверить, что в контейнере включён discovery
+podman exec uosserver ps aux | grep discovery
+
+# Проверить логи контейнера на ошибки
+podman logs uosserver | grep -i error
+```
+
+---
+
 
 ## 📌 Что такое TUN-устройства и зачем они нужны в контейнере?
 
