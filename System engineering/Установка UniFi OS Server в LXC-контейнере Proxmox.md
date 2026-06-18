@@ -387,6 +387,9 @@ systemctl disable uosserver
              └─627 /var/lib/uosserver/bin/discovery
 ```
 
+***ВАЖНО! После перезагрузки контейнера пропадет TUN и не работает веб-интерфейс. Как это решить - читай ниже в статье.***
+
+
 ### 9.2. Просмотр логов
 
 **Чтение логов через journalctl:**
@@ -595,6 +598,107 @@ podman logs uosserver | grep -i error
 
 3. **Инкапсуляция трафика**  
    Некоторые функции UniFi (например, Site Magic SD-WAN) требуют создания VPN-туннелей между сайтами. TUN как раз для этого и предназначен — он позволяет "прокладывать" виртуальные каналы поверх существующей сети.
+
+-------
+
+
+### 📌 Что делать, если после перезагрузки контейнера потерялся TUN и не работает веб-интерфейс
+
+После перезагрузки LXC-контейнера устройство `/dev/net/tun`, созданное вручную через `mknod`, **не сохраняется**. Это приводит к тому, что Podman не может запустить сетевой стек, и контейнер `uosserver` не стартует.
+
+#### Признаки проблемы:
+- Веб-интерфейс `https://IP:11443` не открывается.
+- Команда `ss -tulpn | grep 11443` не показывает ничего.
+- В логах службы `journalctl -u uosserver` видны ошибки:
+  ```
+  ERROR Timeout: Container did not start within 60 seconds.
+  ```
+- При попытке запустить контейнер вручную появляется ошибка:
+  ```
+  Failed to open() /dev/net/tun: No such file or directory
+  ```
+
+#### 🔧 Быстрое восстановление (вручную)
+
+Зайдите в контейнер и выполните:
+```bash
+# 1. Создаём TUN-устройство заново
+mkdir -p /dev/net
+mknod /dev/net/tun c 10 200
+chmod 666 /dev/net/tun
+
+# 2. Запускаем контейнер
+sudo -i -u uosserver podman start uosserver
+
+# 3. Проверяем, что порты открылись
+ss -tulpn | grep -E "11443|8080"
+```
+После этого веб-интерфейс снова станет доступен.
+
+---
+
+#### Автоматическое восстановление (чтобы не делать это вручную)
+
+Чтобы TUN создавался автоматически при каждой загрузке контейнера, мы добавили **systemd-службу**, которая создаёт устройство до запуска `uosserver`.
+
+**Создайте файл `/etc/systemd/system/tun-device.service`:**
+
+```bash
+cat > /etc/systemd/system/tun-device.service << 'EOF'
+[Unit]
+Description=Create TUN device for Podman
+After=local-fs.target
+Before=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'mkdir -p /dev/net && [ -e /dev/net/tun ] || mknod /dev/net/tun c 10 200 && chmod 666 /dev/net/tun'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+**Активируйте службу:**
+```bash
+systemctl daemon-reload
+systemctl enable tun-device.service
+systemctl start tun-device.service
+```
+
+Теперь после перезагрузки контейнера TUN будет создаваться автоматически, и `uosserver` запустится без ошибок.
+
+---
+
+#### Альтернативный способ — через rc.local (проще)
+
+Если вы не хотите создавать systemd-службу, можно добавить команды в `/etc/rc.local`:
+
+```bash
+#!/bin/bash
+mkdir -p /dev/net
+[ -e /dev/net/tun ] || mknod /dev/net/tun c 10 200
+chmod 666 /dev/net/tun
+exit 0
+```
+
+Не забудьте сделать файл исполняемым:
+```bash
+chmod +x /etc/rc.local
+```
+
+---
+
+#### ✅ Проверка
+
+После настройки автоматического создания TUN перезагрузите контейнер и убедитесь, что:
+```bash
+ls -la /dev/net/tun   # должно показывать crw-rw-rw-
+systemctl status uosserver   # должно быть active (running)
+ss -tulpn | grep 11443   # должен быть LISTEN
+ss -tulpn | grep -E "11443|8080|8444|3478"
+```
 
 ------------
 <br>
