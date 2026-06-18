@@ -423,9 +423,14 @@ podman logs -f uosserver
 
 ### 9.3. Управление Podman-контейнером
 
+Возникает ошибка cannot chdir to /root возникает, потому что sudo -u uosserver не меняет домашнюю директорию, а sudo -i -u uosserver — меняет.
+
 UniFi OS Server работает внутри Podman-контейнера с именем `uosserver`. Вот основные команды для управления им:
 
 ```bash
+# Войти в сессию пользователя uosserver (рекомендуемый способ)
+sudo -i -u uosserver
+
 # Список запущенных контейнеров
 podman ps
 
@@ -455,6 +460,15 @@ podman inspect uosserver
 
 # Просмотр статистики использования ресурсов
 podman stats uosserver
+```
+
+Однострочники
+```bash
+sudo -i -u uosserver podman ps
+sudo -i -u uosserver podman ps -a               # Список всех контейнеров
+sudo -i -u uosserver podman logs uosserver      # логи (Ctrl+C для выхода)
+sudo -i -u uosserver podman logs -f uosserver
+sudo -i -u uosserver podman restart uosserver   # Перезапск контейнера
 ```
 
 ### 9.4. Проверка сетевых портов
