@@ -903,6 +903,28 @@ ssh VdNKf@192.168.97.220
 scp /root/programs/UniFi_firmware_8.6.11_for_U7-Mesh VdNKf@192.168.97.220:/tmp/fwupdate.bin
 ```
 
+Может возникнуть ошибка ash: /usr/libexec/sftp-server: not found потому, что на точке доступа нет SFTP-сервера, который используется командой scp по умолчанию. 
+На прошивках LEDE/OpenWrt scp работает по-другому — через dropbear, который не поддерживает SFTP.
+
+#### Способ 1: Копирование через cat + перенаправление
+```bash
+root@UniFi-hotspot ~/programs
+06:30:50 # cat /root/programs/UniFi_firmware_8.6.11_for_U7-Mesh | ssh VdNKf@192.168.97.220 "cat > /tmp/fwupdate.bin"
+VdNKf@192.168.97.220's password: 
+#--------------
+
+U7Pro220-BZ.7.0.64# ls -alF /tmp/fw*
+-rw-r--r--    1 VdNKf    root      46138907 Jun 22 09:31 /tmp/fwupdate.bin
+```
+
+#### Способ 2: Копирование через scp с опцией -O
+пция `-O` заставляет `scp` использовать старый протокол, который работает с `dropbear`.
+```bash
+# Используем старый протокол SCP (не SFTP)
+scp -O /root/programs/UniFi_firmware_8.6.11_for_U7-Mesh VdNKf@192.168.97.220:/tmp/fwupdate.bin
+```
+
+
 **Запуск обновления:**
 
 ```bash
