@@ -911,8 +911,13 @@ scp /root/programs/UniFi_firmware_8.6.11_for_U7-Mesh VdNKf@192.168.97.220:/tmp/f
 root@UniFi-hotspot ~/programs
 06:30:50 # cat /root/programs/UniFi_firmware_8.6.11_for_U7-Mesh | ssh VdNKf@192.168.97.220 "cat > /tmp/fwupdate.bin"
 VdNKf@192.168.97.220's password: 
-#--------------
 
+root@UniFi-hotspot ~/programs
+06:31:44 # ssh VdNKf@192.168.97.220 "du -sh /tmp/fwupdate.bin"
+VdNKf@192.168.97.220's password: 
+44.0M   /tmp/fwupdate.bin
+
+# на точке доступа
 U7Pro220-BZ.7.0.64# ls -alF /tmp/fw*
 -rw-r--r--    1 VdNKf    root      46138907 Jun 22 09:31 /tmp/fwupdate.bin
 ```
