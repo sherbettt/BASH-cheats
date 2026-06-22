@@ -1081,6 +1081,62 @@ http://192.168.87.153:8000/UniFi_firmware_8.6.11_U7-Mesh.bin
 6. Вставьте ссылку на файл прошивки
 7. Нажмите **Apply Custom Upgrade**
 
+Получаем
+
+<p align="center">
+  <img src="https://github.com/sherbettt/BASH-cheats/blob/main/images/UniFI-OS_SSH-hotsopt_5.1.19_console4.png" alt="UniFI-OS_SSH-hotsopt_5.1.19_console4.png">
+</p>
+
+```bash
+Device U7 Pro 226: Connecting
+Device U7 Pro 226: Connected
+
+********************************* NOTICE **********************************
+* By logging in to, accessing, or using any Ubiquiti product, you are     *
+* signifying that you have read our Terms of Service (ToS) and End User   *
+* License Agreement (EULA), understand their terms, and agree to be       *
+* fully bound to them. The use of SSH (Secure Shell) can potentially      *
+* harm Ubiquiti devices and result in lost access to them and their data. *
+* By proceeding, you acknowledge that the use of SSH to modify device(s)  *
+* outside of their normal operational scope, or in any manner             *
+* inconsistent with the ToS or EULA, will permanently and irrevocably     *
+* void any applicable warranty.                                           *
+***************************************************************************
+
+  ___ ___      .__________.__
+ |   |   |____ |__\_  ____/__|   PRODUCT: U7-Pro
+ |   |   /    \|  ||  __) |  |   MAC:     a8:9c:6c:4e:27:6c
+ |   |  |   |  \  ||  \   |  |   VERSION: 8.6.11+18870.260526.1140
+ |______|___|  /__||__/   |__|
+            |_/
+
+Ubiquiti Inc. (c) 2010-2026      https://www.ui.com
+
+VdNKf@U7Pro226:~#c
+-ash: сc: not found
+VdNKf@U7Pro226:~# cat /etc/os-release 
+NAME="OpenWrt"
+VERSION="23.05-SNAPSHOT"
+ID="openwrt"
+ID_LIKE="lede openwrt"
+PRETTY_NAME="OpenWrt 23.05-SNAPSHOT"
+VERSION_ID="23.05-snapshot"
+HOME_URL="https://openwrt.org/"
+BUG_URL="https://bugs.openwrt.org/"
+SUPPORT_URL="https://forum.openwrt.org/"
+BUILD_ID="r0-fe819d42d5"
+OPENWRT_BOARD="ipq53xx/ipq53xx_32"
+OPENWRT_ARCH="arm_cortex-a7_neon-vfpv4"
+OPENWRT_TAINTS="no-all busybox"
+OPENWRT_DEVICE_MANUFACTURER="OpenWrt"
+OPENWRT_DEVICE_MANUFACTURER_URL="https://openwrt.org/"
+OPENWRT_DEVICE_PRODUCT="Generic"
+OPENWRT_DEVICE_REVISION="v0"
+OPENWRT_RELEASE="OpenWrt 23.05-SNAPSHOT r0-fe819d42d5"
+VdNKf@U7Pro226:~# 
+```
+
+
 ---
 
 ## Логи HTTP-сервера
