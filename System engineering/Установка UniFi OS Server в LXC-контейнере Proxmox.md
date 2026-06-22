@@ -844,6 +844,12 @@ mv BZ2.ipq53xx_8.6.11+18870.260526.1140.bin UniFi_firmware_8.6.11_for_U7-Mesh
 5. Прокрутите вниз до самого низа
 6. Нажмите кнопку **Debug**
 
+<p align="center">
+  <img src="https://github.com/sherbettt/BASH-cheats/blob/main/images/UniFI-OS_SSH-hotsopt_5.1.19_console1.png" alt="UniFI-OS_SSH-hotsopt_5.1.19_console1.png">
+</p>
+
+
+
 <!-- здесь скриншот(ы) -->
 
 Откроется консоль с прямым доступом к точке доступа.
