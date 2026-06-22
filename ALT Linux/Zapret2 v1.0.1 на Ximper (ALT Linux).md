@@ -1,6 +1,6 @@
-# 📗 **Инструкция: Установка и настройка Zapret2 v1.0.1 на Ximper Linux**
+# **Инструкция: Установка и настройка Zapret2 v1.0.1 на Ximper Linux**
 
-> **📅 Актуально на 13 июня 2026**  
+> **📅 Актуально на 21 июня 2026**  
 > **✅ Проверенная рабочая стратегия:** `multisplit:pos=midsld:seqovl=5`  
 > **📂 Важное примечание:** Конфиг находится в `/opt/zapret2/config`, а НЕ в `/etc/zapret2/config`!
 >
@@ -948,4 +948,360 @@ sudo systemctl restart zapret2
 5. **Стратегия** осталась та же — `multisplit:pos=midsld:seqovl=5` (рабочая на июнь 2026)
 
 ---
+
+# 🆕 **ДОПОЛНЕНИЕ: Настройка доступа к Rutracker.org и работа со стратегиями**
+
+> **Добавлено 21 июня 2026**  
+> **Основано на практическом опыте настройки Zapret2**
+
+---
+
+## 🧲 **16. Настройка доступа к Rutracker.org**
+
+### **16.1 Проверка наличия сайта в списке**
+
+```bash
+# Проверяем, есть ли rutracker в списке сайтов
+grep -i "rutracker" /opt/zapret2/ipset/zapret-hosts-user.txt
+```
+
+Если вывод пустой — сайта нет в списке. Добавляем:
+
+```bash
+# Добавляем rutracker и связанные домены
+echo "rutracker.org" | sudo tee -a /opt/zapret2/ipset/zapret-hosts-user.txt
+echo "rutracker.net" | sudo tee -a /opt/zapret2/ipset/zapret-hosts-user.txt
+echo "t-ru.org" | sudo tee -a /opt/zapret2/ipset/zapret-hosts-user.txt
+echo "rutracker.nl" | sudo tee -a /opt/zapret2/ipset/zapret-hosts-user.txt
+
+# Перезапускаем сервис для применения
+sudo systemctl restart zapret2
+```
+
+**Важно:** Не добавляйте сайты в файл исключений `zapret-hosts-user-exclude.txt` — это файл для сайтов, которые **НЕ должны** обрабатываться zapret!
+
+---
+
+### **16.2 Проверка загрузки IP-адресов в nftables**
+
+```bash
+# Получаем IP-адреса rutracker
+host rutracker.org | grep "has address"
+
+# Проверяем, загружены ли они в nftables
+sudo nft list set inet zapret2 zapret | grep -E "104.21.32.39|172.67.182.196"
+```
+
+Если IP не найдены — нужно обновить список:
+
+```bash
+# Обновляем список сайтов
+sudo /opt/zapret2/ipset/get_antizapret_domains.sh
+
+# Или добавляем IP вручную
+cd /opt/zapret2/ipset
+echo "104.21.32.39" | sudo tee -a zapret-ip-user.txt
+echo "172.67.182.196" | sudo tee -a zapret-ip-user.txt
+sudo ./create_ipset.sh
+
+# Перезапускаем сервис
+sudo systemctl restart zapret2
+```
+
+---
+
+### **16.3 Проверка доступности Rutracker**
+
+```bash
+# Проверяем через curl
+curl -I https://rutracker.org 2>/dev/null | head -5
+
+# Ожидаемый вывод: HTTP/2 301 (редирект на /forum/index.php) или HTTP/2 200
+```
+
+**Примечание:** Код ответа `301` — это нормально! Rutracker перенаправляет на страницу форума. Главное, чтобы сайт открывался.
+
+---
+
+## 🎯 **17. Подбор стратегии обхода для конкретных сайтов**
+
+### **17.1 Базовые стратегии**
+
+#### **Стратегия для YouTube (базовая):**
+```bash
+NFQWS2_OPT="--filter-tcp=443 --filter-l7=tls --payload=tls_client_hello --lua-desync=multisplit:pos=midsld:seqovl=5"
+```
+
+#### **Стратегия универсальная (HTTP + HTTPS):**
+```bash
+NFQWS2_OPT="--filter-tcp=80 --filter-l7=http --payload=http_req --lua-desync=multisplit:pos=method+2 --new --filter-tcp=443 --filter-l7=tls --payload=tls_client_hello --lua-desync=multisplit:pos=midsld:seqovl=5"
+```
+
+#### **Стратегия Multidisorder:**
+```bash
+NFQWS2_OPT="--filter-tcp=443 --filter-l7=tls --payload=tls_client_hello --lua-desync=multidisorder:pos=1,midsld"
+```
+
+#### **Стратегия Fake + TCP MD5:**
+```bash
+NFQWS2_OPT="--filter-tcp=443 --filter-l7=tls --payload=tls_client_hello --lua-desync=fake:blob=fake_default_tls:tcp_md5:tcp_seq=-10000"
+```
+
+#### **Комбинированная стратегия ("тяжёлая артиллерия"):**
+```bash
+NFQWS2_OPT="--filter-tcp=80 --filter-l7=http --payload=http_req --lua-desync=multisplit:pos=method+2 --new --filter-tcp=443 --filter-l7=tls --payload=tls_client_hello --lua-desync=multisplit:pos=midsld:seqovl=5 --lua-desync=multidisorder:pos=1,midsld --lua-desync=fake:blob=fake_default_tls:tcp_md5:tcp_seq=-10000"
+```
+
+---
+
+### **17.2 Как быстро переключать стратегии**
+
+#### **Способ 1: Через sed (быстро):**
+```bash
+# Универсальная стратегия
+sudo sed -i 's|^NFQWS2_OPT=.*|NFQWS2_OPT="--filter-tcp=80 --filter-l7=http --payload=http_req --lua-desync=multisplit:pos=method+2 --new --filter-tcp=443 --filter-l7=tls --payload=tls_client_hello --lua-desync=multisplit:pos=midsld:seqovl=5"|' /opt/zapret2/config
+sudo systemctl restart zapret2
+sleep 3
+curl -I https://rutracker.org 2>/dev/null | head -5
+```
+
+#### **Способ 2: Скрипт для переключения стратегий:**
+```bash
+sudo mcedit /usr/local/bin/switch-strategy
+```
+
+```bash
+#!/bin/bash
+
+case "$1" in
+  1)
+    echo "📌 Стратегия 1: Универсальная (HTTP+HTTPS)"
+    sudo sed -i 's|^NFQWS2_OPT=.*|NFQWS2_OPT="--filter-tcp=80 --filter-l7=http --payload=http_req --lua-desync=multisplit:pos=method+2 --new --filter-tcp=443 --filter-l7=tls --payload=tls_client_hello --lua-desync=multisplit:pos=midsld:seqovl=5"|' /opt/zapret2/config
+    ;;
+  2)
+    echo "📌 Стратегия 2: Multidisorder"
+    sudo sed -i 's|^NFQWS2_OPT=.*|NFQWS2_OPT="--filter-tcp=443 --filter-l7=tls --payload=tls_client_hello --lua-desync=multidisorder:pos=1,midsld"|' /opt/zapret2/config
+    ;;
+  3)
+    echo "📌 Стратегия 3: Fake + мультисплит"
+    sudo sed -i 's|^NFQWS2_OPT=.*|NFQWS2_OPT="--filter-tcp=443 --filter-l7=tls --payload=tls_client_hello --lua-desync=fake:blob=fake_default_tls:tcp_md5:tcp_seq=-10000 --lua-desync=multisplit:pos=midsld:seqovl=5"|' /opt/zapret2/config
+    ;;
+  4)
+    echo "📌 Стратегия 4: Комбо (тяжёлая артиллерия)"
+    sudo sed -i 's|^NFQWS2_OPT=.*|NFQWS2_OPT="--filter-tcp=80 --filter-l7=http --payload=http_req --lua-desync=multisplit:pos=method+2 --new --filter-tcp=443 --filter-l7=tls --payload=tls_client_hello --lua-desync=multisplit:pos=midsld:seqovl=5 --lua-desync=multidisorder:pos=1,midsld --lua-desync=fake:blob=fake_default_tls:tcp_md5:tcp_seq=-10000"|' /opt/zapret2/config
+    ;;
+  youtube)
+    echo "📌 Возврат к стратегии для YouTube"
+    sudo sed -i 's|^NFQWS2_OPT=.*|NFQWS2_OPT="--filter-tcp=443 --filter-l7=tls --payload=tls_client_hello --lua-desync=multisplit:pos=midsld:seqovl=5"|' /opt/zapret2/config
+    ;;
+  *)
+    echo "Использование: $0 {1|2|3|4|youtube}"
+    echo "  1 - Универсальная (HTTP+HTTPS)"
+    echo "  2 - Multidisorder"
+    echo "  3 - Fake + мультисплит"
+    echo "  4 - Комбо (тяжёлая артиллерия)"
+    echo "  youtube - Вернуться к YouTube стратегии"
+    exit 1
+    ;;
+esac
+
+sudo systemctl restart zapret2
+sleep 3
+echo ""
+echo "=== ПРОВЕРКА RUTRACKER ==="
+curl -I https://rutracker.org 2>/dev/null | head -5
+echo ""
+echo "=== ПРОВЕРКА YOUTUBE ==="
+curl -I https://youtube.com 2>/dev/null | head -1
+```
+
+```bash
+sudo chmod +x /usr/local/bin/switch-strategy
+
+# Использование:
+sudo switch-strategy 1   # Универсальная
+sudo switch-strategy 2   # Multidisorder
+sudo switch-strategy 3   # Fake
+sudo switch-strategy 4   # Комбо
+sudo switch-strategy youtube  # Вернуться к YouTube
+```
+
+---
+
+### **17.3 Автоматический подбор стратегии через blockcheck2**
+
+В Zapret2 есть встроенный инструмент для подбора стратегии:
+
+```bash
+cd /opt/zapret2
+
+# Запускаем тестирование для конкретного сайта
+sudo ./blockcheck2.sh --hosts=https://rutracker.org --port=443 --lua --skip-ipv6
+```
+
+**Что делает blockcheck2:**
+1. Пытается подключиться к сайту разными способами
+2. Показывает, какая стратегия прошла успешно
+3. Выдаёт рекомендацию по настройке
+
+**Пример вывода:**
+```
+=== blockcheck2 v1.0.1 ===
+Testing https://rutracker.org:443...
+
+[1] multisplit:pos=midsld:seqovl=5     -> FAIL
+[2] multidisorder:pos=1,midsld         -> OK
+[3] fake:blob=fake_default_tls        -> FAIL
+
+Вердикт: работает стратегия "multidisorder:pos=1,midsld"
+```
+
+---
+
+## 🛠️ **18. Расширенная диагностика**
+
+### **18.1 Включение отладки**
+
+```bash
+# Включаем отладку
+sudo sed -i 's|^NFQWS2_OPT=.*|NFQWS2_OPT="--filter-tcp=443 --filter-l7=tls --payload=tls_client_hello --lua-desync=multisplit:pos=midsld:seqovl=5 --debug=1"|' /opt/zapret2/config
+sudo systemctl restart zapret2
+
+# Смотрим логи в реальном времени
+sudo journalctl -u zapret2 -f
+
+# Отключаем отладку
+sudo sed -i 's| --debug=1||' /opt/zapret2/config
+sudo systemctl restart zapret2
+```
+
+### **18.2 Проверка статуса (расширенная)**
+
+```bash
+# Обновлённый скрипт статуса
+sudo mcedit /usr/local/bin/zapret-status
+```
+
+```bash
+#!/bin/bash
+
+echo "=== 📡 ZAPRET STATUS ==="
+if systemctl is-active --quiet zapret2; then
+    echo "✅ Сервис: РАБОТАЕТ"
+    PID=$(pgrep -f nfqws2 | head -1)
+    echo "   PID: $PID"
+else
+    echo "❌ Сервис: НЕ РАБОТАЕТ"
+fi
+
+echo ""
+echo "=== ⚙️ ТЕКУЩАЯ СТРАТЕГИЯ ==="
+grep "^NFQWS2_OPT=" /opt/zapret2/config | cut -d'"' -f2 | cut -c1-80..." 2>/dev/null || echo "Не найдена"
+
+echo ""
+echo "=== 🔥 NFTABLES RULES ==="
+if sudo nft list table inet zapret2 &>/dev/null; then
+    echo "✅ Таблица zapret2 загружена"
+    COUNT=$(sudo nft list set inet zapret2 zapret 2>/dev/null | grep -c "^[[:space:]]*[0-9]" || echo 0)
+    echo "   IP-адресов в списке: $COUNT"
+else
+    echo "❌ Таблица не найдена"
+fi
+
+echo ""
+echo "=== 📋 СПИСОК САЙТОВ ==="
+if [ -f /opt/zapret2/ipset/zapret-hosts-user.txt ]; then
+    DOMAINS=$(wc -l < /opt/zapret2/ipset/zapret-hosts-user.txt)
+    echo "✅ Доменов в списке: $DOMAINS"
+    echo "   Rutracker в списке: $(grep -c rutracker /opt/zapret2/ipset/zapret-hosts-user.txt 2>/dev/null || echo 0)"
+fi
+
+echo ""
+echo "=== 🎬 YouTube ==="
+curl -I https://youtube.com 2>/dev/null | head -1
+
+echo ""
+echo "=== 🧲 Rutracker.org ==="
+curl -I https://rutracker.org 2>/dev/null | head -1
+
+echo ""
+echo "=== 📊 СТАТИСТИКА ==="
+ps aux | grep nfqws2 | grep -v grep | awk '{print "   CPU: " $3 "%  MEM: " $4 "%  RSS: " $6 " KB"}'
+```
+
+```bash
+sudo chmod +x /usr/local/bin/zapret-status
+zapret-status
+```
+
+---
+
+## 📋 **19. Быстрое добавление новых сайтов**
+
+```bash
+# Добавляем сайт в список
+echo "example.com" | sudo tee -a /opt/zapret2/ipset/zapret-hosts-user.txt
+
+# Обновляем IP
+cd /opt/zapret2/ipset && sudo ./create_ipset.sh
+
+# Перезапускаем сервис
+sudo systemctl restart zapret2
+```
+
+---
+
+## 🎯 **20. Рекомендуемая стратегия на 2026 год**
+
+На основе практического опыта, для большинства сайтов (YouTube, Rutracker, Discord, Telegram и др.) рекомендуется **комбинированная стратегия**:
+
+```bash
+NFQWS2_OPT="--filter-tcp=80 --filter-l7=http --payload=http_req --lua-desync=multisplit:pos=method+2 --new --filter-tcp=443 --filter-l7=tls --payload=tls_client_hello --lua-desync=multisplit:pos=midsld:seqovl=5 --lua-desync=multidisorder:pos=1,midsld --lua-desync=fake:blob=fake_default_tls:tcp_md5:tcp_seq=-10000"
+```
+
+**Что делает эта стратегия:**
+- Обрабатывает HTTP трафик (порт 80) — разрыв после метода запроса
+- Обрабатывает HTTPS трафик (порт 443) — комбинация трёх методов:
+  - `multisplit` — разрыв SNI посередине
+  - `multidisorder` — изменение порядка пакетов
+  - `fake` — подделка TLS-сертификата
+
+---
+
+## ✅ **Итоговый чек-лист для Rutracker:**
+
+```bash
+# ✅ 1. Rutracker добавлен в список сайтов
+grep rutracker /opt/zapret2/ipset/zapret-hosts-user.txt
+
+# ✅ 2. IP-адреса загружены в nftables
+sudo nft list set inet zapret2 zapret | grep -E "104.21.32.39|172.67.182.196"
+
+# ✅ 3. Стратегия подобрана (комбинированная)
+grep "^NFQWS2_OPT=" /opt/zapret2/config
+
+# ✅ 4. Сервис работает
+systemctl status zapret2
+
+# ✅ 5. Rutracker открывается
+curl -I https://rutracker.org 2>/dev/null | head -5
+```
+
+---
+
+## 📌 **Заключение**
+
+**Zapret2 v1.0.1** — это мощный и гибкий инструмент для обхода DPI. С правильной стратегией и актуальным списком сайтов он обеспечивает доступ к большинству заблокированных ресурсов.
+
+**Ключевые моменты для успешной работы:**
+1. Используйте `hostlist` (метод 3) для фильтрации трафика
+2. Регулярно обновляйте список сайтов через `get_antizapret_domains.sh`
+3. Для проблемных сайтов используйте комбинированную стратегию
+4. Проверяйте загрузку IP-адресов в nftables
+
+**Полезные ресурсы:**
+- [Официальный репозиторий zapret2](https://github.com/bol-van/zapret2)
+- [Список заблокированных сайтов (AntiZapret)](https://github.com/bol-van/zapret/tree/master/ipset)
+
+
 
