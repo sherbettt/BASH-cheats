@@ -848,11 +848,16 @@ mv BZ2.ipq53xx_8.6.11+18870.260526.1140.bin UniFi_firmware_8.6.11_for_U7-Mesh
   <img src="https://github.com/sherbettt/BASH-cheats/blob/main/images/UniFI-OS_SSH-hotsopt_5.1.19_console1.png" alt="UniFI-OS_SSH-hotsopt_5.1.19_console1.png">
 </p>
 
+<p align="center">
+  <img src="https://github.com/sherbettt/BASH-cheats/blob/main/images/UniFI-OS_SSH-hotsopt_5.1.19_console2.png" alt="UniFI-OS_SSH-hotsopt_5.1.19_console2.png">
+</p>
 
-
-<!-- здесь скриншот(ы) -->
+<p align="center">
+  <img src="https://github.com/sherbettt/BASH-cheats/blob/main/images/UniFI-OS_SSH-hotsopt_5.1.19_console3.png" alt="UniFI-OS_SSH-hotsopt_5.1.19_console3.png">
+</p>
 
 Откроется консоль с прямым доступом к точке доступа.
+
 
 ### 13.4. Определение пользователя для входа
 
@@ -911,6 +916,9 @@ upgrade /tmp/fwupdate.bin
 ### 13.7. Ожидание завершения
 
 Процесс обновления занимает 3-5 минут. Точка доступа перезагрузится. После перезагрузки она появится в интерфейсе с новой версией прошивки.
+
+<!-- здесь скриншот(ы) -->
+
 
 ---
 
