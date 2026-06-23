@@ -142,6 +142,13 @@ alias lock='dm-tool lock'
 alias df-tmpfs='df -hT / /home /boot /var 2>/dev/null | grep -v "^tmpfs"'
 alias free-w='free --si --lohi --total -w'
 alias ps-cpu-sort='ps aux --sort=-%cpu | head -15'
+alias procs-cpu='procs --pager disable --and --sortd CPU'
+alias procs-mem='procs --pager disable --and --sortd MEM'
+alias procs-pid='procs --pager disable --and --sorta PID'
+alias procs-user='procs --pager disable --and --sortd User'
+# procs --pager disable --and --sortd CPU postgres
+# procs --pager disable --and --sortd CPU postgres stat
+
 
 # Utility aliases
 alias sudo='sudo '
