@@ -143,16 +143,20 @@ alias df-tmpfs='df -hT / /home /boot /var 2>/dev/null | grep -v "^tmpfs"'
 alias free-w='free --si --lohi --total -w'
 alias top-cpu='top -b -n 1 -o %CPU'
 alias top-mem='top -b -n 1 -o %MEM'
+alias top-zz='top -b -n 1 | grep -E " Z "'
 alias top-zz='top -b -n 1 | grep -E "^  *[0-9]+.* Z "'
-alias top-z='top -b -n 1 | grep -E " Z "'   # Zombie
 alias top-r='top -b -n 1 | grep -E " R "'   # Running (выполняется)
 alias top-d='top -b -n 1 | grep -E " D "'   # Uninterruptible Sleep (непрерываемый сон - проблемы с I/O)
 alias top-s='top -b -n 1 | grep -E " S "'   # Sleeping (спит, прерываемый)
 alias top-t='top -b -n 1 | grep -E " T "'   # Stopped (остановлен)
 alias top-i='top -b -n 1 | grep -E " I "'   # Idle (бездействует)
-alias ps-cpu-sort='ps aux --sort=-%cpu | head -15'
+alias ps-cpu='ps aux --sort=-%cpu | head -15'
+alias ps-cpu-short='ps -eo cmd,pid,%cpu,%mem,user --sort=-%cpu | head -15'
+alias ps-mem-short='ps -eo cmd,pid,%cpu,%mem,user --sort=-%mem | head -15'
+# ps -eo pid,ppid,pgid,sid,tty,stat,uid,user,pcpu,pmem,vsz,rss,etime,time,comm,cmd --sort=-pmem
 alias procs-cpu='procs --pager disable --and --sortd CPU'
 alias procs-mem='procs --pager disable --and --sortd MEM'
+alias procs-rss='procs --pager disable --sortd rss'
 alias procs-pid='procs --pager disable --and --sorta PID'
 alias procs-user='procs --pager disable --and --sortd User'
 # procs --pager disable --and --sortd CPU postgres
