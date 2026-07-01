@@ -141,6 +141,15 @@ alias diff='diff --color=always'
 alias lock='dm-tool lock'
 alias df-tmpfs='df -hT / /home /boot /var 2>/dev/null | grep -v "^tmpfs"'
 alias free-w='free --si --lohi --total -w'
+alias top-cpu='top -b -n 1 -o %CPU'
+alias top-mem='top -b -n 1 -o %MEM'
+alias top-zz='top -b -n 1 | grep -E " Z "'
+alias top-zz='top -b -n 1 | grep -E "^  *[0-9]+.* Z "'
+alias top-r='top -b -n 1 | grep -E " R "'   # Running (выполняется)
+alias top-d='top -b -n 1 | grep -E " D "'   # Uninterruptible Sleep (непрерываемый сон - проблемы с I/O)
+alias top-s='top -b -n 1 | grep -E " S "'   # Sleeping (спит, прерываемый)
+alias top-t='top -b -n 1 | grep -E " T "'   # Stopped (остановлен)
+alias top-i='top -b -n 1 | grep -E " I "'   # Idle (бездействует)
 alias ps-cpu-sort='ps aux --sort=-%cpu | head -15'
 alias procs-cpu='procs --pager disable --and --sortd CPU'
 alias procs-mem='procs --pager disable --and --sortd MEM'
