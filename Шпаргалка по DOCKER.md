@@ -19,6 +19,7 @@
 ```bash
 # Все запущенные контейнеры
 docker ps
+docker stats --no-stream
 
 # ВСЕ контейнеры (включая остановленные)
 docker ps -a
