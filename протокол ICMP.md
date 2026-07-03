@@ -1,4 +1,4 @@
-см. начало: [Настройка NAT на роутере с Ubuntu.md](https://github.com/sherbettt/BASH-cheats/blob/main/26.%20Настройка%20NAT%20на%20роутере%20с%20Ubuntu.md)
+см. начало: [Настройка NAT на роутере с Ubuntu.md](https://github.com/sherbettt/BASH-cheats/blob/main/System%20engineering/03.%20Настройка%20NAT%20на%20роутере%20с%20Ubuntu.md)
 
 ### ICMP Протокол
 [Wiki-ICMP](https://ru.wikipedia.org/wiki/ICMP)
