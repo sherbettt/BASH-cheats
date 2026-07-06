@@ -2,6 +2,7 @@
 
 Командная строка RouterOS — это не `bash`, а собственная иерархическая оболочка. Привычные `ls -alF` здесь не работают, но освоить её довольно просто, если запомнить несколько принципов.
 <br/> [Шпаргалка MikroTik RouterOS / Полезные команды](https://blog.mark99.ru/shpargalka-mikrotik-routeros-poleznye-komandy/);
+<br/> [RouterOS-Command+Line+Interface](https://help.mikrotik.com/docs/spaces/ROS/pages/328134/Command+Line+Interface);
 
 
 #### 🔑 Основные принципы
