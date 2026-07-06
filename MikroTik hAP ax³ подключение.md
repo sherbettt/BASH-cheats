@@ -5,7 +5,6 @@
 <br/> [RouterOS-Command+Line+Interface](https://help.mikrotik.com/docs/spaces/ROS/pages/328134/Command+Line+Interface);
 <br/> [Winbox download](https://mikrotik.com/download/winbox/);
 
-https://mikrotik.com/download/winbox/
 
 
 #### 🔑 Основные принципы
@@ -121,5 +120,10 @@ https://mikrotik.com/download/winbox/
 3.  **Включите роутер**.
 4.  Подождите 10-15 секунд. В WinBox в разделе `Interfaces` у вашего PPPoE-интерфейса должен загореться значок **`R`**, что означает, что соединение установлено и работает .
 
-Поздравляю! Ваш новый роутер должен быть полностью настроен и готов к работе. Если что-то пойдет не так, вы всегда сможете проверить статус соединения или обратиться к логам в `Log` .
+<br/>
 
+
+
+### Ссылки
+[mikrotik software](https://mikrotik.com/software);
+<br/> [ROS architecture arm64](https://mikrotik.com/download?architecture=arm64);
