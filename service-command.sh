@@ -17,4 +17,4 @@ echo "${YELLOW}=== Git Push to gitverse.ru ===${NC}"
 git push git@gitverse.ru:sherbettt/BASH-cheats.git;
 echo "${YELLOW}=== Git Push to gitlab.runtel.org ===${NC}"
 git push git@gitlab.runtel.org:kkorablin/bash-cheats.git;
-echo "${CYAN}=== The End ===${NC}"
+echo "${RED}=== The End ===${NC}"
