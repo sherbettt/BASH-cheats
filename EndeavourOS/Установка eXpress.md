@@ -248,3 +248,228 @@ pactl list short sources    # краткий список
 
 ---
 
+<br/>
+
+
+
+
+
+## 📋 Инструкция: Переключение метода регистрации между Email и OpenID
+
+---
+
+### 🔍 **1. Проверка текущего метода регистрации**
+
+```bash
+# Проверка активного метода
+docker exec cts-etcd-1 etcdctl get /cts/ad_integration/registration_method
+```
+
+**Ожидаемый ответ:** `email` или `openid`
+
+---
+
+### 🔄 **2. Переключение на OpenID**
+
+#### **Шаг 2.1: Изменение метода**
+
+```bash
+# Установка метода регистрации
+docker exec cts-etcd-1 etcdctl put /cts/ad_integration/registration_method "openid"
+
+# Включение OpenID
+docker exec cts-etcd-1 etcdctl put /cts/ad_integration/openid_enabled "true"
+```
+
+#### **Шаг 2.2: Перезапуск сервиса**
+
+```bash
+cd /opt/express
+/usr/local/bin/dpl -d ad_integration
+```
+
+#### **Шаг 2.3: Проверка статуса**
+
+```bash
+# Проверка логов на ошибки
+docker logs cts-ad_integration-1 --tail 20
+
+# Проверка метода в etcd
+docker exec cts-etcd-1 etcdctl get /cts/ad_integration/registration_method
+```
+
+**Ожидаемый ответ:** `openid`
+
+#### **Шаг 2.4: Проверка пользователей**
+
+```bash
+# Список всех пользователей
+docker exec cts-postgres-1 sh -c "PGPASSWORD='Vst2yO8N6gowyFyd' psql -U postgres -d admin_prod -c \"SELECT login, source FROM users;\""
+
+# Проверка конкретного пользователя
+docker exec cts-postgres-1 sh -c "PGPASSWORD='Vst2yO8N6gowyFyd' psql -U postgres -d admin_prod -c \"SELECT login, source, block_at FROM users WHERE login='k@runtel.ru';\""
+```
+
+#### **Шаг 2.5: Проверка доступности OpenID провайдера**
+
+```bash
+# Проверка доступности Keycloak
+curl -v https://sso.runtel.ru:8443/realms/runtel/.well-known/openid-configuration
+```
+
+**Ожидаемый ответ:** JSON с конфигурацией OpenID
+
+#### **Шаг 2.6: Проверка методов регистрации через API**
+
+```bash
+# Получение списка методов
+curl -X GET https://exchat.runtel.ru/api/v2/ad_integration/register_methods \
+  -H "Content-Type: application/json"
+```
+
+**Ожидаемый ответ:** `"register_methods":["openid"]`
+
+---
+
+### 🔄 **3. Переключение на Email**
+
+#### **Шаг 3.1: Изменение метода**
+
+```bash
+# Установка метода регистрации
+docker exec cts-etcd-1 etcdctl put /cts/ad_integration/registration_method "email"
+
+# Отключение OpenID
+docker exec cts-etcd-1 etcdctl del /cts/ad_integration/openid_enabled
+```
+
+#### **Шаг 3.2: Перезапуск сервиса**
+
+```bash
+cd /opt/express
+/usr/local/bin/dpl -d ad_integration
+```
+
+#### **Шаг 3.3: Проверка статуса**
+
+```bash
+# Проверка логов на ошибки
+docker logs cts-ad_integration-1 --tail 20
+
+# Проверка метода в etcd
+docker exec cts-etcd-1 etcdctl get /cts/ad_integration/registration_method
+```
+
+**Ожидаемый ответ:** `email`
+
+#### **Шаг 3.4: Проверка пользователей**
+
+```bash
+# Список всех пользователей
+docker exec cts-postgres-1 sh -c "PGPASSWORD='Vst2yO8N6gowyFyd' psql -U postgres -d admin_prod -c \"SELECT login, source FROM users;\""
+
+# Проверка конкретного пользователя
+docker exec cts-postgres-1 sh -c "PGPASSWORD='Vst2yO8N6gowyFyd' psql -U postgres -d admin_prod -c \"SELECT login, source, block_at FROM users WHERE login='k@runtel.ru';\""
+```
+
+#### **Шаг 3.5: Проверка методов регистрации через API**
+
+```bash
+# Получение списка методов
+curl -X GET https://exchat.runtel.ru/api/v2/ad_integration/register_methods \
+  -H "Content-Type: application/json"
+```
+
+**Ожидаемый ответ:** `"register_methods":["email"]`
+
+---
+
+### 🛠 **4. Дополнительные проверки**
+
+#### **Проверка настроек OpenID в Express**
+
+```bash
+# Проверка всех настроек OpenID в etcd
+docker exec cts-etcd-1 etcdctl get /cts/ad_integration/openid --prefix
+```
+
+**Ожидаемый ответ:** 
+```
+/cts/ad_integration/openid_enabled
+true
+/cts/ad_integration/openid_redirect_uri
+https://exchat.runtel.ru/admin/openid/callback
+```
+
+#### **Проверка статуса сервиса ad_integration**
+
+```bash
+# Проверка статуса
+docker ps | grep ad_integration
+
+# Проверка логов в реальном времени
+docker logs -f cts-ad_integration-1
+```
+
+#### **Проверка пользователей в PostgreSQL**
+
+```bash
+# Подключение к PostgreSQL
+docker exec -it cts-postgres-1 sh -c "PGPASSWORD='Vst2yO8N6gowyFyd' psql -U postgres -d admin_prod"
+
+# Запросы внутри psql:
+SELECT login, source, block_at FROM users;
+SELECT login, source FROM users WHERE source='admin';
+\q
+```
+
+---
+
+### 📝 **5. Чек-лист для проверки работоспособности**
+
+| Проверка | Команда | Ожидаемый результат |
+|----------|---------|---------------------|
+| Метод регистрации | `docker exec cts-etcd-1 etcdctl get /cts/ad_integration/registration_method` | `email` или `openid` |
+| Статус OpenID | `docker exec cts-etcd-1 etcdctl get /cts/ad_integration/openid_enabled` | `true` или ключ отсутствует |
+| Сервис работает | `docker ps \| grep ad_integration` | `Up` |
+| Ошибок нет | `docker logs cts-ad_integration-1 --tail 10` | Нет `error` или `crash` |
+| API методы | `curl -X GET https://exchat.runtel.ru/api/v2/ad_integration/register_methods` | `["openid"]` или `["email"]` |
+| Пользователь существует | `docker exec cts-postgres-1 sh -c "PGPASSWORD='Vst2yO8N6gowyFyd' psql -U postgres -d admin_prod -c \"SELECT login FROM users WHERE login='k@runtel.ru';\""` | `k@runtel.ru` |
+
+---
+
+### ⚠️ **6. Если что-то пошло не так**
+
+1. **Проверьте логи:**
+   ```bash
+   docker logs cts-ad_integration-1 --tail 50
+   ```
+
+2. **Перезапустите сервис принудительно:**
+   ```bash
+   docker restart cts-ad_integration-1
+   ```
+
+3. **Если ошибка с OpenID сохраняется — проверьте доступность Keycloak:**
+   ```bash
+   curl -v https://sso.runtel.ru:8443/realms/runtel/.well-known/openid-configuration
+   ```
+
+4. **Если сервис не запускается — верните email:**
+   ```bash
+   docker exec cts-etcd-1 etcdctl put /cts/ad_integration/registration_method "email"
+   docker exec cts-etcd-1 etcdctl del /cts/ad_integration/openid_enabled
+   cd /opt/express && /usr/local/bin/dpl -d ad_integration
+   ```
+
+---
+
+### 🎯 **7. Итоговый чек-лист для входа через OpenID**
+
+1. ✅ Сервер возвращает `register_methods: ["openid"]`
+2. ✅ В веб-клиенте есть кнопка **«Войти через OpenID»** или **«Корпоративный вход»**
+3. ✅ Пользователь существует в Keycloak и имеет email
+4. ✅ Keycloak доступен с сервера (`sso.runtel.ru:8443`)
+5. ✅ В настройках клиента в Keycloak указан правильный Redirect URI
+
+**Если кнопка не появляется — обновите веб-клиент или используйте десктопное приложение.** 🚀
