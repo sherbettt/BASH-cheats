@@ -368,6 +368,9 @@ docker exec cts-etcd-1 etcdctl get /cts/ad_integration/registration_method
 # Список всех пользователей
 docker exec cts-postgres-1 sh -c "PGPASSWORD='Vst2yO8N6gowyFyd' psql -U postgres -d admin_prod -c \"SELECT login, source FROM users;\""
 
+# Проверка паролей у пользователей
+docker exec cts-postgres-1 sh -c "PGPASSWORD='Vst2yO8N6gowyFyd' psql -U postgres -d admin_prod -c \"SELECT login, password_hash FROM users WHERE login IN ('k@runtel.ru', 'admin@runtel.ru', 'i@runtel.ru', 'npetuhov@runtel.ru');\""
+
 # Проверка конкретного пользователя
 docker exec cts-postgres-1 sh -c "PGPASSWORD='Vst2yO8N6gowyFyd' psql -U postgres -d admin_prod -c \"SELECT login, source, block_at FROM users WHERE login='k@runtel.ru';\""
 ```
