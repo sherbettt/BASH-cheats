@@ -355,7 +355,7 @@ echo "nfnetlink_queue" | sudo tee /etc/modules-load.d/nfqueue.conf
 
 ```bash
 # Создаём файл правил
-sudo nano /etc/nftables/zapret.nft
+sudo mcedit /etc/nftables/zapret.nft
 ```
 
 **Содержимое:**
