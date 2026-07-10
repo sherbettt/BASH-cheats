@@ -1,11 +1,18 @@
+### Ссылки для исследования
+- **[mikrotik.com software](https://mikrotik.com/software)**;
+- **[Winbox download](https://mikrotik.com/download/winbox/)**;
+- **[ROS architecture arm64](https://mikrotik.com/download?architecture=arm64) -> firmwares**;
+- **[RouterOS-Command+Line+Interface](https://help.mikrotik.com/docs/spaces/ROS/pages/328134/Command+Line+Interface)**;
+- **[WebFig](https://help.mikrotik.com/docs/spaces/ROS/pages/328131/WebFig)**;
+- **[WinBox](https://help.mikrotik.com/docs/spaces/ROS/pages/328129/WinBox)**;
+- **[SSH](https://help.mikrotik.com/docs/spaces/ROS/pages/132350014/SSH)**;
+- **[Шпаргалка MikroTik RouterOS / Полезные команды](https://blog.mark99.ru/shpargalka-mikrotik-routeros-poleznye-komandy/)**;
+
+<br/>
+
 ### 📋 Система команд RouterOS (CLI)
 
 Командная строка RouterOS — это не `bash`, а собственная иерархическая оболочка. Привычные `ls -alF` здесь не работают, но освоить её довольно просто, если запомнить несколько принципов.
-<br/> [Шпаргалка MikroTik RouterOS / Полезные команды](https://blog.mark99.ru/shpargalka-mikrotik-routeros-poleznye-komandy/);
-<br/> [RouterOS-Command+Line+Interface](https://help.mikrotik.com/docs/spaces/ROS/pages/328134/Command+Line+Interface);
-<br/> [Winbox download](https://mikrotik.com/download/winbox/);
-
-
 
 #### 🔑 Основные принципы
 
