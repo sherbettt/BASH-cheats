@@ -131,6 +131,25 @@
 
 
 ```bash
+[admin@hAP] > interface print
+Flags: R - RUNNING; S - SLAVE
+Columns: NAME, TYPE, ACTUAL-MTU, L2MTU, MAX-L2MTU, MAC-ADDRESS
+#    NAME        TYPE       ACTUAL-MTU  L2MTU  MAX-L2MTU  MAC-ADDRESS      
+0 R  ether1      ether            1500   1568       9214  D0:EA:11:0D:C0:0B
+1  S ether2      ether            1500   1568       9214  D0:EA:11:0D:C0:0C
+2  S ether3      ether            1500   1568       9214  D0:EA:11:0D:C0:0D
+3 RS ether4      ether            1500   1568       9214  D0:EA:11:0D:C0:0E
+4  S ether5      ether            1500   1568       9214  D0:EA:11:0D:C0:0F
+;;; defconf
+5 R  bridge      bridge           1500   1560             D0:EA:11:0D:C0:0C
+6 R  lo          loopback        65536                    00:00:00:00:00:00
+7 R  pppoe-out1  pppoe-out        1492                                     
+8  S wifi1       wifi             1500   1560       1560  D0:EA:11:0D:C0:10
+9 RS wifi2       wifi             1500   1560       1560  D0:EA:11:0D:C0:11
+```
+
+
+```bash
   MMM      MMM       KKK                          TTTTTTTTTTT      KKK
   MMMM    MMMM       KKK                          TTTTTTTTTTT      KKK
   MMM MMMM MMM  III  KKK  KKK  RRRRRR     OOOOOO      TTT     III  KKK  KKK
