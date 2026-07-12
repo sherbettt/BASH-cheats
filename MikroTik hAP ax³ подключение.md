@@ -130,6 +130,109 @@
 <br/>
 
 
+```bash
+  MMM      MMM       KKK                          TTTTTTTTTTT      KKK
+  MMMM    MMMM       KKK                          TTTTTTTTTTT      KKK
+  MMM MMMM MMM  III  KKK  KKK  RRRRRR     OOOOOO      TTT     III  KKK  KKK
+  MMM  MM  MMM  III  KKKKK     RRR  RRR  OOO  OOO     TTT     III  KKKKK
+  MMM      MMM  III  KKK KKK   RRRRRR    OOO  OOO     TTT     III  KKK KKK
+  MMM      MMM  III  KKK  KKK  RRR  RRR   OOOOOO      TTT     III  KKK  KKK
+
+  MikroTik RouterOS 7.23.2 (c) 1999-2026       https://www.mikrotik.com/
+
+
+Press F1 for help
+
+
+2026-07-12 13:18:36 system,critical,info cloud change time Jul/12/2026 13:18:02 => Jul/12/2026 13:18:36
+[admin@hAP] > 
+
+app -- 
+beep -- 
+blink -- 
+break -- 
+certificate -- Certificate management
+console -- 
+container -- 
+continue -- 
+convert -- convert binary data encoding
+delay -- does nothing for a while
+deserialize -- deserialize input to console values
+disk -- 
+do -- executes command
+environment -- list of all variables
+error -- make error value
+execute -- run script as separate console job
+exit -- 
+file -- Local router file storage.
+find -- Find items by value
+for -- executes command for a range of integer values
+foreach -- executes command for every element in a list
+global -- set value global variable
+grep -- search for patterns in script output
+if -- executes command if condition is true
+import -- 
+interface -- 
+ip -- 
+ipv6 -- 
+jobname -- return current script name
+len -- return number of elements in value
+local -- set value of local variable
+lock -- lock terminal session
+log -- System logs
+mpls -- 
+nothing -- do nothing and return nothing
+onerror -- executes command
+parse -- build command from text
+partitions -- 
+password -- Change password
+pick -- return range of string characters or array values
+port -- Serial ports
+ppp -- Point to Point Protocol
+put -- prints argument on the screen
+queue -- Bandwidth management
+quit -- Quit console
+radius -- Radius client settings
+range -- make an array from the provided range
+redo -- Redo previously undone action
+resolve -- perform a dns lookup of domain name
+retry -- repeatedly executes command until it succeeds
+return -- return value from function
+rndnum -- return random number in given interval
+rndstr -- return random string
+routing -- 
+safe-mode -- 
+serialize -- serialize console values to different formats
+set -- Change item properties
+snmp -- SNMP settings
+special-login -- Special login users
+system -- System information and utilities
+task -- commands related to background task handling
+terminal -- commands related to terminal handling
+time -- returns time taken by command to execute
+timestamp -- returns time since the epoch
+toarray -- convert argument to array value
+tobool -- convert argument to truth value
+tocrlf -- converts line endings to CRLF
+toid -- convert argument to internal number value
+toip -- convert argument to IP address value
+toip6 -- convert argument to IPv6 address value
+tolf -- converts line endings to LF
+tonsec -- convert time argument to nanoseconds
+tonum -- convert argument to integer number value
+tool -- Diagnostics tools
+tostr -- convert argument to string value
+totime -- convert argument to time interval value
+typeof -- return type of value
+undo -- Undo previous action
+user -- User management
+while -- executes command while condition is true
+export -- Print or save an export script that can be used to restore configuration
+
+Press F1 for general console usage help
+```
+<br/>
+
 
 ### Ссылки
 [mikrotik software](https://mikrotik.com/software);
