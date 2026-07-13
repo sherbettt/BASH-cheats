@@ -10,8 +10,12 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color (сброс)
 
 
-printf "${YELLOW}=== aptly repo list ===${NC}\n"
+printf "${YELLOW}=== Local repo (aptly repo lis) ===${NC}\n"
 aptly repo list 
+echo
+
+printf "${GREEN}\n=== Published repo (aptly publish lis) ===${NC}\n"
+aptly publish list 
 echo
 
 printf "${YELLOW}=== aptly repo show runtel-trixie-dev ===${NC}\n"
@@ -28,6 +32,10 @@ echo
 
 printf "${YELLOW}=== aptly repo show -with-packages runtel-trixie ===${NC}\n"
 aptly repo show -with-packages runtel-trixie | head -25
+echo
+
+printf "${YELLOW}=== Update publication ===${NC}\n"
+aptly publish update trixie
 echo
 
 printf "${RED}=== debs folder should be cleared after Ansible playbook ===${NC}\n"
