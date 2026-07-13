@@ -180,7 +180,7 @@ alias l='ls -CF'
 alias pcat='pygmentize -g'
 alias ccat='highlight --out-format=xterm256 --syntax=yaml --style=molokai'
 alias batc='bat --config-dir; bat --cache-dir'
-alias batp='bat -p -S'
+alias batp='bat -pP'
 alias getip="curl -s ifconfig.me ; echo"
 alias getip2='curl -s 2ip.ru ; echo'
     # curl -s https://yandex.ru/internet | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}'
