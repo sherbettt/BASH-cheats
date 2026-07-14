@@ -5,7 +5,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-set -e
+set -eux
 
 echo -e "${YELLOW}Удалить старые ключи${NC}"
 rm -f /etc/apt/trusted.gpg.d/runtel.gpg
@@ -17,10 +17,12 @@ echo "------"
 echo -e "${YELLOW}Удалить дублирующиеся файлы репозиториев${NC}"
 rm -f /etc/apt/sources.list.d/runtel.list
 rm -f /etc/apt/sources.list.d/repo_runtel_ru.list
+ls -alF /etc/apt/sources.list.d/
 echo "------"
 
 echo "Создать директорию для ключей (если её нет)"
 mkdir -p /etc/apt/keyrings
+ls -alF /etc/apt/keyrings
 
 echo "Скачать ключ и конвертировать в правильный формат"
 wget -qO- http://repo.runtel.ru/runtel.gpg | gpg --dearmor > /etc/apt/keyrings/runtel-archive-keyring.gpg
