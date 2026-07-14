@@ -1,7 +1,5 @@
 # Инструкция по добавлению репозитория runtel.ru и установке OpenSIPS на Debian 12
 
-# Полная инструкция по добавлению репозитория runtel.ru в Debian
-
 ## Содержание
 1. [Проблема и её решение](#проблема)
 2. [Способы добавления GPG-ключа](#способы-добавления-gpg-ключа)
@@ -458,4 +456,328 @@ apt list --upgradable
 - Дублирование репозиториев
 - Проблемы с форматом ключей в Debian 12
 
+-----------------------------------------------
+<br/>
 
+
+
+Для Debian 13 (Trixie) нужно адаптировать инструкцию с учетом изменений в формате репозиториев (deb822) и новых путей для ключей.
+
+## Инструкция для Debian 13 (Trixie) с deb822 форматом
+
+### Шаг 1: Очистка старых ключей и файлов
+```bash
+# Удалить старые ключи
+rm -f /etc/apt/trusted.gpg.d/runtel.gpg
+rm -f /etc/apt/keyrings/runtel.gpg
+
+# Удалить дублирующиеся файлы репозиториев
+rm -f /etc/apt/sources.list.d/runtel.list
+rm -f /etc/apt/sources.list.d/repo_runtel_ru.list
+```
+
+### Шаг 2: Скачать и установить ключ репозитория
+```bash
+# Создать директорию для ключей (если её нет)
+mkdir -p /etc/apt/keyrings
+
+# Скачать ключ и конвертировать в правильный формат
+wget -qO- http://repo.runtel.ru/runtel.gpg | gpg --dearmor > /etc/apt/keyrings/runtel-archive-keyring.gpg
+
+# Скопировать ключ в доверенные ключи APT (для совместимости)
+cp /etc/apt/keyrings/runtel-archive-keyring.gpg /etc/apt/trusted.gpg.d/
+
+# Проверить, что ключ установлен
+gpg --show-keys /etc/apt/keyrings/runtel-archive-keyring.gpg
+```
+
+### Шаг 3: Настройка файла репозитория (deb822 формат)
+```bash
+# Создать файл в формате deb822
+cat > /etc/apt/sources.list.d/runtel.sources << 'EOF'
+# Runtel repositories - Debian 13 Trixie
+Types: deb
+URIs: http://repo.runtel.ru
+Suites: trixie
+Components: main dev
+Signed-By: /etc/apt/keyrings/runtel-archive-keyring.gpg
+EOF
+```
+
+### Шаг 4: Очистка кэша и обновление
+```bash
+# Очистить кэш APT
+apt clean
+rm -rf /var/lib/apt/lists/*
+
+# Обновить списки пакетов
+apt update
+```
+
+### Шаг 5: Проверка репозитория
+```bash
+# Проверить, что репозиторий виден
+apt-cache policy | grep -A 10 "repo.runtel.ru"
+
+# Проверить наличие пакетов
+apt-cache search runtel
+```
+
+## Обновленный Ansible playbook для Debian 13
+
+```yaml
+---
+- name: Deb13 - установка необходимых утилит
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update apt package cache first
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Create /etc/apt/sources.list.d/ (deb822 format)
+      file:
+        path: /etc/apt/sources.list.d/
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Remove old sources.list
+      file:
+        path: /etc/apt/sources.list
+        state: absent
+      ignore_errors: yes
+
+    - name: Create directory for APT keyrings
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Download Runtel repository key
+      get_url:
+        url: http://repo.runtel.ru/runtel.gpg
+        dest: /etc/apt/keyrings/runtel-archive-keyring.gpg
+        mode: '0644'
+        force: yes
+      register: key_download
+
+    - name: Convert key to dearmored format if needed
+      shell: |
+        gpg --dearmor /etc/apt/keyrings/runtel-archive-keyring.gpg > /etc/apt/keyrings/runtel-archive-keyring.gpg.tmp
+        mv /etc/apt/keyrings/runtel-archive-keyring.gpg.tmp /etc/apt/keyrings/runtel-archive-keyring.gpg
+      when: key_download is success
+      ignore_errors: yes
+
+    - name: Copy key to trusted.gpg.d for compatibility
+      copy:
+        src: /etc/apt/keyrings/runtel-archive-keyring.gpg
+        dest: /etc/apt/trusted.gpg.d/runtel-archive-keyring.gpg
+        remote_src: yes
+        mode: '0644'
+      when: key_download is success
+
+    - name: Configure Debian repositories with RF mirrors (deb822)
+      copy:
+        content: |
+          # Debian 13 Trixie - Official repositories
+          Types: deb
+          URIs: http://mirror.yandex.ru/debian/
+          Suites: trixie trixie-updates
+          Components: main contrib non-free non-free-firmware
+          Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+          Types: deb
+          URIs: http://ftp.ru.debian.org/debian/
+          Suites: trixie
+          Components: main contrib non-free non-free-firmware
+          Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+          Types: deb
+          URIs: http://mirror.truenetwork.ru/debian/
+          Suites: trixie
+          Components: main contrib non-free non-free-firmware
+          Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+          # Security updates
+          Types: deb
+          URIs: http://security.debian.org/debian-security
+          Suites: trixie-security
+          Components: main contrib non-free non-free-firmware
+          Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+          # Backports
+          Types: deb
+          URIs: http://mirror.yandex.ru/debian/
+          Suites: trixie-backports
+          Components: main contrib non-free non-free-firmware
+          Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+        dest: /etc/apt/sources.list.d/debian.sources
+        mode: '0644'
+
+    - name: Configure Runtel repositories in deb822 format
+      copy:
+        content: |
+          # Runtel repositories - Debian 13 Trixie
+          Types: deb
+          URIs: http://repo.runtel.ru
+          Suites: trixie
+          Components: main dev
+          Signed-By: /etc/apt/keyrings/runtel-archive-keyring.gpg
+        dest: /etc/apt/sources.list.d/runtel.sources
+        mode: '0644'
+      when: key_download is success
+
+    - name: Fallback - Configure Runtel repositories without key (if download failed)
+      copy:
+        content: |
+          # Runtel repositories - Debian 13 Trixie (без проверки подписи)
+          Types: deb
+          URIs: http://repo.runtel.ru
+          Suites: trixie
+          Components: main dev
+          # Signed-By: /etc/apt/keyrings/runtel-archive-keyring.gpg
+        dest: /etc/apt/sources.list.d/runtel.sources
+        mode: '0644'
+      when: key_download is failed
+      ignore_errors: yes
+
+    - name: Update apt package cache after repository configuration
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Check /etc/resolv.conf
+      ansible.builtin.slurp:
+        src: /etc/resolv.conf
+      register: resolv_conf
+      changed_when: false
+
+    - name: DEBUG /etc/resolv.conf
+      debug:
+        msg: "Содержимое /etc/resolv.conf:\n{{ resolv_conf.content | b64decode }}"
+
+    - name: Install common utilities for Debian 13
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+      vars:
+        packages:
+          - sudo
+          - curl
+          - wget
+          - neovim
+          - vim
+          - vim-syntastic
+          - mc
+          - rsync
+          - iptables
+          - netfilter-persistent
+          - sngrep
+          - tmux
+          - nmap
+          - bind9-dnsutils
+          - dnsutils
+          - traceroute
+          - highlight
+          - ccze
+          - sysstat
+          - strace
+          - htop
+          - btop
+          - atop
+          - ncdu
+          - gdu
+          - tree
+          - jq
+          - yq
+          - gnupg2
+          - rsyslog
+          - apt-transport-https
+          - ca-certificates
+      ignore_errors: yes
+
+    - name: Create /etc/nginx directory
+      file:
+        path: /etc/nginx
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Copy certificates via copy module
+      copy:
+        src: "../keys/{{ item }}"
+        dest: "/etc/nginx/{{ item }}"
+        owner: root
+        group: root
+        mode: '0644'
+      loop:
+        - cprt.pem
+        - runtel.pem
+        - runtelorg.pem
+      ignore_errors: yes
+
+    - name: Verify repository configuration
+      shell: |
+        echo "=== Debian Official Repositories (deb822) ==="
+        cat /etc/apt/sources.list.d/debian.sources
+        echo
+        echo "=== Runtel Repositories (deb822) ==="
+        cat /etc/apt/sources.list.d/runtel.sources 2>/dev/null || echo "No Runtel sources found"
+        echo
+        echo "=== Available repositories ==="
+        apt-cache policy | grep -E "^[0-9]+:|http://repo.runtel.ru" || echo "Check apt-cache policy manually"
+        echo
+        echo "=== Key info ==="
+        ls -la /etc/apt/keyrings/runtel-archive-keyring.gpg 2>/dev/null || echo "Key file not found"
+      register: repos_check
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Display repository check results
+      debug:
+        msg: "{{ repos_check.stdout_lines }}"
+
+    - name: Info message
+      debug:
+        msg:
+          - "Debian 13 (Trixie) настроен в формате deb822"
+          - "Конфигурация репозиториев: /etc/apt/sources.list.d/debian.sources"
+          - "Репозиторий Runtel: /etc/apt/sources.list.d/runtel.sources"
+          - "Ключ репозитория: /etc/apt/keyrings/runtel-archive-keyring.gpg"
+          - "Все утилиты успешно установлены"
+          - "Сертификаты скопированы в /etc/nginx/"
+          - ""
+          - "Для проверки репозиториев выполните:"
+          - " apt-cache policy | grep -A 5 runtel"
+          - " apt-cache search runtel"
+          - " apt update -y"
+```
+
+## Ключевые отличия для Debian 13
+
+1. **Формат deb822**: Используются файлы `.sources` вместо `.list`
+2. **Имя дистрибутива**: `trixie` вместо `bookworm`
+3. **Путь к ключу**: `/etc/apt/keyrings/runtel-archive-keyring.gpg`
+4. **Структура файла**: Многострочный формат с ключами `Types:`, `URIs:`, `Suites:`, `Components:`, `Signed-By:`
+
+## Ручная проверка на хосте
+
+После выполнения playbook проверьте:
+```bash
+# Проверить ключ
+gpg --show-keys /etc/apt/keyrings/runtel-archive-keyring.gpg
+
+# Проверить репозиторий
+apt-cache policy | grep -A 10 runtel
+
+# Проверить доступные пакеты
+apt-cache search runtel
+```
