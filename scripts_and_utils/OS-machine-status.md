@@ -3,7 +3,7 @@
 Создадим утилиту для быстрой проверки системы:
 
 ```bash
-sudo nano /usr/local/bin/os-status
+sudo mcedit /usr/local/bin/os-status
 ```
 
 ```bash
