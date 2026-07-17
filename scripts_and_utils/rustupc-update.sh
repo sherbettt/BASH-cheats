@@ -7,6 +7,7 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
+# cargo install cargo-update
 printf "${YELLOW}=== rustup update stable ===${NC}\n"
 rustup update stable
 
