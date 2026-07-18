@@ -184,6 +184,8 @@ sudo umount /mnt/emuelec
 1.  **Bit16 (русскоязычный сайт с большой коллекцией)**: [http://bit16.ru/](http://bit16.ru/) . На сайте есть раздел с играми для ZX Spectrum, где можно скачать файлы напрямую. Многие игры сопровождаются описаниями.
 2.  **Debian package spectrum-roms**: [https://packages.debian.org/bookworm/spectrum-roms](https://packages.debian.org/bookworm/spectrum-roms) . Это пакет с образами ПЗУ (BIOS) для разных версий Spectrum (48K, 128K, +2, +3). Они могут понадобиться для корректной работы некоторых эмуляторов.
 3.  **Fantadrom Ltd**: [https://www.fantadrom.narod.ru/games/index.html](https://www.fantadrom.narod.ru/games/index.html) . Сайт с играми для ZX Spectrum, переведенными на русский язык, а также оригинальными разработками. Файлы в форматах `.TRD` или `.SCL`.
+4.  Архив: https://ia800109.us.archive.org/view_archive.php?archive=/35/items/Sinclair_ZX_Spectrum_TOSEC_2012_04_23/Sinclair_ZX_Spectrum_TOSEC_2012_04_23.zip
+5.  Архив: https://archive.org/details/zx_spectrum_library_games
 
 ### Для других систем
 
