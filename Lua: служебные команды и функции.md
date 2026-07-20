@@ -451,6 +451,7 @@ lua script.lua arg1 arg2         # Запустить скрипт с аргум
 ```lua
 -- Создать сокращения для часто используемых команд
 function ls() os.execute("ls -la") end
+function ll() os.execute("ls -alFS --group-directories-first --si --sort=version") end
 function pwd() print(os.getenv("PWD")) end
 function clear() os.execute("clear") end
 function help() 
