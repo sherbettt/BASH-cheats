@@ -282,6 +282,153 @@ lua -e "print('Hello')" -i
 | `=string` | Показывает строку | `="Hello"` |
 | `do` | Начало многострочного блока | `do ... end` |
 
+### **Практический пример: работа в интерактивном режиме**
+
+Рассмотрим реальную сессию работы в Lua:
+
+```bash
+# Запуск интерактивного режима
+$ lua -i
+Lua 5.4.4  Copyright (C) 1994-2022 Lua.org, PUC-Rio
+> 
+```
+
+**Попытка вызвать команду оболочки напрямую:**
+```lua
+> ls
+nil
+```
+Команда `ls` не является функцией Lua, поэтому интерпретатор вернул `nil`.
+
+**Создание собственной функции для вызова системных команд:**
+```lua
+> function ll() os.execute("ls -alFS --group-directories-first --si --sort=version") end
+> ll
+function: 0x5632734579f0
+```
+Мы создали функцию `ll()`, которая вызывает системную команду `ls` с нужными опциями. Проверка показала, что функция существует (адрес в памяти).
+
+**Выполнение созданной функции:**
+```lua
+> ll()
+итого 41k
+drwx------  7 root root 4,1k июл 20 15:38 ./
+drwxr-xr-x 18 root root 4,1k июл 20 14:40 ../
+drwx------  3 root root 4,1k июл 20 14:57 .ansible/
+...
+```
+Функция успешно выполнилась и показала содержимое директории.
+
+**Попытка выйти нестандартным способом:**
+```lua
+> quit
+nil
+> exit
+nil
+```
+Команды `quit` и `exit` не являются стандартными функциями Lua. Для выхода нужно использовать `os.exit()` или нажать Ctrl+D.
+
+### **Как сделать работу в интерактивном режиме удобнее**
+
+#### **Создание постоянного профиля Lua**
+
+Создайте файл `~/.lua_profile` со следующим содержимым:
+
+```lua
+-- ~/.lua_profile
+-- Автоматически загружается при запуске lua -i
+
+-- Системные команды
+function ll() 
+    os.execute("ls -alFS --group-directories-first --si --sort=version") 
+end
+
+function lsa() 
+    os.execute("ls -la") 
+end
+
+function lsl() 
+    os.execute("ls -l") 
+end
+
+function pwd() 
+    print(os.getenv("PWD")) 
+end
+
+function clear() 
+    os.execute("clear") 
+end
+
+function ps()
+    os.execute("ps aux")
+end
+
+function top()
+    os.execute("top -b -n 1")
+end
+
+-- Информация о системе
+function sysinfo()
+    print("=== System Info ===")
+    os.execute("uname -a")
+    print("\n=== Uptime ===")
+    os.execute("uptime")
+    print("\n=== Memory ===")
+    os.execute("free -h")
+    print("\n=== Disk ===")
+    os.execute("df -h")
+end
+
+-- Быстрый выход
+function q()
+    print("Bye!")
+    os.exit()
+end
+
+-- Помощник
+function help()
+    print("Available commands:")
+    print("  ll()    - list files with details")
+    print("  lsa()   - list all files")
+    print("  lsl()   - simple list")
+    print("  pwd()   - show current directory")
+    print("  clear() - clear screen")
+    print("  ps()    - show processes")
+    print("  top()   - show top processes")
+    print("  sysinfo() - show system information")
+    print("  q()     - quit Lua")
+    print("  help()  - show this help")
+end
+
+print("Lua profile loaded! Type help() for available commands.")
+```
+
+#### **Настройка автоматической загрузки профиля**
+
+**Способ 1: Использование переменной окружения LUA_INIT**
+
+Добавьте в `~/.bashrc`:
+```bash
+export LUA_INIT="@$HOME/.lua_profile"
+```
+
+После этого при запуске `lua -i` профиль будет загружаться автоматически.
+
+**Способ 2: Создание алиаса**
+
+```bash
+# В ~/.bashrc
+alias mylua='lua -i -e "dofile(\"$HOME/.lua_profile\")"'
+```
+
+**Способ 3: Явная загрузка при запуске**
+
+```bash
+lua -i -e "dofile(os.getenv('HOME') .. '/.lua_profile')"
+```
+
+**Важное замечание о флаге `-l`:** Флаг `-l` ожидает **имя модуля**, а не путь к файлу. Поэтому использование `lua -l /root/.lua_profile` приведет к ошибке, так как Lua будет искать модуль с таким именем в стандартных путях. Правильный способ загрузить файл с функциями - использовать `dofile()` или настроить `LUA_INIT`.
+
 ### **Полезные однострочники для интерактивного режима**
 
 ```bash
@@ -466,6 +613,31 @@ clear()
 help()
 ```
 
+### **Быстрое создание нескольких функций**
+
+Если нужно быстро добавить набор функций в текущей сессии:
+
+```lua
+-- Создайте сразу несколько функций в цикле
+for name, cmd in pairs({
+    ll  = "ls -alFS --group-directories-first --si --sort=version",
+    lsa = "ls -la",
+    pwd = "pwd",
+    clear = "clear",
+    date = "date",
+    who = "who",
+    ps = "ps aux"
+}) do
+    _G[name] = function() os.execute(cmd) end
+end
+
+-- Теперь все функции доступны:
+ll()
+lsa()
+pwd()
+date()
+```
+
 ### **Работа с историей команд**
 
 ```bash
@@ -499,343 +671,14 @@ end
 help("print")
 help(print)
 ```
--------------------------------------------------------
-<br/>
 
+### **Сохранение функций для постоянного использования**
 
-
-## Разбор вашей сессии
-
-### 1. **Запуск интерактивного режима**
-```bash
-lua -i
-```
-Вы вошли в интерактивный режим Lua (REPL - Read-Eval-Print Loop).
-
-### 2. **Первая попытка**
-```lua
-> ls
-nil
-```
-Вы попытались выполнить `ls` как Lua-команду, но `ls` - это команда оболочки, а не Lua. Поэтому получили `nil`.
-
-### 3. **Создание функции**
-```lua
-> function ll() os.execute("ls -alFS --group-directories-first --si --sort=version") end
-> ll
-function: 0x5632734579f0
-```
-Вы создали функцию `ll()` и проверили, что она существует (Lua показала адрес функции в памяти).
-
-### 4. **Выполнение функции**
-```lua
-> ll()
-```
-Выполнили функцию - она вызвала системную команду `ls` и показала содержимое домашней директории. ✅
-
-### 5. **Выход**
-```lua
-> quit
-nil
-> exit
-nil
-```
-`quit` и `exit` - не являются стандартными командами Lua. Для выхода нужно использовать:
-- `os.exit()` 
-- Или нажать `Ctrl+D` (Linux/Mac)
-- Или `Ctrl+Z` (Windows)
-
----
-
-## Как сделать это удобнее
-
-### **Вариант 1: Автозагрузка функций при запуске Lua**
-
-Создайте файл `~/.lua_profile`:
-
-```lua
--- ~/.lua_profile
--- Автоматически загружается при запуске lua -i
-
--- Полезные функции для работы с системой
-function ll() 
-    os.execute("ls -alFS --group-directories-first --si --sort=version") 
-end
-
-function lsa() 
-    os.execute("ls -la") 
-end
-
-function lsl() 
-    os.execute("ls -l") 
-end
-
-function pwd() 
-    print(os.getenv("PWD")) 
-end
-
-function cd(path) 
-    os.execute("cd " .. path) 
-    -- Внимание: cd не работает напрямую через os.execute!
-end
-
-function clear() 
-    os.execute("clear") 
-end
-
-function grep(pattern, file)
-    os.execute("grep " .. pattern .. " " .. file)
-end
-
-function ps()
-    os.execute("ps aux")
-end
-
-function top()
-    os.execute("top -b -n 1")
-end
-
--- Информация о системе
-function sysinfo()
-    print("=== System Info ===")
-    os.execute("uname -a")
-    print("\n=== Uptime ===")
-    os.execute("uptime")
-    print("\n=== Memory ===")
-    os.execute("free -h")
-    print("\n=== Disk ===")
-    os.execute("df -h")
-end
-
--- Сокращение для выхода
-function q()
-    print("Bye!")
-    os.exit()
-end
-
--- Помощник
-function help()
-    print("Available commands:")
-    print("  ll()    - list files with details")
-    print("  lsa()   - list all files")
-    print("  lsl()   - simple list")
-    print("  pwd()   - show current directory")
-    print("  clear() - clear screen")
-    print("  ps()    - show processes")
-    print("  top()   - show top processes")
-    print("  sysinfo() - show system information")
-    print("  q()     - quit Lua")
-    print("  help()  - show this help")
-end
-
-print("Lua profile loaded! Type help() for available commands.")
-```
-
-Теперь запускайте Lua с профилем:
-
-```bash
-lua -i -e "dofile(os.getenv('HOME') .. '/.lua_profile')"
-```
-
-Или создайте алиас в `~/.bashrc`:
-```bash
-alias lua='lua -i -e "dofile(os.getenv(\"HOME\") .. \"/.lua_profile\")"'
-```
-
-### **Вариант 2: Создать отдельный скрипт с функциями**
-
-Создайте файл `~/my-lua-tools.lua`:
-
-```lua
-#!/usr/bin/lua
-
--- Мой набор инструментов для работы в Lua
-
-local M = {}
-
--- Системные команды
-function M.ll()
-    os.execute("ls -alFS --group-directories-first --si --sort=version")
-end
-
-function M.lsa()
-    os.execute("ls -la")
-end
-
-function M.clear()
-    os.execute("clear")
-end
-
-function M.pwd()
-    print(os.getenv("PWD") or "Unknown")
-end
-
-function M.date()
-    print(os.date("%Y-%m-%d %H:%M:%S"))
-end
-
-function M.uptime()
-    os.execute("uptime")
-end
-
-function M.free()
-    os.execute("free -h")
-end
-
-function M.df()
-    os.execute("df -h")
-end
-
--- Работа с файлами
-function M.cat(filename)
-    local f = io.open(filename, "r")
-    if f then
-        print(f:read("*all"))
-        f:close()
-    else
-        print("File not found: " .. filename)
-    end
-end
-
-function M.head(filename, n)
-    n = n or 10
-    local f = io.open(filename, "r")
-    if f then
-        local count = 0
-        for line in f:lines() do
-            print(line)
-            count = count + 1
-            if count >= n then break end
-        end
-        f:close()
-    else
-        print("File not found: " .. filename)
-    end
-end
-
-function M.tail(filename, n)
-    n = n or 10
-    os.execute("tail -n " .. n .. " " .. filename)
-end
-
--- Поиск
-function M.grep(pattern, filename)
-    os.execute("grep --color=auto " .. pattern .. " " .. filename)
-end
-
-function M.find(pattern)
-    os.execute("find . -name '" .. pattern .. "'")
-end
-
--- Информация
-function M.sysinfo()
-    print("=== System Information ===")
-    os.execute("uname -a")
-    print("\n=== Uptime ===")
-    os.execute("uptime")
-    print("\n=== Memory ===")
-    os.execute("free -h")
-    print("\n=== Disk Usage ===")
-    os.execute("df -h")
-    print("\n=== CPU Info ===")
-    os.execute("lscpu | head -10")
-end
-
-function M.help()
-    print("=== Available Functions ===")
-    for k,v in pairs(M) do
-        if type(v) == "function" then
-            print("  " .. k .. "()")
-        end
-    end
-end
-
--- Возвращаем таблицу
-return M
-```
-
-Использование:
-
-```bash
-# Запустить с загрузкой модуля
-lua -i -lmy-lua-tools
-
-# Внутри Lua:
-> my_lua_tools.ll()
-> my_lua_tools.sysinfo()
-> my_lua_tools.help()
-```
-
-Или с алиасом:
-```bash
-alias lua='lua -i -lmy-lua-tools'
-```
-
-### **Вариант 3: Функции прямо в интерактивной сессии**
-
-Если нужно быстро добавить функции только для текущей сессии:
-
-```lua
--- В интерактивном режиме выполните:
-
--- Создайте сразу несколько функций
-for name, cmd in pairs({
-    ll  = "ls -alFS --group-directories-first --si --sort=version",
-    lsa = "ls -la",
-    pwd = "pwd",
-    clear = "clear",
-    date = "date",
-    who = "who",
-    ps = "ps aux"
-}) do
-    _G[name] = function() os.execute(cmd) end
-end
-
--- Теперь доступны:
-ll()
-lsa()
-pwd()
-clear()
-date()
-who()
-ps()
-```
-
-### **Вариант 4: Создать bash-функцию для быстрого запуска**
-
-Добавьте в `~/.bashrc`:
-```bash
-# Функция для запуска Lua с моими инструментами
-lua-tools() {
-    lua -i <<'EOF'
-    function ll() os.execute("ls -alFS --group-directories-first --si --sort=version") end
-    function lsa() os.execute("ls -la") end
-    function clear() os.execute("clear") end
-    function pwd() print(os.getenv("PWD")) end
-    function sysinfo()
-        os.execute("uname -a")
-        os.execute("uptime")
-        os.execute("free -h")
-    end
-    print("=== Lua Tools Loaded ===")
-    print("Available: ll(), lsa(), clear(), pwd(), sysinfo()")
-EOF
-}
-
-# Использование:
-# $ lua-tools
-```
-
----
-
-## Как сохранить функции для постоянного использования
-
-### **Метод 1: Использовать `~/.lua`**
+#### **Метод 1: Использовать `~/.lua`**
 
 Создайте файл `~/.lua`:
 ```lua
--- Автоматически загружается, если установлена переменная LUA_INIT
--- или при запуске lua -i
+-- Автоматически загружается при запуске lua -i
 
 function ll()
     os.execute("ls -alFS --group-directories-first --si --sort=version")
@@ -863,14 +706,14 @@ export LUA_INIT="@$HOME/.lua"
 
 Теперь `lua -i` автоматически загрузит ваши функции.
 
-### **Метод 2: Создать алиас с автозагрузкой**
+#### **Метод 2: Создать алиас с автозагрузкой**
 
 ```bash
 # В ~/.bashrc
 alias mylua='lua -i -e "dofile(\"$HOME/.lua-tools.lua\")"'
 ```
 
-### **Метод 3: Использовать `lua -l`**
+#### **Метод 3: Использовать `lua -l` с модулем**
 
 Если вы создали модуль:
 
@@ -895,9 +738,7 @@ lua -lmyutils -i
 # Теперь myutils.ll(), myutils.lsa()
 ```
 
----
-
-## Как правильно выйти из интерактивного режима
+### **Как правильно выйти из интерактивного режима**
 
 ```lua
 -- Способ 1: Функция
@@ -915,9 +756,7 @@ q()
 q()
 ```
 
----
-
-## Полезные сокращения для интерактивного режима
+### **Полезные сокращения для интерактивного режима**
 
 Создайте в `~/.lua`:
 ```lua
@@ -955,3 +794,43 @@ run("ls -la")  -- выполнит и запомнит
 r()             -- повторит последнюю команду
 ```
 
+---
+
+## Типичные ошибки и их решение
+
+### **Ошибка: попытка использовать команды оболочки напрямую**
+```lua
+> ls
+nil
+> pwd
+nil
+```
+**Решение:** Используйте `os.execute()` для вызова системных команд или создайте функции-обертки.
+
+### **Ошибка: неправильное использование `-l`**
+```bash
+lua -l /root/.lua_profile -e "sysinfo()"
+lua: module '/root/.lua_profile' not found
+```
+**Решение:** Флаг `-l` ожидает имя модуля, а не путь. Используйте `dofile()` или настройте `LUA_INIT`.
+
+Правильные способы:
+```bash
+# Способ 1: через LUA_INIT
+export LUA_INIT="@$HOME/.lua_profile"
+lua -i
+
+# Способ 2: через dofile
+lua -e 'dofile("/root/.lua_profile"); sysinfo()'
+
+# Способ 3: интерактивный режим
+lua -i
+```
+
+### **Ошибка: `os.execute()` не меняет текущую директорию**
+```lua
+> os.execute("cd /tmp")
+> pwd()
+/root
+```
+**Решение:** `os.execute()` запускает команду в новом процессе, поэтому `cd` не влияет на текущий процесс Lua. Используйте другие методы для работы с директориями.
