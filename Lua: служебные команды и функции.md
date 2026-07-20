@@ -334,40 +334,41 @@ nil
 
 Создайте файл `~/.lua_profile` со следующим содержимым:
 
+<details>
+<summary>❗ ~/.lua_profile ❗</summary>
+
 ```lua
 -- ~/.lua_profile
 -- Автоматически загружается при запуске lua -i
 
--- Системные команды
-function ll() 
-    os.execute("ls -alFS --group-directories-first --si --sort=version") 
+-- ============================================
+-- ОСНОВНЫЕ СИСТЕМНЫЕ ФУНКЦИИ
+-- ============================================
+
+function ll()
+    os.execute("ls -alFS --group-directories-first --si --sort=version")
 end
 
-function lsa() 
-    os.execute("ls -la") 
+function pwd()
+    print(os.getenv("PWD"))
 end
 
-function lsl() 
-    os.execute("ls -l") 
+function clear()
+    os.execute("clear")
 end
 
-function pwd() 
-    print(os.getenv("PWD")) 
+function ps_cpu_short()
+    os.execute("ps -eo cmd,pid,%cpu,%mem,user --sort=-%cpu | head -15")
 end
 
-function clear() 
-    os.execute("clear") 
+function top_cpu()
+    os.execute("top -b -n 1 -o %CPU")
 end
 
-function ps()
-    os.execute("ps aux")
+function top_mem()
+    os.execute("top -b -n 1 -o %MEM")
 end
 
-function top()
-    os.execute("top -b -n 1")
-end
-
--- Информация о системе
 function sysinfo()
     print("=== System Info ===")
     os.execute("uname -a")
@@ -379,29 +380,623 @@ function sysinfo()
     os.execute("df -h")
 end
 
--- Быстрый выход
 function q()
-    print("Bye!")
+    print("Exit from REPL!")
     os.exit()
 end
 
--- Помощник
+-- ============================================
+-- ФУНКЦИЯ СПРАВКИ ПО КОМАНДАМ
+-- ============================================
+
+function help_cmd(cmd)
+    -- БАЗА ЗНАНИЙ О ФУНКЦИЯХ
+    local help_db = {
+        -- ---- ВСТРОЕННЫЕ ФУНКЦИИ LUA ----
+        ["print"] = {
+            desc = "Выводит значения в консоль",
+            syntax = "print(value1, value2, ...)",
+            example = 'print("Hello", 42, true)  --> Hello 42 true',
+            note = "Автоматически преобразует значения в строки"
+        },
+        ["tostring"] = {
+            desc = "Преобразует значение в строку",
+            syntax = "tostring(value)",
+            example = 'tostring(123)  --> "123"',
+            note = "Используется для безопасной конкатенации"
+        },
+        ["tonumber"] = {
+            desc = "Преобразует строку в число",
+            syntax = "tonumber(value [, base])",
+            example = 'tonumber("123")  --> 123  |  tonumber("FF", 16)  --> 255',
+            note = "Возвращает nil если преобразование невозможно"
+        },
+        ["type"] = {
+            desc = "Возвращает тип значения",
+            syntax = "type(value)",
+            example = 'type(42)  --> "number"  |  type("hello")  --> "string"',
+            note = "Возвращает: nil, number, string, boolean, table, function, thread, userdata"
+        },
+        ["assert"] = {
+            desc = "Проверяет условие, вызывает ошибку если false/nil",
+            syntax = "assert(condition [, message])",
+            example = 'assert(1 + 1 == 2, "Math is broken!")',
+            note = "Полезно для проверки входных данных"
+        },
+        ["error"] = {
+            desc = "Генерирует ошибку с сообщением",
+            syntax = "error(message [, level])",
+            example = 'error("Something went wrong!")',
+            note = "Используется для обработки исключительных ситуаций"
+        },
+        ["pcall"] = {
+            desc = "Безопасный вызов функции (перехватывает ошибки)",
+            syntax = "pcall(function, ...)",
+            example = 'local ok, err = pcall(function() error("test") end)',
+            note = "Возвращает true/false и результат/ошибку"
+        },
+        ["xpcall"] = {
+            desc = "Безопасный вызов с обработчиком ошибок",
+            syntax = "xpcall(function, error_handler, ...)",
+            example = 'xpcall(f, function(err) print("Error:", err) end)',
+            note = "Позволяет кастомизировать обработку ошибок"
+        },
+        ["dofile"] = {
+            desc = "Выполняет Lua-скрипт из файла",
+            syntax = "dofile(filename)",
+            example = 'dofile("script.lua")',
+            note = "Загружает и выполняет файл сразу"
+        },
+        ["loadfile"] = {
+            desc = "Загружает Lua-скрипт из файла (без выполнения)",
+            syntax = "loadfile(filename)",
+            example = 'local f = loadfile("script.lua"); f()',
+            note = "Возвращает функцию, которую можно вызвать позже"
+        },
+        ["load"] = {
+            desc = "Загружает Lua-код из строки",
+            syntax = "load(code [, chunkname [, mode [, env]]])",
+            example = 'local f = load("print(42)"); f()',
+            note = "Позволяет выполнить динамический код"
+        },
+        ["collectgarbage"] = {
+            desc = "Управляет сборщиком мусора",
+            syntax = "collectgarbage([opt [, arg]])",
+            example = 'collectgarbage("collect")  -- Принудительный сбор',
+            note = "Полезно при работе с большими данными"
+        },
+        ["_G"] = {
+            desc = "Глобальная таблица со всеми переменными",
+            syntax = "_G",
+            example = 'for k,v in pairs(_G) do print(k) end',
+            note = "Хранит все глобальные переменные/функции"
+        },
+        ["_VERSION"] = {
+            desc = "Версия Lua",
+            syntax = "_VERSION",
+            example = 'print(_VERSION)  --> Lua 5.4',
+            note = "Проверка версии для обратной совместимости"
+        },
+        
+        -- ---- БИБЛИОТЕКА OS ----
+        ["os.execute"] = {
+            desc = "Выполняет команду в системной оболочке",
+            syntax = "os.execute(command)",
+            example = 'os.execute("ls -la")',
+            note = "Возвращает код завершения команды (0 = успех)"
+        },
+        ["os.getenv"] = {
+            desc = "Получает значение переменной окружения",
+            syntax = "os.getenv(varname)",
+            example = 'local home = os.getenv("HOME")',
+            note = "Возвращает nil если переменная не найдена"
+        },
+        ["os.setenv"] = {
+            desc = "Устанавливает переменную окружения",
+            syntax = "os.setenv(varname, value)",
+            example = 'os.setenv("MYVAR", "hello")',
+            note = "Изменяет окружение текущего процесса"
+        },
+        ["os.exit"] = {
+            desc = "Завершает программу с кодом выхода",
+            syntax = "os.exit([code [, close]])",
+            example = 'os.exit(0)  -- Успешное завершение',
+            note = "code: 0 = успех, 1 = ошибка"
+        },
+        ["os.date"] = {
+            desc = "Форматирует дату и время",
+            syntax = "os.date([format [, time]])",
+            example = 'os.date("%Y-%m-%d %H:%M:%S")  --> 2026-07-20 20:35:29',
+            note = "Спецификаторы: %Y(год), %m(месяц), %d(день), %H(час), %M(мин), %S(сек)"
+        },
+        ["os.time"] = {
+            desc = "Возвращает текущее время в секундах",
+            syntax = "os.time([table])",
+            example = 'local now = os.time()',
+            note = "Используйте для измерения времени выполнения"
+        },
+        ["os.clock"] = {
+            desc = "Возвращает время CPU программы в секундах",
+            syntax = "os.clock()",
+            example = 'local start = os.clock(); -- код; print(os.clock() - start)',
+            note = "Полезно для измерения производительности"
+        },
+        ["os.remove"] = {
+            desc = "Удаляет файл",
+            syntax = "os.remove(filename)",
+            example = 'os.remove("temp.txt")',
+            note = "Возвращает true/false в зависимости от успеха"
+        },
+        ["os.rename"] = {
+            desc = "Переименовывает файл",
+            syntax = "os.rename(oldname, newname)",
+            example = 'os.rename("old.txt", "new.txt")',
+            note = "Может также перемещать файлы"
+        },
+        ["os.tmpname"] = {
+            desc = "Возвращает имя временного файла",
+            syntax = "os.tmpname()",
+            example = 'local temp = os.tmpname()',
+            note = "Генерирует уникальное имя, но не создает файл"
+        },
+        
+        -- ---- БИБЛИОТЕКА IO ----
+        ["io.open"] = {
+            desc = "Открывает файл для чтения/записи",
+            syntax = "io.open(filename [, mode])",
+            example = 'local f = io.open("file.txt", "r")',
+            note = "Режимы: r(чтение), w(запись), a(добавление), r+(чтение/запись)"
+        },
+        ["io.close"] = {
+            desc = "Закрывает открытый файл",
+            syntax = "io.close([file])",
+            example = 'f:close()  или  io.close()',
+            note = "Всегда закрывайте файлы после работы"
+        },
+        ["io.read"] = {
+            desc = "Читает из стандартного ввода",
+            syntax = "io.read(...)",
+            example = 'local line = io.read("*line")',
+            note = "Форматы: *all (весь), *line (строка), *number (число)"
+        },
+        ["io.write"] = {
+            desc = "Пишет в стандартный вывод",
+            syntax = "io.write(...)",
+            example = 'io.write("Hello World!\\n")',
+            note = "Быстрее чем print(), но без автоматического форматирования"
+        },
+        ["io.input"] = {
+            desc = "Устанавливает или возвращает текущий файл ввода",
+            syntax = "io.input([file])",
+            example = 'io.input("input.txt")',
+            note = "По умолчанию stdin (клавиатура)"
+        },
+        ["io.output"] = {
+            desc = "Устанавливает или возвращает текущий файл вывода",
+            syntax = "io.output([file])",
+            example = 'io.output("output.txt")',
+            note = "По умолчанию stdout (экран)"
+        },
+        ["io.popen"] = {
+            desc = "Открывает pipe для выполнения команды",
+            syntax = "io.popen(prog [, mode])",
+            example = 'local f = io.popen("ls -la", "r"); print(f:read("*all"))',
+            note = "Позволяет читать вывод команд"
+        },
+        ["io.lines"] = {
+            desc = "Итератор по строкам файла",
+            syntax = "io.lines([filename])",
+            example = 'for line in io.lines("file.txt") do print(line) end',
+            note = "Удобно для обработки больших файлов"
+        },
+        
+        -- ---- БИБЛИОТЕКА STRING ----
+        ["string.len"] = {
+            desc = "Возвращает длину строки",
+            syntax = "string.len(s)",
+            example = 'string.len("hello")  --> 5',
+            note = "Альтернатива: #" .. '"hello"  --> 5'
+        },
+        ["string.sub"] = {
+            desc = "Извлекает подстроку",
+            syntax = "string.sub(s, i [, j])",
+            example = 'string.sub("hello world", 1, 5)  --> "hello"',
+            note = "Индексация начинается с 1"
+        },
+        ["string.find"] = {
+            desc = "Ищет подстроку или шаблон",
+            syntax = "string.find(s, pattern [, init [, plain]])",
+            example = 'string.find("hello", "ll")  --> 3 4',
+            note = "Возвращает позиции начала и конца"
+        },
+        ["string.gsub"] = {
+            desc = "Глобальная замена по шаблону",
+            syntax = "string.gsub(s, pattern, repl [, n])",
+            example = 'string.gsub("hello world", "l", "L")  --> "heLLo worLd"',
+            note = "Можно использовать шаблоны и функции"
+        },
+        ["string.gmatch"] = {
+            desc = "Итератор по совпадениям с шаблоном",
+            syntax = "string.gmatch(s, pattern)",
+            example = 'for word in string.gmatch("a b c", "%w") do print(word) end',
+            note = "Извлекает все части, соответствующие шаблону"
+        },
+        ["string.match"] = {
+            desc = "Ищет первое совпадение с шаблоном",
+            syntax = "string.match(s, pattern [, init])",
+            example = 'string.match("hello 123", "%d+")  --> "123"',
+            note = "Возвращает найденное совпадение"
+        },
+        ["string.format"] = {
+            desc = "Форматирует строку (как printf в C)",
+            syntax = "string.format(formatstring, ...)",
+            example = 'string.format("Name: %s, Age: %d", "John", 30)',
+            note = "Спецификаторы: %s(строка), %d(число), %f(дробное), %x(hex)"
+        },
+        ["string.upper"] = {
+            desc = "Преобразует строку в верхний регистр",
+            syntax = "string.upper(s)",
+            example = 'string.upper("hello")  --> "HELLO"'
+        },
+        ["string.lower"] = {
+            desc = "Преобразует строку в нижний регистр",
+            syntax = "string.lower(s)",
+            example = 'string.lower("HELLO")  --> "hello"'
+        },
+        ["string.rep"] = {
+            desc = "Повторяет строку N раз",
+            syntax = "string.rep(s, n [, sep])",
+            example = 'string.rep("=", 10)  --> "=========="'
+        },
+        
+        -- ---- БИБЛИОТЕКА TABLE ----
+        ["table.insert"] = {
+            desc = "Вставляет элемент в таблицу",
+            syntax = "table.insert(table, [pos,] value)",
+            example = 't = {1,2,3}; table.insert(t, 4)  --> {1,2,3,4}',
+            note = "Вставляет в конец или по указанной позиции"
+        },
+        ["table.remove"] = {
+            desc = "Удаляет элемент из таблицы",
+            syntax = "table.remove(table [, pos])",
+            example = 't = {1,2,3}; table.remove(t)  --> {1,2}',
+            note = "Удаляет последний или по указанной позиции"
+        },
+        ["table.sort"] = {
+            desc = "Сортирует таблицу",
+            syntax = "table.sort(table [, comp])",
+            example = 't = {3,1,2}; table.sort(t)  --> {1,2,3}',
+            note = "Можно передать функцию сравнения"
+        },
+        ["table.concat"] = {
+            desc = "Объединяет элементы таблицы в строку",
+            syntax = "table.concat(table [, sep [, i [, j]]])",
+            example = 'table.concat({"a","b","c"}, ",")  --> "a,b,c"',
+            note = "Быстрее чем цикл с конкатенацией"
+        },
+        ["table.pack"] = {
+            desc = "Упаковывает аргументы в таблицу",
+            syntax = "table.pack(...)",
+            example = 't = table.pack(1,2,3)  --> {1,2,3, n=3}',
+            note = "Сохраняет количество аргументов в поле n"
+        },
+        ["table.unpack"] = {
+            desc = "Распаковывает таблицу в аргументы",
+            syntax = "table.unpack(table [, i [, j]])",
+            example = 'a,b,c = table.unpack({1,2,3})  --> a=1,b=2,c=3'
+        },
+        
+        -- ---- БИБЛИОТЕКА MATH ----
+        ["math.abs"] = {
+            desc = "Модуль числа (абсолютное значение)",
+            syntax = "math.abs(x)",
+            example = 'math.abs(-5)  --> 5'
+        },
+        ["math.floor"] = {
+            desc = "Округление вниз (в меньшую сторону)",
+            syntax = "math.floor(x)",
+            example = 'math.floor(3.7)  --> 3'
+        },
+        ["math.ceil"] = {
+            desc = "Округление вверх (в большую сторону)",
+            syntax = "math.ceil(x)",
+            example = 'math.ceil(3.2)  --> 4'
+        },
+        ["math.random"] = {
+            desc = "Генерирует случайное число",
+            syntax = "math.random([m [, n]])",
+            example = 'math.random(1, 100)  --> случайное от 1 до 100',
+            note = "Предварительно вызовите math.randomseed(os.time())"
+        },
+        ["math.randomseed"] = {
+            desc = "Устанавливает seed для генератора случайных чисел",
+            syntax = "math.randomseed(x)",
+            example = 'math.randomseed(os.time())',
+            note = "Используйте разные seed для разных запусков"
+        },
+        ["math.min"] = {
+            desc = "Минимальное значение из списка",
+            syntax = "math.min(x, ...)",
+            example = 'math.min(3, 1, 5)  --> 1'
+        },
+        ["math.max"] = {
+            desc = "Максимальное значение из списка",
+            syntax = "math.max(x, ...)",
+            example = 'math.max(3, 1, 5)  --> 5'
+        },
+        ["math.sqrt"] = {
+            desc = "Квадратный корень",
+            syntax = "math.sqrt(x)",
+            example = 'math.sqrt(16)  --> 4'
+        },
+        ["math.pi"] = {
+            desc = "Число Пи (3.14159...)",
+            syntax = "math.pi",
+            example = 'print(math.pi)  --> 3.1415926535898'
+        },
+        
+        -- ---- ВАШИ ПОЛЬЗОВАТЕЛЬСКИЕ ФУНКЦИИ ----
+        ["ll"] = {
+            desc = "Подробный список файлов с сортировкой по версиям",
+            syntax = "ll()",
+            example = 'll()  -- показывает все файлы в текущей директории',
+            note = "Использует: ls -alFS --group-directories-first --si --sort=version"
+        },
+        ["pwd"] = {
+            desc = "Показывает текущую рабочую директорию",
+            syntax = "pwd()",
+            example = 'pwd()  --> /home/kkorablin',
+            note = "Print Working Directory"
+        },
+        ["clear"] = {
+            desc = "Очищает экран терминала",
+            syntax = "clear()",
+            example = 'clear()  -- Очистка экрана',
+            note = "Аналог команды clear в терминале"
+        },
+        ["ps_cpu_short"] = {
+            desc = "Показывает топ процессов по использованию CPU",
+            syntax = "ps_cpu_short()",
+            example = 'ps_cpu_short()  -- первые 15 процессов',
+            note = "Использует: ps с сортировкой по CPU"
+        },
+        ["top_cpu"] = {
+            desc = "Интерактивный просмотр процессов по CPU",
+            syntax = "top_cpu()",
+            example = 'top_cpu()  -- запускает top с сортировкой по CPU',
+            note = "Однократный запуск top в пакетном режиме"
+        },
+        ["top_mem"] = {
+            desc = "Интерактивный просмотр процессов по памяти",
+            syntax = "top_mem()",
+            example = 'top_mem()  -- запускает top с сортировкой по памяти',
+            note = "Однократный запуск top в пакетном режиме"
+        },
+        ["sysinfo"] = {
+            desc = "Показывает полную информацию о системе",
+            syntax = "sysinfo()",
+            example = 'sysinfo()  -- Ядро, аптайм, память, диски',
+            note = "Объединяет: uname, uptime, free, df"
+        },
+        ["q"] = {
+            desc = "Выход из интерактивного режима Lua",
+            syntax = "q()",
+            example = 'q()  -- Exit from REPL!',
+            note = "Завершает сессию Lua с кодом 0"
+        },
+        ["help"] = {
+            desc = "Показывает список доступных команд",
+            syntax = "help()",
+            example = 'help()  -- список всех пользовательских функций',
+            note = "Показывает только базовые команды"
+        },
+        ["help_cmd"] = {
+            desc = "Показывает подробную справку по функции",
+            syntax = "help_cmd('function_name')",
+            example = 'help_cmd("print")  -- справка по print',
+            note = "Используйте кавычки вокруг имени функции"
+        },
+    }
+    
+    -- ============================================
+    -- ЛОГИКА ВЫВОДА СПРАВКИ
+    -- ============================================
+    
+    -- Если команда не указана - показываем все
+    if not cmd then
+        print("📚 ДОСТУПНЫЕ КОМАНДЫ ДЛЯ СПРАВКИ:")
+        print("")
+        print("📌 ВСТРОЕННЫЕ ФУНКЦИИ LUA:")
+        local lua_funcs = {"print", "tostring", "tonumber", "type", "assert", 
+                          "error", "pcall", "xpcall", "dofile", "loadfile", 
+                          "load", "collectgarbage", "_G", "_VERSION"}
+        
+        for _, name in ipairs(lua_funcs) do
+            if help_db[name] then
+                print(string.format("  %-15s - %s", name, help_db[name].desc))
+            end
+        end
+        
+        print("")
+        print("📌 БИБЛИОТЕКИ:")
+        local libs = {"os.execute", "os.getenv", "os.date", "os.time", 
+                     "io.open", "io.read", "io.write", 
+                     "string.format", "string.gsub", "string.find",
+                     "table.insert", "table.sort", "table.concat",
+                     "math.random", "math.floor", "math.ceil"}
+        
+        for _, name in ipairs(libs) do
+            if help_db[name] then
+                print(string.format("  %-20s - %s", name, help_db[name].desc))
+            end
+        end
+        
+        print("")
+        print("📌 ПОЛЬЗОВАТЕЛЬСКИЕ ФУНКЦИИ:")
+        local user_funcs = {"ll", "pwd", "clear", "ps_cpu_short", 
+                           "top_cpu", "top_mem", "sysinfo", "q", "help", "help_cmd"}
+        
+        for _, name in ipairs(user_funcs) do
+            if help_db[name] then
+                print(string.format("  %-15s - %s", name, help_db[name].desc))
+            end
+        end
+        
+        print("")
+        print(string.rep("=", 60))
+        print("💡 Используйте: help_cmd('имя_функции') для подробной справки")
+        print("   Пример: help_cmd('os.execute')")
+        return
+    end
+    
+    -- ============================================
+    -- ПОКАЗ СПРАВКИ ПО КОНКРЕТНОЙ ФУНКЦИИ
+    -- ============================================
+    
+    local info = help_db[cmd]
+    
+    if not info then
+        print("❌ Функция '" .. cmd .. "' не найдена в базе знаний")
+        print("💡 Введите help_cmd() для списка доступных команд")
+        return
+    end
+    
+    print(string.rep("=", 60))
+    print("📖 СПРАВКА: " .. cmd)
+    print(string.rep("=", 60))
+    print("")
+    print("📌 Описание: " .. info.desc)
+    print("")
+    print("📝 Синтаксис: " .. info.syntax)
+    print("")
+    print("📋 Пример:    " .. info.example)
+    
+    if info.note then
+        print("")
+        print("💡 Примечание: " .. info.note)
+    end
+    
+    print("")
+    print(string.rep("=", 60))
+end
+
+-- ============================================
+-- ОБНОВЛЕННАЯ ФУНКЦИЯ HELP
+-- ============================================
+
 function help()
-    print("Available commands:")
-    print("  ll()    - list files with details")
-    print("  lsa()   - list all files")
-    print("  lsl()   - simple list")
-    print("  pwd()   - show current directory")
-    print("  clear() - clear screen")
-    print("  ps()    - show processes")
-    print("  top()   - show top processes")
-    print("  sysinfo() - show system information")
-    print("  q()     - quit Lua")
-    print("  help()  - show this help")
+    print(string.rep("=", 60))
+    print("📚 ДОСТУПНЫЕ КОМАНДЫ")
+    print(string.rep("=", 60))
+    print("")
+    print("📁 РАБОТА С ФАЙЛАМИ:")
+    print("  ll()         - Подробный список файлов")
+    print("  pwd()        - Показать текущую директорию")
+    print("  clear()      - Очистить экран")
+    print("")
+    print("📊 МОНИТОРИНГ СИСТЕМЫ:")
+    print("  ps_cpu_short() - Топ процессов по CPU (краткий)")
+    print("  top_cpu()    - Топ процессов по CPU (интерактивный)")
+    print("  top_mem()    - Топ процессов по памяти (интерактивный)")
+    print("  sysinfo()    - Полная информация о системе")
+    print("")
+    print("🎯 УПРАВЛЕНИЕ:")
+    print("  q()          - Выйти из Lua")
+    print("  help()       - Показать эту справку")
+    print("  help_cmd('func') - Подробная справка по функции")
+    print("")
+    print("💡 ПРИМЕРЫ:")
+    print("  help_cmd('print')      - справка по print")
+    print("  help_cmd('os.execute') - справка по os.execute")
+    print("  help_cmd('ll')         - справка по ll()")
+    print("")
+    print(string.rep("=", 60))
+    print("📖 Для детальной справки используйте help_cmd('имя_функции')")
 end
 
 print("Lua profile loaded! Type help() for available commands.")
 ```
+</details> 
+<br/>
+
+
+<details>
+<summary>❗ПРИМЕРЫ ИСПОЛЬЗОВАНИЯ❗</summary>
+
+```lua
+-- Запуск Lua
+> lua -i
+Lua 5.4.7  Copyright (C) 1994-2024 Lua.org, PUC-Rio
+Lua profile loaded! Type help() for available commands.
+
+-- 1. БАЗОВАЯ СПРАВКА
+> help()
+-- Показывает все доступные команды
+
+-- 2. СПРАВКА ПО КОНКРЕТНОЙ ФУНКЦИИ
+> help_cmd('print')
+============================================================
+📖 СПРАВКА: print
+============================================================
+
+📌 Описание: Выводит значения в консоль
+
+📝 Синтаксис: print(value1, value2, ...)
+
+📋 Пример:    print("Hello", 42, true)  --> Hello 42 true
+
+💡 Примечание: Автоматически преобразует значения в строки
+============================================================
+
+-- 3. СПРАВКА ПО OS.EXECUTE
+> help_cmd('os.execute')
+============================================================
+📖 СПРАВКА: os.execute
+============================================================
+
+📌 Описание: Выполняет команду в системной оболочке
+
+📝 Синтаксис: os.execute(command)
+
+📋 Пример:    os.execute("ls -la")
+
+💡 Примечание: Возвращает код завершения команды (0 = успех)
+============================================================
+
+-- 4. СПРАВКА ПО ВАШЕЙ ФУНКЦИИ
+> help_cmd('ll')
+============================================================
+📖 СПРАВКА: ll
+============================================================
+
+📌 Описание: Подробный список файлов с сортировкой по версиям
+
+📝 Синтаксис: ll()
+
+📋 Пример:    ll()  -- показывает все файлы в текущей директории
+
+💡 Примечание: Использует: ls -alFS --group-directories-first --si --sort=version
+============================================================
+
+-- 5. СПРАВКА ПО STRING.FORMAT
+> help_cmd('string.format')
+============================================================
+📖 СПРАВКА: string.format
+============================================================
+
+📌 Описание: Форматирует строку (как printf в C)
+
+📝 Синтаксис: string.format(formatstring, ...)
+
+📋 Пример:    string.format("Name: %s, Age: %d", "John", 30)
+
+💡 Примечание: Спецификаторы: %s(строка), %d(число), %f(дробное), %x(hex)
+============================================================
+```
+
+</details> 
+<br/>
+
 
 #### **Настройка автоматической загрузки профиля**
 
