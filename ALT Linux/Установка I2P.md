@@ -497,6 +497,165 @@ curl -x http://127.0.0.1:4444 -v http://i2p-projekt.i2p/
 *   **Настройте прокси в браузере**: Убедитесь, что ваш браузер правильно использует HTTP прокси I2P (`127.0.0.1:4444`) .
 
 ---
+<br/>
 
 
 
+
+
+## 🌐 НАСТРОЙКА БРАУЗЕРА ДЛЯ I2P
+
+### Вариант 1: Firefox (рекомендую)
+
+**Установка Firefox (если нет):**
+```bash
+sudo apt-get install firefox
+```
+
+**Настройка прокси:**
+
+1. Запустите Firefox:
+   ```bash
+   firefox
+   ```
+
+2. Откройте **Настройки** (три полоски в правом верхнем углу → "Настройки" или в адресной строке `about:preferences`)
+
+3. Прокрутите вниз до раздела **"Настройки сети"** (в блоке "Общие")
+
+4. Нажмите **"Настройка..."** рядом с "Настройка подключения Firefox к интернету"
+
+5. Выберите **"Ручная настройка прокси"**
+
+6. Заполните поля:
+   ```
+   HTTP прокси: 127.0.0.1  Порт: 4444
+   HTTPS прокси: 127.0.0.1  Порт: 4445
+   ```
+
+7. В поле **"Без прокси для"** добавьте:
+   ```
+   localhost, 127.0.0.1
+   ```
+
+8. Нажмите **OK** и перезапустите Firefox
+
+---
+
+### Вариант 2: Chromium / Google Chrome
+
+**Установка Chromium (если нет):**
+```bash
+sudo apt-get install chromium
+```
+
+**Настройка прокси:**
+
+#### Способ А: Через параметры запуска (проще)
+Создайте ярлык или используйте эту команду для запуска:
+```bash
+chromium --proxy-server="http://127.0.0.1:4444" \
+         --host-resolver-rules="MAP * ~NOTFOUND , EXCLUDE localhost"
+```
+
+#### Способ Б: Через расширение (удобнее)
+1. Установите расширение **Proxy SwitchyOmega** из Chrome Web Store
+2. После установки откройте настройки расширения
+3. Создайте новый профиль:
+   - **Имя:** I2P
+   - **Протокол:** HTTP
+   - **Сервер:** 127.0.0.1
+   - **Порт:** 4444
+4. Сохраните и активируйте профиль
+
+---
+
+## 🚀 БЫСТРЫЙ ЗАПУСК (для всех браузеров)
+
+Создайте desktop-файлы для быстрого запуска с прокси:
+
+```bash
+# Для Firefox с I2P
+nano ~/.local/share/applications/firefox-i2p.desktop
+```
+
+Вставьте:
+```ini
+[Desktop Entry]
+Name=Firefox (I2P)
+Comment=Firefox with I2P proxy
+Exec=firefox -P default --new-window about:blank
+Icon=firefox
+Terminal=false
+Type=Application
+Categories=Network;
+```
+
+```bash
+# Для Chromium с I2P
+nano ~/.local/share/applications/chromium-i2p.desktop
+```
+
+Вставьте:
+```ini
+[Desktop Entry]
+Name=Chromium (I2P)
+Comment=Chromium with I2P proxy
+Exec=chromium --proxy-server="http://127.0.0.1:4444" --host-resolver-rules="MAP * ~NOTFOUND , EXCLUDE localhost"
+Icon=chromium
+Terminal=false
+Type=Application
+Categories=Network;
+```
+
+Теперь у вас будут ярлыки в меню приложений!
+
+---
+
+## ✅ ПРОВЕРКА РАБОТЫ
+
+После настройки браузера, откройте в нем:
+
+1. **Для проверки прокси:** `http://check.torproject.org/` — должна загрузиться страница с вашим IP
+
+2. **Сайты в I2P:**
+   - `http://i2p-projekt.i2p/` — официальный сайт
+   - `http://forum.i2p/` — форум
+   - `http://reg.i2p/` — регистрация
+   - `http://i2pfaq.i2p/` — FAQ
+
+3. **Страница для поиска сайтов:**
+   - `http://identiguy.i2p/` — каталог сайтов
+
+---
+
+## ⚙️ АЛЬТЕРНАТИВА: Настройка через about:config (Firefox)
+
+Если хотите сохранить настройки без графического интерфейса:
+
+1. В адресной строке Firefox введите `about:config`
+2. Нажмите "Принять риск"
+3. Найдите или создайте параметры:
+
+| Параметр | Значение |
+|----------|----------|
+| `network.proxy.type` | 1 |
+| `network.proxy.http` | 127.0.0.1 |
+| `network.proxy.http_port` | 4444 |
+| `network.proxy.ssl` | 127.0.0.1 |
+| `network.proxy.ssl_port` | 4445 |
+| `network.proxy.no_proxies_on` | localhost, 127.0.0.1 |
+
+---
+
+## 🔍 СОВЕТЫ
+
+1. **Не включайте прокси для обычного интернета** — используйте отдельный профиль или расширение для переключения
+
+2. **Для торрентов** используйте встроенный клиент I2PSnark (на главной странице консоли)
+
+3. **Для чатов** настройте IRC-клиент на `127.0.0.1:6668` (без SSL)
+
+---
+
+**Попробуйте сейчас!** Настройте браузер и откройте `http://i2p-projekt.i2p/`. Если что-то пойдет не так — покажите ошибку, помогу разобраться. 🚀
