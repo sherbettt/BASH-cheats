@@ -1,0 +1,461 @@
+# 📘 ПОЛНАЯ ИНСТРУКЦИЯ ПО УСТАНОВКЕ I2P НА XIMPER LINUX
+
+## Часть 1: Установка I2P
+
+### 1.1 Установка Java
+```bash
+# Проверка Java
+java -version
+
+# Установка Java (если нет)
+sudo apt-get update
+sudo apt-get install openjdk-17-jre openjdk-17-jre-headless
+
+# Проверка
+java -version
+```
+
+### 1.2 Скачивание и установка I2P
+```bash
+# Создаем папку для установки
+mkdir -p ~/i2p
+cd ~/i2p
+
+# Скачиваем последнюю версию (если еще не скачали)
+wget https://download.i2p2.de/releases/2.12.0/i2pinstall_2.12.0.jar
+
+# Устанавливаем (консольный режим)
+java -jar i2pinstall_2.12.0.jar -console
+
+# Или графический режим
+java -jar i2pinstall_2.12.0.jar
+```
+
+**При установке:**
+- Выберите язык: English (или Русский)
+- Путь установки: оставьте `/home/ваше_имя/i2p` (или измените на `/opt/i2p`)
+- Компоненты: все по умолчанию
+- Подтвердите установку
+
+### 1.3 Первый запуск
+```bash
+cd ~/i2p
+
+# Запуск
+./i2prouter start
+
+# Проверка статуса
+./i2prouter status
+
+# Должно показать: I2P Service is running: PID:XXXXX
+```
+
+---
+
+## Часть 2: Проверка работы
+
+### 2.1 Проверка портов
+```bash
+# Проверяем, что все порты слушаются
+ss -tulpn | grep -E "7657|4444|4445"
+
+# Должны увидеть:
+# 127.0.0.1:4444 - HTTP прокси
+# 127.0.0.1:4445 - HTTPS прокси
+# 127.0.0.1:7657 - Веб-консоль
+```
+
+### 2.2 Проверка логов
+```bash
+# Логи запуска
+tail -f ~/.i2p/wrapper.log
+
+# После запуска нажмите Ctrl+C для выхода
+```
+
+### 2.3 Проверка подключения к сети
+```bash
+# Проверяем, что I2P скачал список узлов
+grep -i "reseed" ~/.i2p/wrapper.log | tail -5
+
+# Должно быть что-то типа: "Reseed got 77 router infos"
+```
+
+---
+
+## Часть 3: Настройка I2P
+
+### 3.1 Настройка через веб-консоль
+
+**Откройте в браузере:** `http://127.0.0.1:7657/`
+
+1. **Первичная настройка (мастер):**
+   - Нажмите "Настройки" → "Помощь"
+   - Выберите "Мастер настройки"
+   - Укажите скорость интернета (честно)
+   - Выберите, сколько трафика готовы отдавать
+   - Сохраните
+
+2. **Настройка пропускной способности:**
+   - "Настройки" → "Пропускная способность"
+   - Введите вашу скорость
+   - Сохраните
+
+3. **Проверка сетевых настроек:**
+   - "Настройки" → "Сеть"
+   - Проверьте, что порты не блокируются
+   - При необходимости настройте UPnP или проброс портов
+
+### 3.2 Продвинутая настройка (конфиг)
+
+```bash
+# Основной конфиг
+nano ~/.i2p/router.config
+
+# Важные параметры для редактирования:
+```
+
+Добавьте или измените следующие строки:
+```ini
+# Язык интерфейса
+routerconsole.lang=ru
+
+# Автоматический запуск
+wrapper.autostart=true
+
+# Память для JVM (если мало RAM)
+wrapper.java.maxmemory=256
+
+# Прокси настройки (обычно уже по умолчанию)
+clientApp.0.args=7657 127.0.0.1 7657
+clientApp.1.args=4444 127.0.0.1 4444
+clientApp.2.args=4445 127.0.0.1 4445
+```
+
+---
+
+## Часть 4: Настройка браузера
+
+### 4.1 Настройка Firefox
+
+**Графический способ:**
+1. Откройте Firefox
+2. Настройки → Общие → Настройки сети
+3. Выберите "Ручная настройка прокси"
+4. Заполните:
+   ```
+   HTTP прокси: 127.0.0.1:4444
+   HTTPS прокси: 127.0.0.1:4445
+   Исключения: localhost, 127.0.0.1
+   ```
+5. Нажмите OK
+
+**Через about:config:**
+1. В адресной строке введите `about:config`
+2. Нажмите "Принять риск"
+3. Найдите `network.proxy.type`
+4. Установите значение `1` (ручная настройка)
+5. Создайте или измените:
+   - `network.proxy.http` = `127.0.0.1`
+   - `network.proxy.http_port` = `4444`
+   - `network.proxy.ssl` = `127.0.0.1`
+   - `network.proxy.ssl_port` = `4445`
+   - `network.proxy.no_proxies_on` = `localhost, 127.0.0.1`
+
+### 4.2 Настройка Chromium/Google Chrome
+
+**Через расширение Proxy SwitchyOmega:**
+1. Установите расширение [Proxy SwitchyOmega](https://chrome.google.com/webstore/detail/proxy-switchyomega/padekgcemlokbadohgkifijomclgjgif)
+2. Создайте профиль "I2P":
+   - Протокол: HTTP
+   - Сервер: 127.0.0.1
+   - Порт: 4444
+3. Активируйте профиль
+
+**Через параметры запуска:**
+```bash
+chromium --proxy-server="http://127.0.0.1:4444" \
+         --host-resolver-rules="MAP * ~NOTFOUND , EXCLUDE localhost" \
+         --ignore-certificate-errors-spki-list
+```
+
+### 4.3 Быстрая проверка браузера
+После настройки прокси откройте:
+- `http://i2p-projekt.i2p/` - официальный сайт
+- `http://forum.i2p/` - форум
+- `http://reg.i2p/` - регистрация сайтов
+
+---
+
+## Часть 5: Управление I2P
+
+### 5.1 Основные команды
+
+```bash
+# Запуск I2P
+cd ~/i2p
+./i2prouter start
+
+# Остановка
+./i2prouter stop
+
+# Перезапуск
+./i2prouter restart
+
+# Статус
+./i2prouter status
+
+# Проверка логов (в реальном времени)
+tail -f ~/.i2p/wrapper.log
+
+# Просмотр всех логов
+less ~/.i2p/wrapper.log
+```
+
+### 5.2 Дополнительные команды
+
+```bash
+# Проверка количества пиров
+grep -c "peer connected" ~/.i2p/wrapper.log
+
+# Проверка использования памяти
+ps aux | grep java | grep i2p
+
+# Проверка открытых портов
+ss -tulpn | grep -E "4444|4445|7657"
+
+# Тест HTTP прокси
+curl -x http://127.0.0.1:4444 http://check.torproject.org/
+
+# Тест HTTPS прокси (с проверкой сертификата)
+curl -x https://127.0.0.1:4445 https://check.torproject.org/ -k
+
+# Просмотр статуса подключения
+curl http://127.0.0.1:7657/ | grep -i "peer"
+```
+
+### 5.3 Автозапуск (systemd)
+
+Создайте сервис для автозапуска:
+
+```bash
+# Создаем файл сервиса
+sudo nano /etc/systemd/system/i2p.service
+```
+
+Вставьте содержимое:
+```ini
+[Unit]
+Description=I2P Router
+After=network.target
+
+[Service]
+Type=forking
+User=kkorablin
+WorkingDirectory=/home/kkorablin/i2p
+ExecStart=/home/kkorablin/i2p/i2prouter start
+ExecStop=/home/kkorablin/i2p/i2prouter stop
+ExecReload=/home/kkorablin/i2p/i2prouter restart
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Затем:
+```bash
+# Перезагружаем systemd
+sudo systemctl daemon-reload
+
+# Включаем автозапуск
+sudo systemctl enable i2p.service
+
+# Запускаем
+sudo systemctl start i2p.service
+
+# Проверяем
+sudo systemctl status i2p.service
+```
+
+---
+
+## Часть 6: Проверка работоспособности
+
+### 6.1 Статус подключения к сети
+
+Откройте `http://127.0.0.1:7657/` и проверьте:
+- **Количество пиров** > 10 (желательно > 20)
+- **Уровень интеграции** > 90%
+- **Статус сети** - "Сеть работает"
+- **Древо обмена** - зеленое/синее
+
+### 6.2 Команды для диагностики
+
+```bash
+# Полный статус I2P
+./i2prouter status
+
+# Проверка, что все процессы работают
+ps aux | grep -E "i2p|java.*i2p"
+
+# Проверка сетевых соединений I2P
+ss -tulpn | grep -E "4444|4445|7657"
+
+# Просмотр последних 50 строк лога
+tail -50 ~/.i2p/wrapper.log
+
+# Поиск ошибок в логах
+grep -i error ~/.i2p/wrapper.log
+grep -i "fail" ~/.i2p/wrapper.log
+```
+
+---
+
+## Часть 7: Решение типичных проблем
+
+### 7.1 Не запускается после установки
+```bash
+# Проверка Java
+java -version
+
+# Проверка прав
+chmod +x ~/i2p/i2prouter
+chmod +x ~/i2p/runplain.sh
+
+# Ручной запуск для отладки
+cd ~/i2p
+./runplain.sh
+```
+
+### 7.2 Нет подключения к сети
+```bash
+# Принудительный reseed (загрузка новых узлов)
+# Остановите I2P
+./i2prouter stop
+
+# Удалите старые контакты
+rm -rf ~/.i2p/netDb/*
+
+# Запустите снова
+./i2prouter start
+
+# Следите за логами
+tail -f ~/.i2p/wrapper.log
+```
+
+### 7.3 Мало памяти
+```bash
+# Уменьшите память в конфиге
+nano ~/.i2p/wrapper.config
+
+# Найдите и измените:
+wrapper.java.maxmemory=256
+# вместо 512 или 1024
+```
+
+### 7.4 Не открываются .i2p сайты
+```bash
+# Проверка прокси
+curl -v -x http://127.0.0.1:4444 http://i2p-projekt.i2p/
+
+# Если ошибка - смотрите логи
+tail -f ~/.i2p/wrapper.log | grep -i proxy
+
+# Перезапустите I2P
+./i2prouter restart
+```
+
+### 7.5 Порт уже занят
+```bash
+# Найти процесс, занимающий порт
+sudo lsof -i :7657
+
+# Изменить порт в конфиге
+nano ~/.i2p/router.config
+# Найдите "routerconsole.port" и измените
+```
+
+---
+
+## Часть 8: Безопасность
+
+### 8.1 Проверка IP
+```bash
+# Через HTTP прокси (покажет IP, который видит внешний мир)
+curl -x http://127.0.0.1:4444 http://check.torproject.org/
+
+# Через HTTPS прокси
+curl -x https://127.0.0.1:4445 https://check.torproject.org/ -k
+```
+
+### 8.2 Базовые настройки безопасности
+```bash
+# Ограничить доступ к веб-консоли только с локального хоста
+# По умолчанию уже настроено, но проверьте:
+grep "routerconsole.host" ~/.i2p/router.config
+
+# Должно быть:
+# routerconsole.host=127.0.0.1
+```
+
+---
+
+## Часть 9: Полезные команды (шпаргалка)
+
+```bash
+# === УПРАВЛЕНИЕ ===
+cd ~/i2p
+./i2prouter start|stop|restart|status
+
+# === ЛОГИ ===
+tail -f ~/.i2p/wrapper.log                          # Логи в реальном времени
+tail -100 ~/.i2p/wrapper.log                        # Последние 100 строк
+grep -i error ~/.i2p/wrapper.log                    # Ошибки
+
+# === ПРОВЕРКА ===
+ss -tulpn | grep -E "4444|4445|7657"              # Проверка портов
+ps aux | grep -E "i2p|java.*i2p"                  # Проверка процессов
+curl -x http://127.0.0.1:4444 http://check.torproject.org/  # Тест прокси
+
+# === ПРОБЛЕМЫ ===
+# Очистка кеша и перезапуск
+./i2prouter stop
+rm -rf ~/.i2p/netDb/*
+./i2prouter start
+
+# === ИНФОРМАЦИЯ ===
+# Сколько памяти использует I2P
+ps aux | grep java | grep i2p | awk '{print $6/1024 " MB"}'
+
+# Сколько пиров подключено
+grep -c "peer connected" ~/.i2p/wrapper.log
+```
+
+---
+
+## 🎯 ИТОГОВАЯ ПРОВЕРКА
+
+После выполнения всех шагов проверьте:
+
+```bash
+# 1. I2P запущен?
+./i2prouter status
+
+# 2. Порты слушаются?
+ss -tulpn | grep -E "4444|4445|7657"
+
+# 3. В браузере открывается http://127.0.0.1:7657/ ?
+
+# 4. После настройки прокси открывается http://i2p-projekt.i2p/ ?
+
+# 5. Есть подключения к сети?
+curl -x http://127.0.0.1:4444 -v http://i2p-projekt.i2p/
+```
+
+Если все работает - поздравляю! 🎉 Вы успешно установили и настроили I2P на Ximper Linux!
+
+---
+
+
+
