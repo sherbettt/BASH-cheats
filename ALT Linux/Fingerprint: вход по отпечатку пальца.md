@@ -64,7 +64,7 @@ account         required        pam_nologin.so
 ...
 ```
 
-Сохраните (`Ctrl+O`, Enter, `Ctrl+X`).
+Сохраните (`F2`, `F10`).
 
 ### 3. Проверьте в GNOME
 
