@@ -43,7 +43,7 @@
 В вашем файле `/etc/pam.d/gdm-password` **нет строки** `pam_fprintd.so`. Нужно её добавить:
 
 ```bash
-sudo nano /etc/pam.d/gdm-password
+sudo micro /etc/pam.d/gdm-password
 ```
 
 Добавьте эту строку **после** `auth substack common-login` (примерно между 8-й и 9-й строками):
@@ -84,7 +84,7 @@ sudo reboot
 
 **Вернуть как было** (удалить добавленную строку):
 ```bash
-sudo nano /etc/pam.d/gdm-password
+sudo micro /etc/pam.d/gdm-password
 # Удалить строку с pam_fprintd.so и сохранить
 ```
 
