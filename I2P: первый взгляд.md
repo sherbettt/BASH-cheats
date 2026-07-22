@@ -1,3 +1,10 @@
+## Инфо
+Ссылки на ресурсы:
+- **[i2p.net: get-involved](https://i2p.net/ru/get-involved/)** -
+- **[i2p.net: download](https://i2p.net/ru/downloads/)** -
+- **[ARCH WIKI: I2P](https://wiki.archlinux.org/title/I2P_%28Русский%29)**
+
+
 ## 1. Принципиальная разница между i2pd и i2p-bin
 
 ### **i2pd (C++)** - "Легкий демон"
