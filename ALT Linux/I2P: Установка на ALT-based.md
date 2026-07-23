@@ -4,6 +4,7 @@
 Ссылки на ресурсы:
 - **[i2p.net: get-involved](https://i2p.net/ru/get-involved/)** -
 - **[i2p.net: download](https://i2p.net/ru/downloads/)** -
+- **[PurpleI2P](https://github.com/PurpleI2P/)** - Архив с репозиториями, где можно найти i2pdbrowser
 
 ## Часть 1: Установка I2P
 
