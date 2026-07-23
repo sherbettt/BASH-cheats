@@ -1,5 +1,10 @@
 # ИНСТРУКЦИЯ ПО УСТАНОВКЕ I2P НА XIMPER LINUX
 
+## Инфо
+Ссылки на ресурсы:
+- **[i2p.net: get-involved](https://i2p.net/ru/get-involved/)** -
+- **[i2p.net: download](https://i2p.net/ru/downloads/)** -
+
 ## Часть 1: Установка I2P
 
 ### 1.1 Установка Java
