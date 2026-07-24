@@ -27,7 +27,7 @@ passbolt list users
 passbolt list groups
 ```
 
-### Поиск и фильтрация (правильный синтаксис)
+### Поиск и фильтрация
 
 **Важно:** Фильтры работают ТОЛЬКО с оператором `==` (точное совпадение)!
 
@@ -35,7 +35,7 @@ passbolt list groups
 # Поиск по точному имени
 passbolt list resources --filter 'name == "kats"'
 
-# Поиск по точному URI
+# Поиск по точному URI (обязательно в кавычках!)
 passbolt list resources --filter 'uri == "10.100.210.2"'
 
 # Поиск по папке (по ID папки)
@@ -70,26 +70,53 @@ passbolt get user --id 955ab5fe-7638-46d3-8027-aea3bb13d993
 passbolt get group --id 0adf657d-9d93-40a8-bd16-7958c75b8eb8
 ```
 
-### Просмотр пароля
+### Просмотр пароля (секрета)
+
+**Единственный рабочий способ** - использовать JSON вывод с флагом `-j` или `--json`:
 
 ```bash
-# Получить пароль (секрет) - ДРУГОЙ флаг!
-passbolt get resource --id 6af23369-4ac5-4c90-81b2-2f5f04595db9 --secret
+# Получить пароль (короткий флаг -j)
+passbolt get resource --id b9d9592b-0b0c-4ce4-a057-71f58d880a86 -j | jq '.password'
 
-# Или с полной информацией
-passbolt get resource --id b9d9592b-0b0c-4ce4-a057-71f58d880a86 --json
+# Или с полным флагом --json
+passbolt get resource --id b9d9592b-0b0c-4ce4-a057-71f58d880a86 --json | jq '.password'
 
-passbolt get resource --id b9d9592b-0b0c-4ce4-a057-71f58d880a86 -j | jq '.secret'
+# Посмотреть всю информацию о ресурсе
+passbolt get resource --id b9d9592b-0b0c-4ce4-a057-71f58d880a86 -j | jq '.'
+```
+
+**Пример вывода:**
+```json
+{
+  "folder_parent_id": "9d589e93-b8bf-4950-9185-c3485e09bc33",
+  "name": "kats",
+  "username": "root",
+  "uri": "10.100.210.2",
+  "password": "<PASSWR>",
+  "description": "Imported (date: 2026-07-24T12:01:45Z)",
+  "metadata": {
+    "description": "Imported (date: 2026-07-24T12:01:45Z)",
+    "name": "kats",
+    "uri": "10.100.210.2",
+    "username": "root"
+  },
+  "secret": {
+    "description": "Imported (date: 2026-07-24T12:01:45Z)",
+    "password": "<PASSWR>"
+  },
+  "deleted": false,
+  "expired": false
+}
 ```
 
 ### Просмотр прав доступа (Permissions)
 
 ```bash
-# Получить ресурс с правами доступа
-passbolt get resource --id 6af23369-4ac5-4c90-81b2-2f5f04595db9 --include-permissions
+# Получить права доступа для ресурса
+passbolt get resource permission --id 6af23369-4ac5-4c90-81b2-2f5f04595db9 -j | jq '.'
 
-# Получить папку с правами
-passbolt get folder --id 9d589e93-b8bf-4950-9185-c3485e09bc33 --include-permissions
+# Или через get resource с JSON
+passbolt get resource --id 6af23369-4ac5-4c90-81b2-2f5f04595db9 -j | jq '.permissions'
 ```
 
 ## 3. Создание данных
@@ -198,159 +225,149 @@ passbolt delete group --id 0adf657d-9d93-40a8-bd16-7958c75b8eb8
 # Экспорт всех ресурсов в JSON
 passbolt export resources > all_resources.json
 
-# Экспорт с паролями
-passbolt export resources --secret > all_with_passwords.json
-
-# Экспорт в CSV
+# Экспорт в CSV (если поддерживается)
 passbolt export resources --format csv > all_resources.csv
 ```
 
-## 8. Работа с JSON и jq (продвинутый уровень)
+**Примечание:** Флаг `--secret` для export может не работать. Используйте `get resource --json` для получения паролей.
+
+## 8. Работа с JSON и jq
 
 ```bash
-# Получить список всех имен ресурсов
-passbolt list resources --output json | jq '.[].name'
+# Получить пароль для конкретного ресурса
+passbolt get resource --id b9d9592b-0b0c-4ce4-a057-71f58d880a86 -j | jq -r '.password'
 
-# Получить ID ресурса по имени и имени пользователя
-passbolt list resources --output json | \
-  jq -r '.[] | select(.name=="kats" and .username=="root") | .id'
+# Получить все поля ресурса
+passbolt get resource --id b9d9592b-0b0c-4ce4-a057-71f58d880a86 -j | jq '.'
 
-# Найти дубликаты по URI
-passbolt list resources --output json | \
-  jq -r '.[] | {uri: .uri, name: .name, username: .username}' | \
-  jq -s 'group_by(.uri) | map(select(length > 1))'
-
-# Получить все ресурсы в папке с паролями
-passbolt list resources --filter 'folder_parent_id == "9d589e93-b8bf-4950-9185-c3485e09bc33"' --output json | \
-  jq '.[] | {name, username, uri, password: .secret}'
+# Получить только имя и пароль
+passbolt get resource --id b9d9592b-0b0c-4ce4-a057-71f58d880a86 -j | jq '{name, password}'
 ```
 
-## 9. Частые ошибки и их решение
+## 9. Полезные скрипты
+
+### Скрипт для просмотра всех паролей в папке
+
+```bash
+#!/bin/bash
+# save as show_folder_passwords.sh
+FOLDER_ID="9d589e93-b8bf-4950-9185-c3485e09bc33"
+
+echo "=== Пароли из папки ssh_users ==="
+echo "----------------------------------------"
+
+passbolt list resources --filter "folder_parent_id == \"$FOLDER_ID\"" | \
+  awk 'NR>1 {print $1, $4, $5}' | \
+  while read id name uri; do
+    password=$(passbolt get resource --id $id -j 2>/dev/null | jq -r '.password')
+    echo "$name | $uri | $password"
+  done
+```
+
+### Функция для быстрого получения пароля
+
+Добавьте в `~/.bashrc`:
+
+```bash
+# Быстрое получение пароля по имени
+pass-get() {
+    if [ -z "$1" ]; then
+        echo "Использование: pass-get <имя_ресурса> [username]"
+        return 1
+    fi
+    
+    if [ -n "$2" ]; then
+        id=$(passbolt list resources --filter "name == \"$1\" && username == \"$2\"" 2>/dev/null | awk 'NR==2 {print $1}')
+    else
+        id=$(passbolt list resources --filter "name == \"$1\"" 2>/dev/null | awk 'NR==2 {print $1}')
+    fi
+    
+    if [ -z "$id" ]; then
+        echo "Ресурс '$1' не найден"
+        return 1
+    fi
+    
+    passbolt get resource --id $id -j 2>/dev/null | jq -r '.password'
+}
+
+# Показать все версии ресурса
+pass-list() {
+    if [ -z "$1" ]; then
+        echo "Использование: pass-list <имя_ресурса>"
+        return 1
+    fi
+    
+    passbolt list resources --filter "name == \"$1\"" 2>/dev/null | awk 'NR>1 {print $4, $5, $1}'
+}
+```
+
+Использование:
+```bash
+source ~/.bashrc
+
+# Получить пароль для kats/root
+pass-get kats root
+
+# Получить пароль для первого найденного kats
+pass-get kats
+
+# Показать все версии kats
+pass-list kats
+```
+
+## 10. Частые ошибки и их решение
 
 | Ошибка | Причина | Решение |
 |--------|---------|---------|
 | `unknown flag: --limit` | Флаг не существует | Уберите `--limit` |
-| `unknown flag: --show-secret` | Неправильный флаг | Используйте `--secret` |
-| `--show-password` | Неправильный флаг | Используйте `--secret` |
+| `unknown flag: --output` | Неправильный флаг | Используйте `-j` или `--json` |
+| `unknown flag: --secret` | Флаг не существует | Используйте `-j \| jq '.password'` |
+| `unknown flag: --show-secret` | Флаг не существует | Используйте `-j \| jq '.password'` |
 | `Error: required flag(s) "id" not set` | Не передали ID | Добавьте `--id <UUID>` |
 | `API error (code 404)` | Объект не найден | Проверьте ID (ресурс vs папка) |
-| `gopenpgp: error in unlocking key` | Проблема с ключом | Запросите пароль заново или перезапустите |
+| `gopenpgp: error in unlocking key` | Проблема с ключом | Введите пароль заново |
 | Фильтры не работают | Используете `=~` или `contains` | Используйте только `==` |
 
-## 10. Примеры из вашей системы
+## 11. Шпаргалка по полям JSON
 
-### Найти все дубликаты (по URI)
+При использовании `-j` или `--json` вывод содержит:
 
-```bash
-# Найти все ресурсы с одинаковым URI
-passbolt list resources --output json | \
-  jq -r '.[] | {uri: .uri, name: .name, username: .username}' | \
-  jq -s 'group_by(.uri) | map(select(length > 1)) | .[] | {uri: .[0].uri, count: length, entries: .}'
+```json
+{
+  "id": "b9d9592b-0b0c-4ce4-a057-71f58d880a86",
+  "name": "kats",
+  "username": "root",
+  "uri": "10.100.210.2",
+  "password": "<PASSWR>",    // ← ПАРОЛЬ ЗДЕСЬ!
+  "description": "Imported (date: ...)",
+  "folder_parent_id": "9d589e93-b8bf-4950-9185-c3485e09bc33",
+  "metadata": { ... },
+  "secret": {
+    "password": "<PASSWR>"   // ← И ЗДЕСЬ ТОЖЕ!
+  },
+  "deleted": false,
+  "expired": false
+}
 ```
 
-### Получить пароль для конкретного ресурса
+**Пароль находится в двух местах:**
+- `password` - основной пароль
+- `secret.password` - дублирование
 
-```bash
-# 1. Найти ID
-passbolt list resources --filter 'name == "kats" && username == "root"'
-# ID: b9d9592b-0b0c-4ce4-a057-71f58d880a86
-
-# 2. Получить пароль
-passbolt get resource --id b9d9592b-0b0c-4ce4-a057-71f58d880a86 --secret
-```
-
-### Показать все ресурсы с правами доступа
-
-```bash
-passbolt list resources --output json | \
-  jq '.[] | {name, username, uri, permissions: .permissions}'
-```
-
-### Посмотреть структуру папок
-
-```bash
-passbolt list folders --output json | \
-  jq '.[] | {name, id, parent: .folder_parent_id}'
-```
-
-### Добавить пользователя в группу developers
-
-```bash
-passbolt update group --id 0adf657d-9d93-40a8-bd16-7958c75b8eb8 --add-user="k@runtel.ru"
-```
-
-### Создать ресурс из файла
-
-```bash
-# Если у вас есть файл с паролями в формате CSV
-passbolt import resources --file passwords.csv --format csv
-```
-
-## 11. Шпаргалка по полям объекта
-
-### Ресурс (пароль):
-- `id` - UUID
-- `name` - название
-- `username` - имя пользователя
-- `uri` - URL/IP
-- `description` - описание
-- `secret` - пароль (требуется --secret)
-- `folder_parent_id` - ID папки (null если в корне)
-- `created` - дата создания
-- `modified` - дата изменения
-
-### Папка:
-- `id` - UUID
-- `name` - название
-- `folder_parent_id` - ID родительской папки (null если корневая)
-
-### Пользователь:
-- `id` - UUID
-- `username` - email
-- `first_name` - имя
-- `last_name` - фамилия
-- `role` - роль (admin, user)
-
-### Группа:
-- `id` - UUID
-- `name` - название группы
-- `users` - список пользователей (требуется --include-users)
-
-## 12. Полезные комбинации
-
-```bash
-# Получить все пароли из папки ssh_users
-passbolt list resources \
-  --filter 'folder_parent_id == "9d589e93-b8bf-4950-9185-c3485e09bc33"' \
-  --output json | jq '.[] | {name, username, uri, password: .secret}'
-
-# Найти все ресурсы, созданные сегодня
-passbolt list resources --output json | \
-  jq '.[] | select(.created | startswith("2026-07-24"))'
-
-# Очистить дубликаты (оставить только root)
-for name in kats lk-a7ru lk-cher; do
-  # Найти ID для odmen и tcpdump, удалить
-  passbolt list resources --filter "name == \"$name\" && username != \"root\"" --output json | \
-    jq -r '.[].id' | while read id; do
-      echo "Deleting $id ($name)"
-      passbolt delete resource --id $id
-    done
-done
-```
-
----
-
-## Важно: ключевые отличия от других CLI
+## 12. Важные отличия от других CLI
 
 1. **Нет** `--limit` - выводит все сразу
-2. **Нет** `--show-password` - используйте `--secret`
-3. **Нет** `contains()` и `=~` - только точное сравнение `==`
-4. **get resource** - обязательно с `--id`
-5. ID папки и ресурса - разные вещи, не путайте!
+2. **Нет** `--output json` - используйте `-j` или `--json`
+3. **Нет** `--secret` или `--show-secret` для `get resource`
+4. **Пароль получается через JSON** - `-j | jq '.password'`
+5. **Нет** `contains()` и `=~` - только точное сравнение `==`
+6. **get resource** - обязательно с `--id`
 
-Если что-то не работает - используйте `--debug` для детального вывода:
+## 13. Отладка
+
+Если что-то не работает - используйте `--debug`:
+
 ```bash
-passbolt --debug list resources
+passbolt --debug get resource --id b9d9592b-0b0c-4ce4-a057-71f58d880a86 -j
 ```
 
