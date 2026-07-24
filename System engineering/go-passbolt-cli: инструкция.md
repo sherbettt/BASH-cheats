@@ -77,7 +77,9 @@ passbolt get group --id 0adf657d-9d93-40a8-bd16-7958c75b8eb8
 passbolt get resource --id 6af23369-4ac5-4c90-81b2-2f5f04595db9 --secret
 
 # Или с полной информацией
-passbolt get resource --id 6af23369-4ac5-4c90-81b2-2f5f04595db9 --secret --output json
+passbolt get resource --id b9d9592b-0b0c-4ce4-a057-71f58d880a86 --json
+
+passbolt get resource --id b9d9592b-0b0c-4ce4-a057-71f58d880a86 -j | jq '.secret'
 ```
 
 ### Просмотр прав доступа (Permissions)
