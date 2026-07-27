@@ -196,8 +196,19 @@ Password: <Long_Pass>
 Description:
 
 
-# создать запись в подпапке Кирилл Кораблин
+# проверка опций для create resource
 passbolt create resource --help
+
+# создать запись в подпапке Кирилл Кораблин
+# для версии 0.5.0
+passbolt create resource \
+  --name="TEST_name_field" \
+  --uri="83.139.182.254" \
+  --username="k@runtel" \
+  --password="TESTpass12345" \
+  --description="тестовое создание записи для k@runtel.ru" \
+  --folderParentID="a4e86d9a-d123-4042-9f98-fa722f20179c"
+
 passbolt list resources --filter 'folder_parent_id == "a4e86d9a-d123-4042-9f98-fa722f20179c"'
 Enter Password:
 id                                   | folder_parent_id                     | name                 | username       | uri
@@ -367,39 +378,6 @@ passbolt get resource --id b9d9592b-0b0c-4ce4-a057-71f58d880a86 -j | jq '.'
 # проверить пароль root от lk-a7ru
 passbolt get resource --id 4e7920d6-26cc-4579-b506-de808e76bd6d -j | jq '.'
 ## ====================================
-
-
-"Сходить"  в папку ssh_users, посомтреть пароль для root для какого-нибудь ресурса (предположим нового, относительно свежедобавленного), этот пароль  root сохранить в runtime , а ещё в в файлик.
-Сгенерировать новые пароли для пользователей из папки поддержки.
-Создать записи для выше указанного нового, относительно свежедобавленного ресурса и добавить эти записи в:
-f94e6a18-4876-443a-bee1-03be0b8eee5c | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Артур Лагутин
-d2e46392-8e37-43a3-b9eb-d8ac7fc7492f | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Богдан Косухин
-9de8c8f8-9174-478a-ad3e-e608f06f62fc | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Вячеслав Ярцев
-6543d9bd-0d30-4e04-be87-5c0783ed0951 | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Дмитрий Хопин
-347788d5-6bb2-43b1-bdaf-eb1da39bfefe | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Иван Ковалёв
-a4e86d9a-d123-4042-9f98-fa722f20179c | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Кирилл Кораблин
-1d539c4a-155f-4fce-b59e-47568828fbd0 | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Кирилл Полыга
-2aba19a3-3c82-4e08-88d9-23fcb324b0a0 | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Николай Нестеров
-7babf1c8-ecd7-4b59-838b-3319bb12e7de | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Олег Антропов
-f7188823-8fb1-449e-9c52-0707754845ed | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Сергей Ширинкин
-feb2483f-9277-4033-b171-02f9934e339e | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Юлия Неваленая
-т.е. внутрь каждой указанной папки.
-
-
-ROOT_PASS=$(passbolt get resource --id 9ac5fc49-6c94-4850-a39c-a1fb155452b7 -j | jq -r '.password')
-NEW_PASS=$(apg -m 14 -x 16 -n 1)
-#сгенерировать пароль: apg -m 14 -x 16 -n 5
-#mkpasswd --method=SHA-512 , после чего ввести свой пароль и подставить в поле выше
-
-
-# для версии 0.5.0
-passbolt create resource \
-  --name="TEST_name_field" \
-  --uri="83.139.182.254" \
-  --username="k@runtel" \
-  --password="TESTpass12345" \
-  --description="тестовое создание записи для k@runtel.ru" \
-  --folderParentID="a4e86d9a-d123-4042-9f98-fa722f20179c"
 
 ```
 
