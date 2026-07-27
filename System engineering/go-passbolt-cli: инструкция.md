@@ -192,8 +192,25 @@ FolderParentID: 9dab5138-df72-4630-a92c-fbbbc3636107
 Name: db_password
 Username: postgres
 URI:
-Password: <Very_Long_Pass>
+Password: <Long_Pass>
 Description:
+
+
+# создать запись в подпапке Кирилл Кораблин
+passbolt create resource --help
+passbolt list resources --filter 'folder_parent_id == "a4e86d9a-d123-4042-9f98-fa722f20179c"'
+Enter Password:
+id                                   | folder_parent_id                     | name                 | username       | uri
+114ba102-940e-491b-8ff1-69a9e3293ea3 | a4e86d9a-d123-4042-9f98-fa722f20179c | kats.dogma.ru        | root@runtel.ru | https://kats.dogma.ru/
+6f8897e8-42c9-4154-9ca8-09d5eb377f49 | a4e86d9a-d123-4042-9f98-fa722f20179c | lk-bichev.cprt.su    | root@runtel.ru | https://lk-bichev.cprt.su/users
+913f8247-224c-4d17-a155-9705ef91c50e | a4e86d9a-d123-4042-9f98-fa722f20179c | lk-fianit.cprt.su    | root@runtel.ru | https://lk-fianit.cprt.su/
+3ff8c07a-32ec-4b30-8ba0-b7c86a4e612d | a4e86d9a-d123-4042-9f98-fa722f20179c | lk-novoselie.cprt.su | k@runtel.ru    | lk-novoselie.cprt.su
+c3bc1922-0dc3-4d3a-b9b2-65063742b9db | a4e86d9a-d123-4042-9f98-fa722f20179c | lk-repremium.cprt.su | k@runtel.ru    | https://lk-repremium.cprt.su/pbx-hosts
+108414ff-49db-43e1-b8a0-784479f9bbb8 | a4e86d9a-d123-4042-9f98-fa722f20179c | lk-sirius.cprt.su    | k@runtel.ru    | https://lk-sirius.cprt.su/users
+a2398c8e-c665-44bb-bfd9-7445b86c0492 | a4e86d9a-d123-4042-9f98-fa722f20179c | pbx.runtel.org       | k@runtel.ru    | https://pbx-test.runtel.org/
+490c9d52-b029-4e3e-b57b-2c1f7fb2021c | a4e86d9a-d123-4042-9f98-fa722f20179c | Sonar Qube           | k@runtel.ru    | https://sq.runtel.ru
+519de763-7238-4667-9e36-b1c44a35d28e | a4e86d9a-d123-4042-9f98-fa722f20179c | TEST_name_field      | k@runtel       | 83.139.182.254
+96c21d2f-68d4-467f-a9d8-9627b89ca44f | a4e86d9a-d123-4042-9f98-fa722f20179c | биллинг              | k@runtel.ru    | https://bl4.runtel.org
 
 
 # Посмотреть всю информацию о ресурсе
@@ -203,7 +220,7 @@ Enter Password:{
   "name": "db_password",
   "username": "postgres",
   "uri": "",
-  "password": "<Very_Long_Pass>",
+  "password": "<Long_Pass>",
   "description": "",
   "metadata": {
     "description": "",
@@ -213,7 +230,7 @@ Enter Password:{
   },
   "secret": {
     "description": "",
-    "password": "<Very_Long_Pass>"
+    "password": "<Long_Pass>"
   },
   "deleted": false,
   "expired": false
@@ -349,6 +366,41 @@ b4c929ba-4063-4ba9-a7b1-073f4f910710 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk
 passbolt get resource --id b9d9592b-0b0c-4ce4-a057-71f58d880a86 -j | jq '.'
 # проверить пароль root от lk-a7ru
 passbolt get resource --id 4e7920d6-26cc-4579-b506-de808e76bd6d -j | jq '.'
+## ====================================
+
+
+"Сходить"  в папку ssh_users, посомтреть пароль для root для какого-нибудь ресурса (предположим нового, относительно свежедобавленного), этот пароль  root сохранить в runtime , а ещё в в файлик.
+Сгенерировать новые пароли для пользователей из папки поддержки.
+Создать записи для выше указанного нового, относительно свежедобавленного ресурса и добавить эти записи в:
+f94e6a18-4876-443a-bee1-03be0b8eee5c | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Артур Лагутин
+d2e46392-8e37-43a3-b9eb-d8ac7fc7492f | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Богдан Косухин
+9de8c8f8-9174-478a-ad3e-e608f06f62fc | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Вячеслав Ярцев
+6543d9bd-0d30-4e04-be87-5c0783ed0951 | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Дмитрий Хопин
+347788d5-6bb2-43b1-bdaf-eb1da39bfefe | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Иван Ковалёв
+a4e86d9a-d123-4042-9f98-fa722f20179c | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Кирилл Кораблин
+1d539c4a-155f-4fce-b59e-47568828fbd0 | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Кирилл Полыга
+2aba19a3-3c82-4e08-88d9-23fcb324b0a0 | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Николай Нестеров
+7babf1c8-ecd7-4b59-838b-3319bb12e7de | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Олег Антропов
+f7188823-8fb1-449e-9c52-0707754845ed | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Сергей Ширинкин
+feb2483f-9277-4033-b171-02f9934e339e | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Юлия Неваленая
+т.е. внутрь каждой указанной папки.
+
+
+ROOT_PASS=$(passbolt get resource --id 9ac5fc49-6c94-4850-a39c-a1fb155452b7 -j | jq -r '.password')
+NEW_PASS=$(apg -m 14 -x 16 -n 1)
+#сгенерировать пароль: apg -m 14 -x 16 -n 5
+#mkpasswd --method=SHA-512 , после чего ввести свой пароль и подставить в поле выше
+
+
+# для версии 0.5.0
+passbolt create resource \
+  --name="TEST_name_field" \
+  --uri="83.139.182.254" \
+  --username="k@runtel" \
+  --password="TESTpass12345" \
+  --description="тестовое создание записи для k@runtel.ru" \
+  --folderParentID="a4e86d9a-d123-4042-9f98-fa722f20179c"
+
 ```
 
 </details>
