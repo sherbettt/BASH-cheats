@@ -192,7 +192,7 @@ FolderParentID: 9dab5138-df72-4630-a92c-fbbbc3636107
 Name: db_password
 Username: postgres
 URI:
-Password: <LONG_PASS>
+Password: VrnRus36Runtel2026QA
 Description:
 
 
@@ -203,7 +203,7 @@ Enter Password:{
   "name": "db_password",
   "username": "postgres",
   "uri": "",
-  "password": "<LONG_PASS>",
+  "password": "VrnRus36Runtel2026QA",
   "description": "",
   "metadata": {
     "description": "",
@@ -213,7 +213,7 @@ Enter Password:{
   },
   "secret": {
     "description": "",
-    "password": "<LONG_PASS>"
+    "password": "VrnRus36Runtel2026QA"
   },
   "deleted": false,
   "expired": false
@@ -263,6 +263,92 @@ Enter Password:[
     "modified_timestamp": "2026-05-15T10:45:42Z"
   }
 ]
+
+
+# проверить корневую папку ssh_users, в которой нет подпапок целенаправленно
+passbolt list resources --filter 'folder_parent_id == "9d589e93-b8bf-4950-9185-c3485e09bc33"'
+Enter Password:
+id                                   | folder_parent_id                     | name              | username | uri
+6af23369-4ac5-4c90-81b2-2f5f04595db9 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | kats              | odmen    | 10.100.210.2
+b9d9592b-0b0c-4ce4-a057-71f58d880a86 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | kats              | root     | 10.100.210.2
+da619ed7-5213-4177-8e34-e1cb8308aa7a | 9d589e93-b8bf-4950-9185-c3485e09bc33 | kats              | tcpdump  | 10.100.210.2
+1c553a82-c7bc-4e5e-a81b-81841e5f6a11 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-a7ru           | odmen    | 10.146.148.2
+4e7920d6-26cc-4579-b506-de808e76bd6d | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-a7ru           | root     | 10.146.148.2
+b4c929ba-4063-4ba9-a7b1-073f4f910710 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-a7ru           | tcpdump  | 10.146.148.2
+757ea72d-2ca9-4082-9abd-6a9b79d575b1 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-cher           | odmen    | 109.172.108.67
+a3114a3b-6261-4f63-964d-c76fc37fcdd1 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-cher           | root     | 109.172.108.67
+d0f26f27-212c-4e3c-9ff1-d9adb358f02d | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-cher           | tcpdump  | 109.172.108.67
+77cbb2f7-f630-497a-b9ae-031ff4ead1c0 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-chmk           | root     | 192.168.0.2
+db009d5b-bdbf-4a65-b8b4-7a2372f2642a | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-chmk           | tcpdump  | 192.168.0.2
+fcd34384-6a91-41e2-8cbc-72373e640004 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-chmk           | odmen    | 192.168.0.2
+17175108-2752-43d1-a1ed-48f9e2ef6cf7 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-fianit         | tcpdump  | 10.205.211.2
+5d024292-65dc-424c-bebc-251302d5b48a | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-fianit         | odmen    | 10.205.211.2
+675c1c9d-0627-4bc1-b831-ca5358e2cb5b | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-fianit         | root     | 10.205.211.2
+4654f69a-e30a-4055-ba46-143ff3952765 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-gelioss        | odmen    | 10.144.145.3
+df8bd37c-a6e4-47b0-b3f8-eff6a9b4ed89 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-gelioss        | tcpdump  | 10.144.145.3
+e482b848-45d0-4d9c-8448-2c0d057b16b9 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-gelioss        | root     | 10.144.145.3
+861075f3-0f3e-4876-b6b2-f8d061cc3035 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-itsoglasie     | odmen    | 10.146.41.2
+a39a8db2-d805-4ff0-9c00-98f54d197fbb | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-itsoglasie     | tcpdump  | 10.146.41.2
+b9d8c946-be8a-48bd-9be6-0343b885f821 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-itsoglasie     | root     | 10.146.41.2
+3073b100-3ba5-4e09-b1e1-c88026bff96c | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-itsoglasie_2   | tcpdump  | 10.146.41.2
+d6c01912-029c-485e-aa56-6a583479eb12 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-itsoglasie_2   | root     | 10.146.41.2
+efd770a6-8411-4e8e-b458-54ceac924ef8 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-itsoglasie_2   | odmen    | 10.146.41.2
+ac624d20-d971-4614-bdb3-2e89e6edf8d5 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-kkod           | root     | 10.146.42.2
+b53fdf84-4405-4c5f-a0c9-337765082728 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-kkod           | tcpdump  | 10.146.42.2
+d393f61f-b974-44e9-87b2-fed643407a17 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-kkod           | odmen    | 10.146.42.2
+2846390b-c126-4093-b842-122fbf865b08 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-mo             | odmen    | 10.108.101.2
+6bc7ebf3-92e9-4f42-92fd-544915d35297 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-mo             | tcpdump  | 10.108.101.2
+d59069d1-f1b8-4483-a5d4-f2926587bc50 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-mo             | root     | 10.108.101.2
+8817f85d-9786-4b55-98ad-e772176c3a0c | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-novoselie      | root     | 10.101.101.2
+e269be02-94c7-4b47-a069-b479e12f8b1f | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-novoselie      | tcpdump  | 10.101.101.2
+fc8c2bdc-0025-43ce-b109-dcec07220fbf | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-novoselie      | odmen    | 10.101.101.2
+259fd610-eb0b-47ae-853a-3b4f311c943d | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-repremium      | root     | 10.197.168.2
+8465597a-97fb-49f7-81b6-06818de3ddf5 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-repremium      | odmen    | 10.197.168.2
+9a0e1b13-d14a-4bc4-8358-c0f0b73f24cf | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-repremium      | tcpdump  | 10.197.168.2
+bad71d7c-b1d5-42b6-aea9-c25b84a2acf6 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-russilica      | tcpdump  | 10.178.178.2
+c2516889-ab61-42fc-bdb4-925d8c3544af | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-russilica      | root     | 10.178.178.2
+e8d89d12-2146-41d2-82b3-91531a5deec8 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-russilica      | odmen    | 10.178.178.2
+44bc6a06-4975-4708-8e5a-88bac7b1397d | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-sirius         | root     | 192.168.100.7
+4783ffe2-709a-4d55-a086-f994ccb34b86 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-sirius         | tcpdump  | 192.168.100.7
+713b3445-c154-44ff-b216-0c3b39664c17 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-sirius         | odmen    | 192.168.100.7
+02d3f130-3c86-44fc-8aa0-08d3a6c13ef9 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-spbpobeda      | root     | 10.146.148.2
+97c341d5-df5e-41f8-a8fb-a5cca69ab27f | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-spbpobeda      | tcpdump  | 10.146.148.2
+b8c14c8f-5993-4018-92d3-1c94ab1e932e | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-spbpobeda      | odmen    | 10.146.148.2
+3f77bf95-a84d-4578-bfdc-fc1987d5016f | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-stepanov       | odmen    | 10.145.145.2
+46353522-e8fc-48d0-ae01-3914fb12d8ed | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-stepanov       | tcpdump  | 10.145.145.2
+ecf1cc08-3c39-4302-97bf-382b64b088ed | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-stepanov       | root     | 10.145.145.2
+44a7ab57-4cf1-4522-960d-0b74234525c2 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-umnaylogistika | root     | 10.144.144.3
+5edc073f-7a2a-4c9f-bf2c-1c6a9cb7749a | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-umnaylogistika | tcpdump  | 10.144.144.3
+6bf25889-f79c-4a0e-bd00-b418a15a30a3 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-umnaylogistika | odmen    | 10.144.144.3
+23505513-fc49-4c2e-bcb0-a1c41981c6f5 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-uprdor         | odmen    | 10.146.150.2
+88a378b0-e430-4e13-a909-433114dec8b8 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-uprdor         | root     | 10.146.150.2
+c6d3bfd8-8001-4899-9c05-c0d8fd69d2ed | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-uprdor         | tcpdump  | 10.146.150.2
+485ac86d-a8da-4825-b71b-5a3ba9a9c6d0 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-zaim           | tcpdump  | 10.205.215.2
+72d8cc51-c47a-493d-bf2d-8bf3efbdf4be | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-zaim           | odmen    | 10.205.215.2
+9ac5fc49-6c94-4850-a39c-a1fb155452b7 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-zaim           | root     | 10.205.215.2
+
+# проверка ресурса по uri (lk-umnaylogistika)
+passbolt list resources --filter 'uri == "10.144.144.3"'
+Enter Password:
+id                                   | folder_parent_id                     | name              | username | uri
+44a7ab57-4cf1-4522-960d-0b74234525c2 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-umnaylogistika | root     | 10.144.144.3
+5edc073f-7a2a-4c9f-bf2c-1c6a9cb7749a | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-umnaylogistika | tcpdump  | 10.144.144.3
+6bf25889-f79c-4a0e-bd00-b418a15a30a3 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-umnaylogistika | odmen    | 10.144.144.3
+
+
+# проверка ресурса по имени
+passbolt list resources --filter 'name == "lk-a7ru"'
+Enter Password:
+id                                   | folder_parent_id                     | name    | username | uri
+1c553a82-c7bc-4e5e-a81b-81841e5f6a11 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-a7ru | odmen    | 10.146.148.2
+4e7920d6-26cc-4579-b506-de808e76bd6d | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-a7ru | root     | 10.146.148.2
+b4c929ba-4063-4ba9-a7b1-073f4f910710 | 9d589e93-b8bf-4950-9185-c3485e09bc33 | lk-a7ru | tcpdump  | 10.146.148.2
+
+
+# проверить пароль root от kats
+passbolt get resource --id b9d9592b-0b0c-4ce4-a057-71f58d880a86 -j | jq '.'
+# проверить пароль root от lk-a7ru
+passbolt get resource --id 4e7920d6-26cc-4579-b506-de808e76bd6d -j | jq '.'
 ```
 
 </details>
