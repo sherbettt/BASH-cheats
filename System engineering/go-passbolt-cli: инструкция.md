@@ -142,10 +142,12 @@ a4e86d9a-d123-4042-9f98-fa722f20179c | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | К
 f7188823-8fb1-449e-9c52-0707754845ed | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Сергей Ширинкин
 feb2483f-9277-4033-b171-02f9934e339e | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Юлия Неваленая
 
+
 # подпапка Артур Лагутин
 passbolt list folders | grep "f94e6a18-4876-443a-bee1-03be0b8eee5c"
 Enter Password:
 f94e6a18-4876-443a-bee1-03be0b8eee5c | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Артур Лагутин
+
 
 # подпапка Кирилл Кораблин
 passbolt list folders | grep "a4e86d9a-d123-4042-9f98-fa722f20179c"
@@ -154,6 +156,7 @@ f499ac52-5b80-4bb5-842f-328eb730215e | a4e86d9a-d123-4042-9f98-fa722f20179c | pb
 9dab5138-df72-4630-a92c-fbbbc3636107 | a4e86d9a-d123-4042-9f98-fa722f20179c | pbx-qa.runtel.org
 f6cd3b04-c168-46ac-bb72-9a47361d928e | a4e86d9a-d123-4042-9f98-fa722f20179c | pbx-stage.runtel.org
 a4e86d9a-d123-4042-9f98-fa722f20179c | 833541ff-b8a3-49d6-9ac2-70d268ba7f5d | Кирилл Кораблин
+
 
 # что внутри подпапки Артур Лагутин
 passbolt list resources --filter 'folder_parent_id == "f94e6a18-4876-443a-bee1-03be0b8eee5c"' | head -7
@@ -165,6 +168,7 @@ id                                   | folder_parent_id                     | na
 b23c7dc0-2a41-421c-9211-9b0695e9cd5c | f94e6a18-4876-443a-bee1-03be0b8eee5c | AURORA telecom                  | al@runtel.ru   | https://vpbx.su
 d537ea49-8b6c-495b-8c29-44579e063f88 | f94e6a18-4876-443a-bee1-03be0b8eee5c | Billing                         | al@runtel.ru   | https://bl4.runtel.org/
 
+
 # что внутри подпапки Кирилл Кораблин
 passbolt list resources --filter 'folder_parent_id == "a4e86d9a-d123-4042-9f98-fa722f20179c"' | head -7
 Enter Password:
@@ -174,6 +178,7 @@ id                                   | folder_parent_id                     | na
 913f8247-224c-4d17-a155-9705ef91c50e | a4e86d9a-d123-4042-9f98-fa722f20179c | lk-fianit.cprt.su    | root@runtel.ru | https://lk-fianit.cprt.su/
 3ff8c07a-32ec-4b30-8ba0-b7c86a4e612d | a4e86d9a-d123-4042-9f98-fa722f20179c | lk-novoselie.cprt.su | k@runtel.ru    | lk-novoselie.cprt.su
 c3bc1922-0dc3-4d3a-b9b2-65063742b9db | a4e86d9a-d123-4042-9f98-fa722f20179c | lk-repremium.cprt.su | k@runtel.ru    | https://lk-repremium.cprt.su/pbx-hosts
+
 
 # что внутри подпапки Кирилл Кораблин/pbx-qa.runtel.org
 passbolt list resources --filter 'folder_parent_id == "9dab5138-df72-4630-a92c-fbbbc3636107"' | head -7
@@ -194,34 +199,6 @@ Username: postgres
 URI:
 Password: <Long_Pass>
 Description:
-
-
-# проверка опций для create resource
-passbolt create resource --help
-
-# создать запись в подпапке Кирилл Кораблин
-# для версии 0.5.0
-passbolt create resource \
-  --name="TEST_name_field" \
-  --uri="83.139.182.254" \
-  --username="k@runtel" \
-  --password="TESTpass12345" \
-  --description="тестовое создание записи для k@runtel.ru" \
-  --folderParentID="a4e86d9a-d123-4042-9f98-fa722f20179c"
-
-passbolt list resources --filter 'folder_parent_id == "a4e86d9a-d123-4042-9f98-fa722f20179c"'
-Enter Password:
-id                                   | folder_parent_id                     | name                 | username       | uri
-114ba102-940e-491b-8ff1-69a9e3293ea3 | a4e86d9a-d123-4042-9f98-fa722f20179c | kats.dogma.ru        | root@runtel.ru | https://kats.dogma.ru/
-6f8897e8-42c9-4154-9ca8-09d5eb377f49 | a4e86d9a-d123-4042-9f98-fa722f20179c | lk-bichev.cprt.su    | root@runtel.ru | https://lk-bichev.cprt.su/users
-913f8247-224c-4d17-a155-9705ef91c50e | a4e86d9a-d123-4042-9f98-fa722f20179c | lk-fianit.cprt.su    | root@runtel.ru | https://lk-fianit.cprt.su/
-3ff8c07a-32ec-4b30-8ba0-b7c86a4e612d | a4e86d9a-d123-4042-9f98-fa722f20179c | lk-novoselie.cprt.su | k@runtel.ru    | lk-novoselie.cprt.su
-c3bc1922-0dc3-4d3a-b9b2-65063742b9db | a4e86d9a-d123-4042-9f98-fa722f20179c | lk-repremium.cprt.su | k@runtel.ru    | https://lk-repremium.cprt.su/pbx-hosts
-108414ff-49db-43e1-b8a0-784479f9bbb8 | a4e86d9a-d123-4042-9f98-fa722f20179c | lk-sirius.cprt.su    | k@runtel.ru    | https://lk-sirius.cprt.su/users
-a2398c8e-c665-44bb-bfd9-7445b86c0492 | a4e86d9a-d123-4042-9f98-fa722f20179c | pbx.runtel.org       | k@runtel.ru    | https://pbx-test.runtel.org/
-490c9d52-b029-4e3e-b57b-2c1f7fb2021c | a4e86d9a-d123-4042-9f98-fa722f20179c | Sonar Qube           | k@runtel.ru    | https://sq.runtel.ru
-519de763-7238-4667-9e36-b1c44a35d28e | a4e86d9a-d123-4042-9f98-fa722f20179c | TEST_name_field      | k@runtel       | 83.139.182.254
-96c21d2f-68d4-467f-a9d8-9627b89ca44f | a4e86d9a-d123-4042-9f98-fa722f20179c | биллинг              | k@runtel.ru    | https://bl4.runtel.org
 
 
 # Посмотреть всю информацию о ресурсе
@@ -291,6 +268,34 @@ Enter Password:[
     "modified_timestamp": "2026-05-15T10:45:42Z"
   }
 ]
+
+
+# проверка опций для create resource
+passbolt create resource --help
+
+# создать запись в подпапке Кирилл Кораблин
+# для версии 0.5.0
+passbolt create resource \
+  --name="TEST_name_field" \
+  --uri="83.139.182.254" \
+  --username="k@runtel" \
+  --password="TESTpass12345" \
+  --description="тестовое создание записи для k@runtel.ru" \
+  --folderParentID="a4e86d9a-d123-4042-9f98-fa722f20179c"
+
+passbolt list resources --filter 'folder_parent_id == "a4e86d9a-d123-4042-9f98-fa722f20179c"'
+Enter Password:
+id                                   | folder_parent_id                     | name                 | username       | uri
+114ba102-940e-491b-8ff1-69a9e3293ea3 | a4e86d9a-d123-4042-9f98-fa722f20179c | kats.dogma.ru        | root@runtel.ru | https://kats.dogma.ru/
+6f8897e8-42c9-4154-9ca8-09d5eb377f49 | a4e86d9a-d123-4042-9f98-fa722f20179c | lk-bichev.cprt.su    | root@runtel.ru | https://lk-bichev.cprt.su/users
+913f8247-224c-4d17-a155-9705ef91c50e | a4e86d9a-d123-4042-9f98-fa722f20179c | lk-fianit.cprt.su    | root@runtel.ru | https://lk-fianit.cprt.su/
+3ff8c07a-32ec-4b30-8ba0-b7c86a4e612d | a4e86d9a-d123-4042-9f98-fa722f20179c | lk-novoselie.cprt.su | k@runtel.ru    | lk-novoselie.cprt.su
+c3bc1922-0dc3-4d3a-b9b2-65063742b9db | a4e86d9a-d123-4042-9f98-fa722f20179c | lk-repremium.cprt.su | k@runtel.ru    | https://lk-repremium.cprt.su/pbx-hosts
+108414ff-49db-43e1-b8a0-784479f9bbb8 | a4e86d9a-d123-4042-9f98-fa722f20179c | lk-sirius.cprt.su    | k@runtel.ru    | https://lk-sirius.cprt.su/users
+a2398c8e-c665-44bb-bfd9-7445b86c0492 | a4e86d9a-d123-4042-9f98-fa722f20179c | pbx.runtel.org       | k@runtel.ru    | https://pbx-test.runtel.org/
+490c9d52-b029-4e3e-b57b-2c1f7fb2021c | a4e86d9a-d123-4042-9f98-fa722f20179c | Sonar Qube           | k@runtel.ru    | https://sq.runtel.ru
+519de763-7238-4667-9e36-b1c44a35d28e | a4e86d9a-d123-4042-9f98-fa722f20179c | TEST_name_field      | k@runtel       | 83.139.182.254
+96c21d2f-68d4-467f-a9d8-9627b89ca44f | a4e86d9a-d123-4042-9f98-fa722f20179c | биллинг              | k@runtel.ru    | https://bl4.runtel.org
 
 
 # проверить корневую папку ssh_users, в которой нет подпапок целенаправленно
@@ -390,13 +395,14 @@ passbolt get resource --id 4e7920d6-26cc-4579-b506-de808e76bd6d -j | jq '.'
 ### Создать ресурс (пароль)
 
 ```bash
+# для версии 0.5.0
 passbolt create resource \
-  --name="server_name" \
-  --uri="10.100.210.2" \
-  --username="admin" \
-  --password="your_password" \
-  --description="Описание сервера" \
-  --folder-parent-id="9d589e93-b8bf-4950-9185-c3485e09bc33"
+  --name="TEST_name_field" \
+  --uri="83.139.182.254" \
+  --username="k@runtel" \
+  --password="TESTpass12345" \
+  --description="тестовое создание записи для k@runtel.ru" \
+  --folderParentID="a4e86d9a-d123-4042-9f98-fa722f20179c"
 ```
 
 ### Создать папку
