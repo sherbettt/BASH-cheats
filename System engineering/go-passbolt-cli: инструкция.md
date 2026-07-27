@@ -20,6 +20,7 @@ passbolt list resources | (head -3; tail -n +4 | sort -t '|' -k 2,2 -k 3,3) | he
 
 # Все папки
 passbolt list folders
+passbolt list folders | grep "c21d953c-ed52-4797-a9f2-ea494e6b23d4"
 passbolt list folders | (head -4; tail -n +5 | sort -t '|' -k 2,2 -k 3,3)
 
 # Все пользователи
