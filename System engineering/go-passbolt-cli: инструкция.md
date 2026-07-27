@@ -192,7 +192,7 @@ FolderParentID: 9dab5138-df72-4630-a92c-fbbbc3636107
 Name: db_password
 Username: postgres
 URI:
-Password: VrnRus36Runtel2026QA
+Password: <Very_Long_Pass>
 Description:
 
 
@@ -203,7 +203,7 @@ Enter Password:{
   "name": "db_password",
   "username": "postgres",
   "uri": "",
-  "password": "VrnRus36Runtel2026QA",
+  "password": "<Very_Long_Pass>",
   "description": "",
   "metadata": {
     "description": "",
@@ -213,7 +213,7 @@ Enter Password:{
   },
   "secret": {
     "description": "",
-    "password": "VrnRus36Runtel2026QA"
+    "password": "<Very_Long_Pass>"
   },
   "deleted": false,
   "expired": false
