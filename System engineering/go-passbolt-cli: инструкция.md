@@ -16,9 +16,11 @@ passbolt configure \
 ```bash
 # Все ресурсы (пароли)
 passbolt list resources
+passbolt list resources | (head -3; tail -n +4 | sort -t '|' -k 2,2 -k 3,3) | head -12
 
 # Все папки
 passbolt list folders
+passbolt list folders | (head -4; tail -n +5 | sort -t '|' -k 2,2 -k 3,3)
 
 # Все пользователи
 passbolt list users
