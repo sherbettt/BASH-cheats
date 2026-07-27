@@ -349,6 +349,11 @@ heroic
 
 **Proton-GE** — это кастомная сборка Proton от сообщества GloriousEggroll. Она содержит множество патчей и исправлений, которых нет в официальном Proton.
 
+```bash
+paru -S protonup-qt-bin
+paru -S proton-ge-custom-bin
+```
+
 **Почему Proton-GE:**
 - Поддержка большего количества игр
 - Исправления для видео-кодеков
