@@ -315,6 +315,35 @@ fwupdmgr get-releases DEVICE_GUID
 
 ---
 
+## BIOS инфо
+
+```ini
+# применив sudo fwupdmgr , найти строку вида
+"HostBiosVersion": "P6CN27WW"
+```
+```bash
+# Через dmidecode (самый надёжный)
+sudo dmidecode -s bios-version
+sudo dmidecode -t bios
+```
+```bash
+# Через /sys/class/dmi/id/
+cat /sys/class/dmi/id/bios_version
+cat /sys/class/dmi/id/bios_date      # дата
+cat /sys/class/dmi/id/product_name   # модель ноутбука
+cat /sys/class/dmi/id/product_version
+```
+```bash
+# Через dmesg (при загрузке)
+dmesg | grep -i "bios"
+```
+```bash
+# Через lshw
+sudo lshw -class bios | grep -E "version|date"
+```
+
+---
+
 ## 🗂️ Где хранятся файлы
 
 | Путь | Назначение |
