@@ -126,6 +126,10 @@ passbolt get resource --id 6af23369-4ac5-4c90-81b2-2f5f04595db9 -j | jq '.permis
 <summary> Пример проверки </summary>
 
 ```bash
+# проверить пользователей
+passbolt list user -j
+passbolt list user -j | jq '.[] | {id, username, first_name, last_name}'
+
 # корневая папка Support level1 private folder
 passbolt list folders | grep "833541ff-b8a3-49d6-9ac2-70d268ba7f5d"
 Enter Password:
