@@ -335,6 +335,258 @@ zapret-stop    # Остановка
 
 ---
 
+# **ЧАСТЬ 4.5: НАСТРОЙКА SYSTEMD-СЕРВИСА (АЛЬТЕРНАТИВА СКРИПТАМ)**
+
+Хотя скрипты управления работают стабильно, некоторые пользователи предпочитают использовать **systemd** для более глубокой интеграции с системой. Systemd обеспечивает:
+
+- ✅ Автоматический запуск при загрузке системы
+- ✅ Управление через стандартные команды (`systemctl`)
+- ✅ Централизованное логирование через `journalctl`
+- ✅ Автоматический перезапуск при сбоях
+- ✅ Интеграцию с другими системными сервисами
+
+## **Создание systemd-сервиса**
+
+```bash
+sudo micro /etc/systemd/system/zapret2.service
+```
+
+**Содержимое:**
+```ini
+[Unit]
+Description=Zapret2 DPI bypass
+After=network.target nftables.service
+Wants=network.target
+Before=firewalld.service
+
+[Service]
+Type=forking
+User=root
+Group=root
+WorkingDirectory=/opt/zapret2
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+# Загрузка модуля ядра перед стартом
+ExecStartPre=/usr/bin/modprobe nfnetlink_queue
+ExecStartPre=/usr/bin/sleep 1
+
+# Загрузка правил nftables
+ExecStartPre=/usr/sbin/nft -f /etc/nftables/zapret.nft
+
+# Запуск nfqws2
+ExecStart=/opt/zapret2/nfq2/nfqws2 \
+    --qnum=200 \
+    --lua-init=@/opt/zapret2/lua/zapret-lib.lua \
+    --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua \
+    --filter-tcp=80,443 \
+    --filter-l7=tls,http \
+    --payload=tls_client_hello \
+    --lua-desync=multisplit:pos=midsld:seqovl=5 \
+    --daemon
+
+# Остановка процессов
+ExecStop=/usr/bin/pkill -f nfqws2
+
+# Перезапуск
+Restart=on-failure
+RestartSec=10
+
+# Лимиты
+LimitNOFILE=65536
+
+# Логирование
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=zapret2
+
+[Install]
+WantedBy=multi-user.target
+```
+
+**Альтернативный вариант с PID-файлом** (для более строгого контроля):
+
+```bash
+sudo micro /etc/systemd/system/zapret2.service
+```
+
+```ini
+[Unit]
+Description=Zapret2 DPI bypass
+After=network.target
+Wants=network.target
+
+[Service]
+Type=forking
+User=root
+Group=root
+WorkingDirectory=/opt/zapret2
+PIDFile=/run/zapret2.pid
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+ExecStartPre=/usr/bin/modprobe nfnetlink_queue
+ExecStartPre=/usr/bin/sleep 1
+ExecStartPre=/usr/sbin/nft -f /etc/nftables/zapret.nft
+
+ExecStart=/opt/zapret2/nfq2/nfqws2 \
+    --qnum=200 \
+    --lua-init=@/opt/zapret2/lua/zapret-lib.lua \
+    --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua \
+    --filter-tcp=80,443 \
+    --filter-l7=tls,http \
+    --payload=tls_client_hello \
+    --lua-desync=multisplit:pos=midsld:seqovl=5 \
+    --pid=/run/zapret2.pid \
+    --daemon
+
+ExecStop=/usr/bin/pkill -F /run/zapret2.pid
+ExecStopPost=/usr/bin/rm -f /run/zapret2.pid
+
+Restart=on-failure
+RestartSec=10
+LimitNOFILE=65536
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=zapret2
+
+[Install]
+WantedBy=multi-user.target
+```
+
+## **Настройка прав и включение сервиса**
+
+```bash
+# Перезагружаем systemd
+sudo systemctl daemon-reload
+
+# Включаем автозапуск
+sudo systemctl enable zapret2.service
+
+# Запускаем вручную
+sudo systemctl start zapret2.service
+
+# Проверяем статус
+sudo systemctl status zapret2.service
+```
+
+## **Команды управления systemd**
+
+```bash
+# Статус
+sudo systemctl status zapret2
+
+# Запуск
+sudo systemctl start zapret2
+
+# Остановка
+sudo systemctl stop zapret2
+
+# Перезапуск
+sudo systemctl restart zapret2
+
+# Логи (живые)
+sudo journalctl -u zapret2 -f
+
+# Последние логи
+sudo journalctl -u zapret2 -n 50 --no-pager
+```
+
+## **Использование файла окружения**
+
+Для удобного изменения параметров без правки самого сервиса:
+
+```bash
+sudo micro /etc/default/zapret2
+```
+
+```bash
+# Параметры zapret2
+ZAPRET_OPTS="--qnum=200 \
+    --lua-init=@/opt/zapret2/lua/zapret-lib.lua \
+    --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua \
+    --filter-tcp=80,443 \
+    --filter-l7=tls,http \
+    --payload=tls_client_hello \
+    --lua-desync=multisplit:pos=midsld:seqovl=5"
+```
+
+**Тогда в сервисе используйте:**
+```ini
+EnvironmentFile=/etc/default/zapret2
+ExecStart=/opt/zapret2/nfq2/nfqws2 $ZAPRET_OPTS --daemon
+```
+
+## **Диагностика проблем с systemd**
+
+### **Проблема: Сервис не запускается**
+
+```bash
+# Смотрим логи
+sudo journalctl -u zapret2 -xe
+
+# Проверяем, что модуль загружается
+sudo modprobe nfnetlink_queue
+lsmod | grep nfnetlink_queue
+
+# Проверяем правила nftables
+sudo nft list table inet zapret
+
+# Запускаем вручную (без daemon) для отладки
+sudo /opt/zapret2/nfq2/nfqws2 \
+    --qnum=200 \
+    --lua-init=@/opt/zapret2/lua/zapret-lib.lua \
+    --lua-init=@/opt/zapret2/lua/zapret-antidpi.lua \
+    --filter-tcp=80,443 \
+    --filter-l7=tls,http \
+    --payload=tls_client_hello \
+    --lua-desync=multisplit:pos=midsld:seqovl=5
+```
+
+### **Проблема: Конфликт с firewalld**
+
+Если после запуска пропадает сеть:
+
+```bash
+# Останавливаем zapret
+sudo systemctl stop zapret2
+
+# Сбрасываем nftables
+sudo nft flush ruleset
+
+# Перезапускаем firewalld
+sudo systemctl restart firewalld
+sudo systemctl restart NetworkManager
+
+# Загружаем правила zapret
+sudo nft -f /etc/nftables/zapret.nft
+
+# Запускаем заново
+sudo systemctl start zapret2
+```
+
+**Чтобы автоматизировать, добавьте в сервис:**
+```ini
+# Перед стартом
+ExecStartPre=/usr/bin/nft flush ruleset
+ExecStartPre=/usr/sbin/nft -f /etc/nftables/zapret.nft
+```
+
+## **Сравнение подходов: скрипты vs systemd**
+
+| Аспект | Скрипты | Systemd |
+|--------|---------|---------|
+| **Сложность настройки** | ⭐ Простая | ⭐⭐ Средняя |
+| **Автозапуск** | Через crontab | Встроенный |
+| **Управление** | `zapret-{start,stop,status}` | `systemctl` |
+| **Логирование** | В консоль | `journalctl` |
+| **Перезапуск при сбое** | Нет | Да (Restart=on-failure) |
+| **Конфликты с firewalld** | Минимальные | Могут быть |
+| **Рекомендация** | Для простоты | Для production |
+
+**Вывод:** Если вам нужен простой и надёжный способ — используйте скрипты. Если вы предпочитаете стандартные системные инструменты и хотите глубокую интеграцию — настройте systemd.
+
+---
+
 # **ЧАСТЬ 5: ОБЩИЕ НАСТРОЙКИ (ДЛЯ ЛЮБОГО СПОСОБА УСТАНОВКИ)**
 
 ## **5.1 Настройка модуля ядра**
