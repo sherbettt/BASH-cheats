@@ -80,6 +80,9 @@ ansible_ssh_private_key_file=/tmp/semaphore/secrets/qa_ssh_key
 ansible_port=22
 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
 ansible_python_interpreter=/usr/bin/python3
+
+# опционально можно и сюда всключить
+ansible_ssh_private_key_file=/tmp/semaphore/project_4/.ssh/id_rsa
 ```
 
 3. **В настройках задачи подключить секрет:**
