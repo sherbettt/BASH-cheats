@@ -102,6 +102,7 @@ clone_or_update() {
 repositories=(
     "Ansible-cheats git@github.com:sherbettt/Ansible-cheats.git"
     "BASH-cheats git@github.com:sherbettt/BASH-cheats.git"
+    "MikroTik-hAP-ax git@github.com:sherbettt/MikroTik-hAP-ax-.git"
     "create_ssh_users git@github.com:sherbettt/create_ssh_users.git"
     "deb-prepare git@github.com:sherbettt/deb-prepare.git"
     "Disk-monitoring git@github.com:sherbettt/Disk-monitoring.git"
