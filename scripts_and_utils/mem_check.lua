@@ -19,10 +19,15 @@ local function get_meminfo()
         local mem_free = content:match("MemFree:%s+(%d+)")
         local mem_available = content:match("MemAvailable:%s+(%d+)")
         
-        -- Выводим результаты
+        -- Выводим в Кб результаты
         print(string.format("MemTotal: %s kB", mem_total or "NOT FOUND"))
         print(string.format("MemFree: %s kB", mem_free or "NOT FOUND"))
         print(string.format("MemAvailable: %s kB", mem_available or "NOT FOUND"))
+
+        -- Выводим в Мб с округлением до 2 знаков
+        print(string.format("MemTotal: %.2f MB", total_mb or 0))
+        print(string.format("MemFree: %.2f MB", free_mb or 0))
+        print(string.format("MemAvailable: %.2f MB", available_mb or 0))
         
         return mem_total, mem_free, mem_available
     end
