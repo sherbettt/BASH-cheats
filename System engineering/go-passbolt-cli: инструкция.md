@@ -2,11 +2,19 @@
 
 ## 1. Настройка
 
+Чтобы выполнять запросы
 ```bash
 # Настраивается единожды:
 passbolt configure \
   --serverAddress https://passwd.runtel.ru \
   --userPrivateKeyFile /home/kkorablin/Загрузки/passbolt-recovery-kit_kiko.txt
+```
+Чтобы не вводить пароль каждый раз
+```bash
+passbolt configure \
+  --serverAddress https://passwd.runtel.ru \
+  --userPrivateKeyFile /home/kkorablin/Загрузки/passbolt-recovery-kit_kiko.txt \
+  --userPassword 'YOUR_HARD_PASS'
 ```
 
 ## 2. Правильные команды для просмотра
