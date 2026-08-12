@@ -128,6 +128,9 @@ passbolt get resource permission --id 6af23369-4ac5-4c90-81b2-2f5f04595db9 -j | 
 
 # Или через get resource с JSON
 passbolt get resource --id 6af23369-4ac5-4c90-81b2-2f5f04595db9 -j | jq '.permissions'
+
+# Получить права доступа для папки
+passbolt get folder permission --id a4e86d9a-d123-4042-9f98-fa722f20179c -j | jq '.'
 ```
 
 <details>
