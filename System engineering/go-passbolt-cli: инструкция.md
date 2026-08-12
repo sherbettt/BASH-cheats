@@ -438,6 +438,22 @@ passbolt create group \
   --users='["k@runtel.ru", "a@runtel.ru"]'
 ```
 
+### Создать/удалить пользователей
+```bash
+# Добавить несколько пользователей
+passbolt update group --id 0adf657d-9d93-40a8-bd16-7958c75b8eb8 \
+  --user="f@runtel.ru" \
+  --user="b@runtel.ru" \
+  --user="al@runtel.ru"
+
+# Удалить несколько пользователей
+passbolt update group --id 05f5ea5d-f044-4840-82fd-c486dac29ddc \
+  --user="f@runtel.ru" \
+  --user="b@runtel.ru" \
+  --delete
+```
+
+
 ## 4. Обновление данных
 
 ### Обновить ресурс
