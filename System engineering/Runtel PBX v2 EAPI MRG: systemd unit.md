@@ -93,22 +93,6 @@ ls -la /etc/runtel/main_plugin.yaml
 # Должен вывести: {'worker_count': 1, 'log_level': 10, ...}
 ```
 
-## 4. Исправление plugin.py
-
-```bash
-nano plugin.py
-```
-
-**В САМОМ НАЧАЛЕ файла** (ДО ВСЕХ ИМПОРТОВ) добавьте:
-
-```python
-import sys
-import os
-
-# Принудительно используем Python из venv для дочерних процессов
-sys.executable = "/home/runtel_pbx_v2_eapi_mrg/.venv/bin/python3"
-os.environ["PYTHON_EXECUTABLE"] = "/home/runtel_pbx_v2_eapi_mrg/.venv/bin/python3"
-```
 
 ## 5. Создание systemd сервиса
 
@@ -126,8 +110,14 @@ Wants=network.target
 
 [Service]
 Type=simple
+
+#WorkingDirectory=/home/runtel_pbx_v2_eapi_mrg
+#Environment="PATH=/home/runtel_pbx_v2_eapi_mrg/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+#Environment="PYTHONPATH=/home/runtel_pbx_v2_eapi_mrg"
+#Environment="PYTHON_EXECUTABLE=/home/runtel_pbx_v2_eapi_mrg/.venv/bin/python3"
 Environment="VIRTUAL_ENV=/home/runtel_pbx_v2_eapi_mrg/.venv/"
 ExecStart=/home/runtel_pbx_v2_eapi_mrg/.venv/bin/python3 /home/runtel_pbx_v2_eapi_mrg/start_eapi.py
+
 User=root
 Group=root
 Restart=always
