@@ -1,9 +1,9 @@
 #!/bin/bash
 
-FOLDER_ID="a4e86d9a-d123-4042-9f98-fa722f20179c"
-USER_ID="955ab5fe-7638-46d3-8027-aea3bb13d993"
 PARENT_FOLDER_ID="833541ff-b8a3-49d6-9ac2-70d268ba7f5d"
+FOLDER_ID="a4e86d9a-d123-4042-9f98-fa722f20179c"
 FOLDER_NAME=$(passbolt get folder --id $FOLDER_ID -j 2>/dev/null | jq -r '.name')
+USER_ID="955ab5fe-7638-46d3-8027-aea3bb13d993"    # Кирилл Кораблин
 
 echo "========================================="
 echo "АНАЛИЗ ПАПКИ $FOLDER_NAME"
@@ -13,10 +13,12 @@ echo ""
 
 # 0. Информация о папке Support level1 private folder
 echo "📁 ИМЯ РОДИТЕЛЬСКОЙ ПАПКИ"
-passbolt get folder --id $PARENT_FOLDER_ID
+#passbolt get folder --id $PARENT_FOLDER_ID
+PARENT_FOLDER_NAME=$(passbolt list folders -j 2>/dev/null | jq -r --arg fid "$PARENT_FOLDER_ID" '.[] | select(.id == $fid) | "\(.name)"')
+echo "$PARENT_FOLDER_NAME"
 echo ""
 
-echo "📂 ПОДПАПКИ в Support level1 private folder"
+echo "📂 ПОДПАПКИ в $PARENT_FOLDER_NAME"
 #passbolt list folders | grep "833541ff-b8a3-49d6-9ac2-70d268ba7f5d"
 #passbolt list folders --filter "folder_parent_id == '833541ff-b8a3-49d6-9ac2-70d268ba7f5d'"
 #passbolt list folders --filter "folder_parent_id == '833541ff-b8a3-49d6-9ac2-70d268ba7f5d'" -j | jq -r '.[] | "\(.id) | \(.name)"' | sort -t '|' -k2 | column -t -s '|'
@@ -27,12 +29,17 @@ echo ""
 
 
 # 1. Информация о пользователе Кирилл Кораблин
-echo "Пользователь Кирилл Кораблин:"
-passbolt list user --filter "id == '$USER_ID'"
+echo "👤 ПОЛНОЕ ИНФО о пользователь $USER_ID (Кирилл Кораблин):"
+#passbolt list user --filter "id == '$USER_ID'"
 passbolt list user -j 2>/dev/null | jq -r --arg id "$USER_ID" '.[] | select(.id == $id)'
 echo ""
 
-echo "Вывести username пользователя Кирилл Кораблин по id:"
+echo "Вывести (имя + фамилия) $USER_ID (Кирилл Кораблин):"
+USERNAME_FN_LN=$(passbolt list user -j | jq -r --arg id "955ab5fe-7638-46d3-8027-aea3bb13d993" '.[] | select(.id == $id) | "\(.first_name) \(.last_name)"')
+echo "$USERNAME_FN_LN"
+echo ""
+
+echo "Вывести username пользователя $USERNAME_FN_LN по id=$USER_ID:"
 USERNAME=$(passbolt list user -j | jq -r --arg id "$USER_ID" '.[] | select(.id == $id) | .username')
 echo "$USERNAME"
 echo ""
@@ -51,10 +58,14 @@ echo "📁 ПОЛНАЯ ИНФОРМАЦИЯ О ПАПКЕ '$(passbolt get folde
 passbolt get folder --id $FOLDER_ID -j 2>/dev/null | jq '.'
 echo ""
 
-echo "Является ли пользователь  с таким же полным именем (имя + фамилия); сравниваем с именем папки"
+echo "❓ Существует ли пользователь, у котого имя+фамилия == имени паки ? ¿"
 OWNER_ID=$(passbolt list user -j 2>/dev/null | jq -r --arg fn "$FOLDER_NAME" '.[] | select((.first_name + " " + .last_name) == $fn) | .id')
+OWNER_USER=$(passbolt list user -j 2>/dev/null | jq -r --arg fn "$FOLDER_NAME" '.[] | select((.first_name + " " + .last_name) == $fn) | "\(.username) - \(.first_name) \(.last_name)" '
+)
 echo "Найденный ID: $OWNER_ID"
+echo "Найденный USERNAME: $OWNER_USER"
 echo ""
+
 
 # 3. Подпапки
 echo "📂 ПОДПАПКИ в $(passbolt get folder --id $FOLDER_ID -j 2>/dev/null | jq -r '.name') :"
