@@ -58,12 +58,12 @@ echo "📁 ПОЛНАЯ ИНФОРМАЦИЯ О ПАПКЕ '$(passbolt get folde
 passbolt get folder --id $FOLDER_ID -j 2>/dev/null | jq '.'
 echo ""
 
-echo "❓ Существует ли пользователь, у котого имя+фамилия == имени паки ? ¿"
+echo "❓ Ищем пользователя, чьё имя+фамилия совпадают с именем папки ? ¿"
 OWNER_ID=$(passbolt list user -j 2>/dev/null | jq -r --arg fn "$FOLDER_NAME" '.[] | select((.first_name + " " + .last_name) == $fn) | .id')
 OWNER_USER=$(passbolt list user -j 2>/dev/null | jq -r --arg fn "$FOLDER_NAME" '.[] | select((.first_name + " " + .last_name) == $fn) | "\(.username) - \(.first_name) \(.last_name)" '
 )
-echo "Найденный ID: $OWNER_ID"
 echo "Найденный USERNAME: $OWNER_USER"
+echo "Найденный ID: $OWNER_ID"
 echo ""
 
 
