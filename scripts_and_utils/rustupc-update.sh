@@ -7,6 +7,18 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
+# Провекра зависимостей
+echo -e "${YELLOW}Checking dependencies...${NC}"
+if ! command -v pkg-config &> /dev/null; then
+    echo -e "${YELLOW}Installing pkg-config...${NC}"
+    apt-get update && apt-get install -y pkg-config
+fi
+
+if ! dpkg -l | grep -q libssl-dev; then
+    echo -e "${YELLOW}Installing libssl-dev...${NC}"
+    apt-get update && apt-get install -y libssl-dev
+fi
+
 cargo install cargo-update
 printf "${YELLOW}=== rustup update stable ===${NC}\n"
 rustup update stable
