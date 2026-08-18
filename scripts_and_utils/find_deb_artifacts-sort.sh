@@ -2,7 +2,7 @@
 
 # alias ll='ls -alFS --group-directories-first --si --sort=version'
 
-echo "Сортирвока ->  TXT список"
+echo "Сортировка -> TXT список"
     find ../deb_artifacts -name "runtel-*.deb" -type f | \
     sort -V | \
     awk -F'[_/]' '{
@@ -15,7 +15,7 @@ echo "Сортирвока ->  TXT список"
     }' > /tmp/latest_files.txt
 echo ""
 
-echo "Сортирвока -> JSON список"
+echo "Сортировка -> JSON список"
     find ../deb_artifacts -name "runtel-*.deb" -type f | \
     sort -V | \
     awk -F'[_/]' '{
@@ -58,6 +58,18 @@ awk -F'/' '{
 }' | sort -V
 echo ""
 
-
+echo "Фильтрация через  dpkg --compare-versions"
+echo "Получаем список уникальных пакетов и их версий"
+find /opt/runtel/ -name "runtel-*.deb" | \
+  awk -F'/' '{print $NF}' | \
+  awk -F'_' '{pkg=$1; ver=$2; print pkg, ver}' | \
+  sort -k1,1 -u | \
+  while read pkg ver; do
+    # Находим самую новую версию для каждого пакета
+    latest=$(find /opt/runtel/ -name "${pkg}_*.deb" | \
+             awk -F'_' '{print $2}' | \
+             sort -Vr | head -1)
+    echo "${pkg}_${latest}"
+  done
 
 
