@@ -2,7 +2,7 @@
 
 # alias ll='ls -alFS --group-directories-first --si --sort=version'
 
-echo "TXT список"
+echo "Сортирвока ->  TXT список"
     find ../deb_artifacts -name "runtel-*.deb" -type f | \
     sort -V | \
     awk -F'[_/]' '{
@@ -15,7 +15,7 @@ echo "TXT список"
     }' > /tmp/latest_files.txt
 echo ""
 
-echo "JSON список"
+echo "Сортирвока -> JSON список"
     find ../deb_artifacts -name "runtel-*.deb" -type f | \
     sort -V | \
     awk -F'[_/]' '{
@@ -29,15 +29,18 @@ echo "JSON список"
     jq -R -s -c 'split("\n") | map(select(length>0))' > /tmp/latest_files.json
 echo ""
 
-# Reverse
+echo "Обратная сортировка (от большего к меньшему)"
 find /opt/runtel/robot/deb_artifacts -name "runtel-*.deb" -type f | \
 sort -V | \
 awk -F'[_/]' '{pkg=$0; sub(/_[^_]*$/, "", pkg); if (pkg != last) {print; last=pkg}}' | \
 sort -rV
 echo ""
 
+echo "Получение только последних версий (1)"
+find /opt/runtel/robot/deb_artifacts/ -name "runtel-*.deb" | sort -r | awk -F'/' '{print $NF}' | awk -F'_' '{pkg=$1; if (!seen[pkg]++) print}'
+echo ""
 
-echo "Получение только последних версий"
+echo "Получение только последних версий (2)"
 find ../deb_artifacts -name "runtel-*.deb" -type f | \
 sort -rV | \
 awk -F'/' '{
@@ -55,7 +58,6 @@ awk -F'/' '{
 }' | sort -V
 echo ""
 
-echo "Получение только последних версий (2)"
-find /opt/runtel/robot/deb_artifacts/ -name "runtel-*.deb" | sort -r | awk -F'/' '{print $NF}' | awk -F'_' '{pkg=$1; if (!seen[pkg]++) print}'
+
 
 
