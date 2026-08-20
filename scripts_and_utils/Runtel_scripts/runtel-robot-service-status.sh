@@ -28,12 +28,7 @@ echo ""
 
 for p in "${services[@]}"; do
     echo -e "${GREEN}▶ apt policy $p${NC}"
-    apt-cache policy "$p" 2>/dev/null | head -3 || echo "  not found"
+    apt-cache policy "$p" 2>/dev/null | head -5 || echo "  not found"
     echo "" 
-done
-
-for p in "${services[@]}"; do
-    echo -e "${GREEN}▶ apt-cache policy $p${NC}"
-    apt-cache policy "$p" 2>/dev/null || echo "  not found"
 done
 
